@@ -1,1 +1,24 @@
-"node_modules/" 
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+frontend/dist/
+frontend/.angular/
+
+# Backend build
+smart-analyzer-backend/target/
+
+# Python
+python_parser/__pycache__/
+python_parser/decoded_frames.json
+python_parser/*.pyc
+uploads/
+
+# Environment
+.env
+*.env
+
+# OS
+.DS_Store
+Thumbs.db
