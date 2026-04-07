@@ -1,0 +1,3391 @@
+[
+  {
+    "timestamp": 1773230879.890181,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 1,
+        "label": "Unlocked",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000001"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000001"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "PSD_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "DRDR_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Psdr_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1742291570.499437,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 1,
+        "label": "Unlocked",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000001"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000001"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01000000"
+      },
+      "PSD_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01000000"
+      },
+      "DRDR_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01000000"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01000000"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      1,
+      64,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230880.164613,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230884.898636,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 1,
+        "label": "Unlocked",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000001"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000001"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "PSD_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "DRDR_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Psdr_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230885.193022,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230889.905506,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 1,
+        "label": "Unlocked",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000001"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000001"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "PSD_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "DRDR_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Psdr_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230890.223798,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230891.914242,
+    "channel": 1,
+    "address": "0X2CA",
+    "direction": "Tx",
+    "bus": "Car_CAN",
+    "message": "Contact_Status",
+    "signals": {
+      "Drd_Status_Cont": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 0,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000100"
+      },
+      "PSD_Status_Cont": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 0,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000100"
+      },
+      "DRDR_Status_Cont": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      },
+      "Psdr_Status_Cont": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 0,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000100"
+      },
+      "Bootlid_Status_Cont": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230893.582415,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000100"
+      },
+      "DRDR_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      },
+      "Psdr_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230893.866882,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000100"
+      },
+      "DRDR_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      },
+      "Psdr_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230894.149478,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000100"
+      },
+      "DRDR_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      },
+      "Psdr_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230894.442563,
+    "channel": 2,
+    "address": "0X2AF",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Latch_Action",
+    "signals": {
+      "Drd_Secure_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxxxxxx1",
+        "byte_binary": "00000000"
+      },
+      "Drdr_Secure_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxxxxx1x",
+        "byte_binary": "00000000"
+      },
+      "Psd_Secure_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxxxx1xx",
+        "byte_binary": "00000000"
+      },
+      "Psdr_Secure_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxxx1xxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Lock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxx1xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drdr_Lock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xx1xxxxx",
+        "byte_binary": "00000000"
+      },
+      "Psd_Lock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "x1xxxxxx",
+        "byte_binary": "00000000"
+      },
+      "Psdr_Lock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "1xxxxxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Unlock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 1,
+        "bit_pattern": "xxxxxxx1",
+        "byte_binary": "00000000"
+      },
+      "Drdr_Unlock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 1,
+        "bit_pattern": "xxxxxx1x",
+        "byte_binary": "00000000"
+      },
+      "Psd_Unlock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 1,
+        "bit_pattern": "xxxxx1xx",
+        "byte_binary": "00000000"
+      },
+      "Psdr_Unlock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 1,
+        "bit_pattern": "xxxx1xxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230894.907482,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000100"
+      },
+      "DRDR_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      },
+      "Psdr_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230895.179915,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230898.59168,
+    "channel": 1,
+    "address": "0X2CA",
+    "direction": "Tx",
+    "bus": "Car_CAN",
+    "message": "Contact_Status",
+    "signals": {
+      "Drd_Status_Cont": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 0,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01000100"
+      },
+      "PSD_Status_Cont": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 0,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01000100"
+      },
+      "DRDR_Status_Cont": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01000100"
+      },
+      "Psdr_Status_Cont": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 0,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01000100"
+      },
+      "Bootlid_Status_Cont": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      68,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230899.557647,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01000100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01000100"
+      },
+      "DRDR_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01000100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01000100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      68,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230899.843433,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01000100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01000100"
+      },
+      "DRDR_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01000100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01000100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      68,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230900.114619,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01000100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01000100"
+      },
+      "DRDR_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01000100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01000100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      68,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230900.38227,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230900.643335,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01000100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01000100"
+      },
+      "DRDR_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01000100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01000100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      68,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230900.948018,
+    "channel": 2,
+    "address": "0X2AF",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Latch_Action",
+    "signals": {
+      "Drd_Secure_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxxxxxx1",
+        "byte_binary": "00000000"
+      },
+      "Drdr_Secure_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxxxxx1x",
+        "byte_binary": "00000000"
+      },
+      "Psd_Secure_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxxxx1xx",
+        "byte_binary": "00000000"
+      },
+      "Psdr_Secure_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxxx1xxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Lock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxx1xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drdr_Lock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xx1xxxxx",
+        "byte_binary": "00000000"
+      },
+      "Psd_Lock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "x1xxxxxx",
+        "byte_binary": "00000000"
+      },
+      "Psdr_Lock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "1xxxxxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Unlock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 1,
+        "bit_pattern": "xxxxxxx1",
+        "byte_binary": "00000000"
+      },
+      "Drdr_Unlock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 1,
+        "bit_pattern": "xxxxxx1x",
+        "byte_binary": "00000000"
+      },
+      "Psd_Unlock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 1,
+        "bit_pattern": "xxxxx1xx",
+        "byte_binary": "00000000"
+      },
+      "Psdr_Unlock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 1,
+        "bit_pattern": "xxxx1xxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230903.903554,
+    "channel": 1,
+    "address": "0X2CA",
+    "direction": "Tx",
+    "bus": "Car_CAN",
+    "message": "Contact_Status",
+    "signals": {
+      "Drd_Status_Cont": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 0,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status_Cont": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 0,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status_Cont": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status_Cont": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 0,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status_Cont": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230904.860345,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230905.140932,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230905.411117,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230905.701478,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230905.980834,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230906.257774,
+    "channel": 2,
+    "address": "0X2AF",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Latch_Action",
+    "signals": {
+      "Drd_Secure_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxxxxxx1",
+        "byte_binary": "00000000"
+      },
+      "Drdr_Secure_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxxxxx1x",
+        "byte_binary": "00000000"
+      },
+      "Psd_Secure_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxxxx1xx",
+        "byte_binary": "00000000"
+      },
+      "Psdr_Secure_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxxx1xxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Lock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xxx1xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drdr_Lock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "xx1xxxxx",
+        "byte_binary": "00000000"
+      },
+      "Psd_Lock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "x1xxxxxx",
+        "byte_binary": "00000000"
+      },
+      "Psdr_Lock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 0,
+        "bit_pattern": "1xxxxxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Unlock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 1,
+        "bit_pattern": "xxxxxxx1",
+        "byte_binary": "00000000"
+      },
+      "Drdr_Unlock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 1,
+        "bit_pattern": "xxxxxx1x",
+        "byte_binary": "00000000"
+      },
+      "Psd_Unlock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 1,
+        "bit_pattern": "xxxxx1xx",
+        "byte_binary": "00000000"
+      },
+      "Psdr_Unlock_latch_action": {
+        "raw_value": 0,
+        "label": "Not_Actuated",
+        "byte": 1,
+        "bit_pattern": "xxxx1xxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230909.923756,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230910.192897,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230914.931551,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230915.211969,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230919.935793,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230920.228938,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230924.941189,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000000"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230925.21322,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230927.927404,
+    "channel": 2,
+    "address": "0X723",
+    "direction": "Tx",
+    "bus": "Key_CAN",
+    "message": "key_comm",
+    "signals": {
+      "KEY_Pos": {
+        "raw_value": 2,
+        "label": "Outside",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "10000000"
+      },
+      "KEY_Butt": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 1,
+        "bit_pattern": "xx111111",
+        "byte_binary": "10000000"
+      },
+      "Key_ID": {
+        "raw_value": 2,
+        "label": "2 (keyId)",
+        "byte": 5,
+        "bit_pattern": "11111111",
+        "byte_binary": "00000010"
+      }
+    },
+    "raw_data": [
+      0,
+      128,
+      119,
+      83,
+      188,
+      2,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230928.078912,
+    "channel": 2,
+    "address": "0X723",
+    "direction": "Tx",
+    "bus": "Key_CAN",
+    "message": "key_comm",
+    "signals": {
+      "KEY_Pos": {
+        "raw_value": 2,
+        "label": "Outside",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "10000000"
+      },
+      "KEY_Butt": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 1,
+        "bit_pattern": "xx111111",
+        "byte_binary": "10000000"
+      },
+      "Key_ID": {
+        "raw_value": 2,
+        "label": "2 (keyId)",
+        "byte": 5,
+        "bit_pattern": "11111111",
+        "byte_binary": "00000010"
+      }
+    },
+    "raw_data": [
+      0,
+      128,
+      119,
+      83,
+      188,
+      2,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230928.214534,
+    "channel": 2,
+    "address": "0X723",
+    "direction": "Tx",
+    "bus": "Key_CAN",
+    "message": "key_comm",
+    "signals": {
+      "KEY_Pos": {
+        "raw_value": 2,
+        "label": "Outside",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "10000010"
+      },
+      "KEY_Butt": {
+        "raw_value": 2,
+        "label": "Lock button",
+        "byte": 1,
+        "bit_pattern": "xx111111",
+        "byte_binary": "10000010"
+      },
+      "Key_ID": {
+        "raw_value": 2,
+        "label": "2 (keyId)",
+        "byte": 5,
+        "bit_pattern": "11111111",
+        "byte_binary": "00000010"
+      }
+    },
+    "raw_data": [
+      0,
+      130,
+      119,
+      83,
+      188,
+      2,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230928.350816,
+    "channel": 2,
+    "address": "0X723",
+    "direction": "Tx",
+    "bus": "Key_CAN",
+    "message": "key_comm",
+    "signals": {
+      "KEY_Pos": {
+        "raw_value": 2,
+        "label": "Outside",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "10000000"
+      },
+      "KEY_Butt": {
+        "raw_value": 0,
+        "label": "Unknown(0)",
+        "byte": 1,
+        "bit_pattern": "xx111111",
+        "byte_binary": "10000000"
+      },
+      "Key_ID": {
+        "raw_value": 2,
+        "label": "2 (keyId)",
+        "byte": 5,
+        "bit_pattern": "11111111",
+        "byte_binary": "00000010"
+      }
+    },
+    "raw_data": [
+      0,
+      128,
+      119,
+      83,
+      188,
+      2,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230929.949234,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 4,
+        "label": "Secured",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000100"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      4,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230930.226328,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000100"
+      },
+      "lock_Button_status": {
+        "raw_value": 1,
+        "label": "pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000100"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230934.952423,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 4,
+        "label": "Secured",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000100"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      4,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230935.270651,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230939.958324,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 4,
+        "label": "Secured",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000100"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      4,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230940.229627,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230944.964307,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 4,
+        "label": "Secured",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000100"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      4,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230945.229557,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230949.970957,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 4,
+        "label": "Secured",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000100"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      4,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230950.262239,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230954.976954,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 4,
+        "label": "Secured",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000100"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      4,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230955.252731,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230959.981653,
+    "channel": 2,
+    "address": "0X2FC",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Car_Status",
+    "signals": {
+      "door_latche_status": {
+        "raw_value": 4,
+        "label": "Secured",
+        "byte": 0,
+        "bit_pattern": "xxxx1111",
+        "byte_binary": "00000100"
+      },
+      "selective_unlock_statuss": {
+        "raw_value": 0,
+        "label": "off",
+        "byte": 0,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000100"
+      },
+      "Drd_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 1,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "01010100"
+      },
+      "PSD_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "01010100"
+      },
+      "DRDR_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "01010100"
+      },
+      "Psdr_Status": {
+        "raw_value": 1,
+        "label": "opened",
+        "byte": 1,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "01010100"
+      },
+      "Bootlid_Status": {
+        "raw_value": 0,
+        "label": "Closed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "Rocker_switch_Status": {
+        "raw_value": 0,
+        "label": "not_pressed",
+        "byte": 2,
+        "bit_pattern": "11xxxxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      4,
+      84,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "timestamp": 1773230960.285005,
+    "channel": 2,
+    "address": "0X23A",
+    "direction": "Rx",
+    "bus": "Car_CAN",
+    "message": "Key_Button_Status",
+    "signals": {
+      "Unlock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxxxx11",
+        "byte_binary": "00000000"
+      },
+      "lock_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xxxx11xx",
+        "byte_binary": "00000000"
+      },
+      "3rd_Button_status": {
+        "raw_value": 0,
+        "label": "Not_pressed",
+        "byte": 2,
+        "bit_pattern": "xx11xxxx",
+        "byte_binary": "00000000"
+      }
+    },
+    "raw_data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+]
