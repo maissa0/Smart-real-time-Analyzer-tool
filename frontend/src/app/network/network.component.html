@@ -1,0 +1,172 @@
+<div class="network-page">
+  <header class="topbar">
+    <div class="brand-group">
+      <button class="icon-btn" type="button" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="brand">SMART <span>ANALYSER</span></div>
+    </div>
+    <div class="user-group">
+      <span class="username">{{ username }}</span>
+      <button type="button" class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1>CAN LOG ANALYZER</h1>
+    <div class="hero-underline"></div>
+    <p>
+      Upload your log file and XML signal definitions to decode and visualize CAN bus communication
+      frames
+    </p>
+  </section>
+
+  <section class="card upload-card">
+    <div class="corner c1"></div>
+    <div class="corner c2"></div>
+    <div class="corner c3"></div>
+    <div class="corner c4"></div>
+
+    <h2>UPLOAD INPUTS</h2>
+
+    <label
+      class="drop-zone"
+      [class.drag-over]="isDragOverLog"
+      (dragover)="onDragOverLog($event)"
+      (dragleave)="onDragLeaveLog($event)"
+      (drop)="onDropLog($event)"
+    >
+      <input type="file" accept=".txt,.log" (change)="onLogFileSelect($event)" />
+      <div class="zone-icon">↑</div>
+      <div class="zone-title">Drop your .txt log file here or click to browse</div>
+      <div class="zone-sub" *ngIf="logFile">{{ logFile.name }}</div>
+    </label>
+
+    <label
+      class="drop-zone"
+      [class.drag-over]="isDragOverXml"
+      (dragover)="onDragOverXml($event)"
+      (dragleave)="onDragLeaveXml($event)"
+      (drop)="onDropXml($event)"
+    >
+      <input type="file" accept=".xml" multiple (change)="onXmlFilesSelect($event)" />
+      <div class="zone-icon">↑</div>
+      <div class="zone-title">Drop XML definition files here or click to browse</div>
+      <div class="zone-sub" *ngIf="xmlFiles.length">
+        <span *ngFor="let file of xmlFiles; let i = index">
+          {{ file.name }}<span *ngIf="i < xmlFiles.length - 1">, </span>
+        </span>
+      </div>
+    </label>
+
+    <button
+      type="button"
+      class="analyze-btn"
+      [disabled]="!logFile || !xmlFiles.length || loading"
+      (click)="analyze()"
+    >
+      <span *ngIf="!loading">ANALYZE</span>
+      <span *ngIf="loading" class="btn-loader"></span>
+    </button>
+
+    <div class="error" *ngIf="error">{{ error }}</div>
+  </section>
+
+  <section class="results" *ngIf="showResults">
+    <div class="stats-grid">
+      <article class="card stat-card" [class.loading]="loading">
+        <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+        <div class="stat-value">{{ totalFrames }}</div>
+        <div class="stat-label">Total Frames</div>
+      </article>
+      <article class="card stat-card" [class.loading]="loading">
+        <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+        <div class="stat-value">{{ totalUniqueAddresses }}</div>
+        <div class="stat-label">Unique Addresses</div>
+      </article>
+      <article class="card stat-card" [class.loading]="loading">
+        <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+        <div class="stat-value">{{ totalUniqueBuses }}</div>
+        <div class="stat-label">Unique Buses</div>
+      </article>
+      <article class="card stat-card" [class.loading]="loading">
+        <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+        <div class="stat-value">{{ totalUniqueMessages }}</div>
+        <div class="stat-label">Unique Messages</div>
+      </article>
+    </div>
+
+    <div class="card filter-card">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="filter-title">FILTER RESULTS</div>
+      <form [formGroup]="filterForm" class="filter-grid">
+        <select formControlName="address">
+          <option value="">All Addresses</option>
+          <option *ngFor="let addr of uniqueAddresses" [value]="addr">{{ addr }}</option>
+        </select>
+        <select formControlName="bus">
+          <option value="">All Buses</option>
+          <option *ngFor="let bus of uniqueBuses" [value]="bus">{{ bus }}</option>
+        </select>
+        <input type="text" placeholder="Search signal name..." formControlName="signalSearch" />
+        <button type="button" class="clear-btn" (click)="clearFilters()">CLEAR FILTERS</button>
+      </form>
+    </div>
+
+    <div class="card table-card">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Timestamp</th>
+              <th>Address</th>
+              <th>Bus</th>
+              <th>Message</th>
+              <th>Direction</th>
+              <th>Signals</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let frame of filteredFrames; let i = index">
+              <tr class="data-row" (click)="toggleRow(frame.id)">
+                <td>{{ i + 1 }}</td>
+                <td>{{ formatTimestamp(frame.timestamp) }}</td>
+                <td><span class="badge address">{{ frame.address }}</span></td>
+                <td><span class="badge" [ngClass]="busClass(frame.bus)">{{ frame.bus }}</span></td>
+                <td>{{ frame.message }}</td>
+                <td>
+                  <span class="badge" [ngClass]="frame.direction === 'Rx' ? 'rx' : 'tx'">
+                    {{ frame.direction }}
+                  </span>
+                </td>
+                <td>{{ isExpanded(frame.id) ? 'Hide' : 'Expand' }}</td>
+              </tr>
+              <tr class="expand-row" [class.open]="isExpanded(frame.id)">
+                <td colspan="7">
+                  <div class="expand-content">
+                    <div class="signals-grid">
+                      <div class="signal-item" *ngFor="let signal of frame.parsedSignals">
+                        <span class="signal-name">[{{ signal.name }}]</span>
+                        <span class="arrow">→</span>
+                        <span class="signal-value">{{ signal.value }}</span>
+                      </div>
+                      <div *ngIf="!frame.parsedSignals.length" class="signal-empty">
+                        No decoded signals for this frame.
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="export-wrap">
+      <button type="button" class="export-btn" (click)="exportResults()">EXPORT RESULTS</button>
+    </div>
+  </section>
+</div>

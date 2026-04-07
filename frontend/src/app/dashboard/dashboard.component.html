@@ -1,0 +1,422 @@
+<div class="page" [class.sidebar-open]="sidebarOpen">
+
+  <!-- Nav overlay -->
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="toggleSidebar()"></div>
+
+  <!-- Nav sidebar -->
+  <nav class="sidebar" [class.open]="sidebarOpen">
+    <div class="sidebar-header">
+      <span class="sidebar-brand">SMART <span>ANALYSER</span></span>
+      <button class="sidebar-close" (click)="toggleSidebar()">✕</button>
+    </div>
+    <ul class="sidebar-nav">
+      <li class="active">⬡ Dashboard</li>
+      <li (click)="goToUsers()">⬡ Users</li>
+    </ul>
+    <div class="sidebar-footer">
+      <span class="sidebar-user">{{ username }}</span>
+      <button class="sidebar-logout" (click)="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="ham-btn" (click)="toggleSidebar()" type="button">
+        <span></span><span></span><span></span>
+      </button>
+      <span class="brand">SMART <span>ANALYSER</span></span>
+    </div>
+    <div class="topbar-right">
+      <span class="top-username">{{ username }}</span>
+      <button class="top-logout" (click)="logout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- App body -->
+  <div class="app-body">
+
+    <!-- ════ LEFT PANEL ════ -->
+    <aside class="left-panel">
+
+      <!-- Upload -->
+      <div class="lp-section">
+        <div class="lp-section-title">UPLOAD</div>
+
+        <div class="drop-zone"
+          [class.drag-over]="isDragOverLog"
+          [class.has-file]="!!logFile"
+          (dragover)="onDragOverLog($event)"
+          (dragleave)="onDragLeaveLog($event)"
+          (drop)="onDropLog($event)"
+          (click)="logInput.click()">
+          <input #logInput type="file" accept=".txt" hidden (change)="onLogFileSelect($event)">
+          <div class="dz-icon">📄</div>
+          <div class="dz-content">
+            <span class="dz-label" *ngIf="!logFile">
+              Log file <span class="dz-hint">.txt</span>
+            </span>
+            <span class="dz-label file-ok" *ngIf="logFile">{{ logFile.name }}</span>
+          </div>
+        </div>
+
+        <div class="drop-zone"
+          [class.drag-over]="isDragOverXml"
+          [class.has-file]="xmlFiles.length > 0"
+          (dragover)="onDragOverXml($event)"
+          (dragleave)="onDragLeaveXml($event)"
+          (drop)="onDropXml($event)"
+          (click)="xmlInput.click()">
+          <input #xmlInput type="file" accept=".xml" multiple hidden
+            (change)="onXmlFilesSelect($event)">
+          <div class="dz-icon">📋</div>
+          <div class="dz-content">
+            <span class="dz-label" *ngIf="xmlFiles.length === 0">
+              XML files <span class="dz-hint">multiple</span>
+            </span>
+            <ng-container *ngIf="xmlFiles.length > 0">
+              <span class="dz-label file-ok" *ngFor="let f of xmlFiles">{{ f.name }}</span>
+            </ng-container>
+          </div>
+        </div>
+
+        <div class="analyze-error" *ngIf="analyzeError">⚠ {{ analyzeError }}</div>
+
+        <button class="analyze-btn" [disabled]="!canAnalyze()" (click)="analyze()">
+          <span *ngIf="!analyzing">⚡ ANALYZE</span>
+          <span *ngIf="analyzing" class="spinner-wrap">
+            <span class="spinner"></span>ANALYZING...
+          </span>
+        </button>
+      </div>
+
+      <!-- Status -->
+      <div class="lp-section" *ngIf="showResults">
+        <div class="status-ok">✅ {{ allFrames.length }} frames decoded</div>
+        <div class="status-sub">
+          {{ uniqueAddresses.length }} addresses · {{ uniqueBuses.length }} buses
+        </div>
+        <button class="clear-btn" (click)="clearAnalysis()">🗑 Clear &amp; reset</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="lp-section" *ngIf="showResults">
+        <div class="lp-section-title">FILTER</div>
+
+        <div class="filter-group">
+          <label class="filter-label">Address</label>
+          <select class="filter-select" [(ngModel)]="filterAddress" (change)="applyFilters()">
+            <option value="">All</option>
+            <option *ngFor="let a of uniqueAddresses" [value]="a">{{ a }}</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Bus</label>
+          <select class="filter-select" [(ngModel)]="filterBus" (change)="applyFilters()">
+            <option value="">All</option>
+            <option *ngFor="let b of uniqueBuses" [value]="b">{{ b }}</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Signal search</label>
+          <input class="filter-input" type="text" placeholder="name or value..."
+            [(ngModel)]="filterSignal" (input)="applyFilters()">
+        </div>
+
+        <button class="filter-clear-btn" (click)="clearFilters()"
+          *ngIf="filterAddress || filterBus || filterSignal">
+          Clear filters
+        </button>
+
+        <div class="filter-count"
+          *ngIf="filterAddress || filterBus || filterSignal">
+          {{ filteredFrames.length }} / {{ allFrames.length }} frames shown
+        </div>
+      </div>
+
+      <!-- Message visibility toggles (charts view only) -->
+      <div class="lp-section"
+        *ngIf="showResults && activeView === 'charts'">
+        <div class="lp-section-title">MESSAGES</div>
+        <div class="msg-toggle-list">
+          <label class="msg-toggle-item" *ngFor="let group of messageGroups">
+            <input type="checkbox" [checked]="group.visible"
+              (change)="toggleGroupVisibility(group)">
+            <div class="msg-toggle-info">
+              <span class="msg-toggle-name">{{ group.messageName }}</span>
+              <span class="msg-toggle-addr">
+                {{ group.address }} · {{ group.cards.length }}
+                chart{{ group.cards.length > 1 ? 's' : '' }}
+              </span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ════ RIGHT PANEL ════ -->
+    <main class="right-panel">
+
+      <!-- Empty state -->
+      <div class="empty-state" *ngIf="!showResults && !analyzing">
+        <div class="empty-icon">⚡</div>
+        <div class="empty-title">Ready to analyze</div>
+        <div class="empty-sub">
+          Upload a log file and XML definitions,<br>then click Analyze
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="empty-state" *ngIf="analyzing">
+        <div class="big-spinner"></div>
+        <div class="empty-title">Analyzing...</div>
+        <div class="empty-sub">Decoding frames and signals</div>
+      </div>
+
+      <!-- Results -->
+      <ng-container *ngIf="showResults">
+
+        <!-- View / mode bar -->
+        <div class="view-bar">
+          <button class="view-btn"
+            [class.active]="activeView === 'table'"
+            (click)="switchView('table')">📋 TABLE</button>
+
+          <button class="view-btn"
+            [class.active]="activeView === 'charts'"
+            (click)="switchView('charts')">📊 CHARTS</button>
+
+          <!-- Chart mode toggle — visible only in charts view -->
+          <div class="chart-mode-toggle" *ngIf="activeView === 'charts'">
+            <button class="cmt-btn"
+              [class.active]="chartMode === 'grouped'"
+              (click)="setChartMode('grouped')"
+              title="Grouped — signals with identical states share one chart">
+              ⊞
+            </button>
+            <button class="cmt-btn"
+              [class.active]="chartMode === 'separate'"
+              (click)="setChartMode('separate')"
+              title="Separate — one chart per signal">
+              ⊟
+            </button>
+          </div>
+
+          <div class="view-bar-stats">
+            <span class="vbs-item">{{ allFrames.length }} frames</span>
+            <span class="vbs-sep">·</span>
+            <span class="vbs-item">{{ filteredFrames.length }} shown</span>
+          </div>
+
+          <button class="export-btn" (click)="exportResults()">⬇ Export JSON</button>
+        </div>
+
+        <!-- ═══ TABLE VIEW ═══ -->
+        <div class="table-view" *ngIf="activeView === 'table'">
+          <div class="frames-table-wrap">
+            <table class="frames-table">
+              <thead>
+                <tr class="frames-thead-row">
+                  <th class="th-num">#</th>
+                  <th class="th-ts">timestamp</th>
+                  <th class="th-ch">ch</th>
+                  <th class="th-id">id</th>
+                  <th class="th-msg">message</th>
+                  <th class="th-dir">dir</th>
+                  <th class="th-raw">raw bytes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <ng-container *ngFor="let frame of filteredFrames; let i = index">
+
+                  <!-- Frame header row -->
+                  <tr class="frame-main-row">
+                    <td class="td-num">{{ i + 1 }}</td>
+                    <td class="td-ts">
+                      {{ formatTimestamp(frame.timestamp) }}
+                      <span class="td-rel">{{ formatRelative(frame.timestamp) }}</span>
+                    </td>
+                    <td class="td-ch">CAN{{ frame.channel }}</td>
+                    <td class="td-id">
+                      <span class="badge addr-badge">{{ frame.address }}</span>
+                    </td>
+                    <td class="td-msg">
+                      <span [ngClass]="'msg-name ' + msgColor(frame.bus)">
+                        {{ frame.message }}
+                      </span>
+                    </td>
+                    <td class="td-dir">
+                      <span class="badge"
+                        [class.rx-badge]="frame.direction === 'Rx'"
+                        [class.tx-badge]="frame.direction === 'Tx'">
+                        {{ frame.direction }}
+                      </span>
+                    </td>
+                    <td class="td-raw">{{ frame.rawData | json }}</td>
+                  </tr>
+
+                  <!-- Signal sub-header -->
+                  <tr class="sig-header-row"
+                    *ngIf="frame.parsedSignals.length > 0">
+                    <td></td>
+                    <td class="sig-col-h">signal</td>
+                    <td class="sig-col-h">raw</td>
+                    <td class="sig-col-h" colspan="4">decoded</td>
+                  </tr>
+
+                  <!-- Signal rows — always visible -->
+                  <tr class="sig-row"
+                    *ngFor="let sig of frame.parsedSignals"
+                    [class.sig-row-warn]="!sig.isValid">
+                    <td></td>
+                    <td class="sig-name-cell">{{ sig.name }}</td>
+                    <td class="sig-raw-cell">{{ sig.rawVal }}</td>
+                    <td class="sig-val-cell" colspan="4"
+                      [class.sig-val-warn]="!sig.isValid">
+                      {{ sig.value }}
+                      <span class="sig-warn-icon" *ngIf="!sig.isValid">⚠</span>
+                    </td>
+                  </tr>
+
+                  <!-- Spacer -->
+                  <tr class="frame-spacer"><td colspan="7"></td></tr>
+
+                </ng-container>
+
+                <tr *ngIf="filteredFrames.length === 0">
+                  <td colspan="7" class="empty-row">
+                    No frames match the current filters.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ CHARTS VIEW ═══ -->
+        <div class="charts-view" *ngIf="activeView === 'charts'">
+
+          <ng-container *ngFor="let group of messageGroups">
+            <div class="msg-section" *ngIf="group.visible">
+
+              <!-- Message section header -->
+              <div class="msg-section-header">
+                <span class="msg-section-name">{{ group.messageName }}</span>
+                <span class="msg-section-id">{{ group.address }}</span>
+                <span class="msg-section-count">
+                  {{ group.cards.length }}
+                  chart{{ group.cards.length > 1 ? 's' : '' }}
+                </span>
+              </div>
+
+              <!-- 2-column chart grid -->
+              <div class="signals-grid">
+                <div class="signal-chart-card"
+                  *ngFor="let card of group.cards">
+
+                  <div class="signal-chart-header">
+                    <span class="signal-chart-name" [title]="card.title">
+                      {{ card.title }}
+                    </span>
+                    <div class="signal-chart-actions">
+                      <span class="sc-state-count">
+                        {{ card.defVals.length }} states
+                      </span>
+                      <button class="sc-expand-btn"
+                        title="Expand chart"
+                        (click)="expandCard(card, group.messageName, $event)">
+                        ⛶
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="signal-chart-body">
+                    <canvas [id]="card.cardId"></canvas>
+                  </div>
+
+                  <!-- Legend — only for grouped cards with multiple signals -->
+                  <div class="card-legend" *ngIf="card.signals.length > 1">
+                    <div class="leg-item" *ngFor="let s of card.signals">
+                      <svg width="20" height="10" style="flex-shrink:0">
+                        <line x1="0" y1="5" x2="20" y2="5"
+                          [attr.stroke]="s.color" stroke-width="2"/>
+                        <circle cx="10" cy="5" r="3"
+                          [attr.fill]="s.color"/>
+                      </svg>
+                      <span>{{ s.signalName }}</span>
+                    </div>
+                  </div>
+
+                  <div class="sc-hint">
+                    ⛶ expand to zoom · x-axis: seconds from log start
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </ng-container>
+
+          <div class="charts-empty"
+            *ngIf="messageGroups.every(g => !g.visible)">
+            <p>All messages hidden. Use the toggles in the left panel.</p>
+          </div>
+
+        </div>
+
+      </ng-container>
+    </main>
+
+  </div>
+
+  <!-- ════ EXPANDED CHART OVERLAY ════ -->
+  <div class="chart-expand-overlay"
+    *ngIf="expandedCard"
+    (click)="onOverlayClick($event)">
+    <div class="chart-expand-modal">
+
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="modal-msg">{{ expandedCardMsgName }}</span>
+          <span class="modal-sep">›</span>
+          <span class="modal-sig">{{ expandedCard.title }}</span>
+        </div>
+        <div class="modal-actions">
+          <button class="reset-zoom-btn" (click)="resetZoom()">
+            ⟳ Reset zoom
+          </button>
+          <button class="modal-close-btn" (click)="closeExpanded()">✕</button>
+        </div>
+      </div>
+
+      <div class="modal-chart-body">
+        <canvas [id]="expandedCard.cardId + '-exp'"></canvas>
+      </div>
+
+      <!-- Legend in expanded view -->
+      <div class="modal-legend" *ngIf="expandedCard.signals.length > 1">
+        <div class="leg-item" *ngFor="let s of expandedCard.signals">
+          <svg width="24" height="10" style="flex-shrink:0">
+            <line x1="0" y1="5" x2="24" y2="5"
+              [attr.stroke]="s.color" stroke-width="2"/>
+            <circle cx="12" cy="5" r="3"
+              [attr.fill]="s.color"/>
+          </svg>
+          <span>{{ s.signalName }}</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <span>🖱 Scroll to zoom</span>
+        <span>✋ Drag to pan</span>
+        <span>⟳ Reset to see full timeline</span>
+        <span>ESC or click outside to close</span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
