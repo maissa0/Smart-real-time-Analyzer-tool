@@ -8,10 +8,6 @@
         <div class="auth-subtitle">Network Intelligence Platform</div>
       </div>
 
-      <div *ngIf="error" class="auth-error">
-        {{ error }}
-      </div>
-
       <form [formGroup]="form" (ngSubmit)="submit()">
         <div class="form-group">
           <label class="form-label" for="username">Username</label>

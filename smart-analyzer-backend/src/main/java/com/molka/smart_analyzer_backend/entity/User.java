@@ -46,6 +46,9 @@ public class User {
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt;
 
+	@Column
+	private String avatarPath;
+
 	@PrePersist
 	protected void onCreate() {
 		if (createdAt == null) {

@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { swal, isDuplicate, duplicateText } from '../utils/swal';
 
 @Component({
   selector: 'app-register',
@@ -14,11 +15,10 @@ import { AuthService } from '../services/auth.service';
 export class RegisterComponent {
   form: FormGroup;
   loading = false;
-  error = '';
   success = '';
   showPassword = false;
 
-  constructor(private fb: FormBuilder, private auth: AuthService, private router: Router) {
+  constructor(private fb: FormBuilder, private auth: AuthService, private router: Router, private cdr: ChangeDetectorRef) {
     this.form = this.fb.group({
       username: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
@@ -33,24 +33,27 @@ export class RegisterComponent {
   submit() {
     if (this.form.invalid) return;
     this.loading = true;
-    this.error = '';
     this.success = '';
     const { username, email, password } = this.form.value;
 
     this.auth.register(username, email, password).subscribe({
       next: () => {
         this.loading = false;
-        this.success = '✅ Account created successfully! Redirecting...';
-        setTimeout(() => {
-          this.auth.login(username, password).subscribe({
-            next: () => this.router.navigate(['/dashboard']),
-            error: () => this.router.navigate(['/login'])
-          });
-        }, 1500);
+        this.success = '✅ Account created! Logging you in…';
+        // Call login immediately — the HTTP round-trip naturally keeps the
+        // success message visible for ~100-300ms before navigation.
+        this.auth.login(username, password).subscribe({
+          next: () => this.router.navigate(['/dashboard']),
+          error: () => this.router.navigate(['/login'])
+        });
       },
       error: (err) => {
-        this.error = err?.error?.message || 'Registration failed. Please try again.';
-        this.loading = false;
+        const popup = isDuplicate(err)
+          ? swal.error('Already in use', duplicateText(err))
+          : err?.status === 500
+            ? swal.error('Something went wrong', 'Please try again.')
+            : swal.error('Registration failed', err?.error?.message || 'Please try again.');
+        popup.then(() => { this.loading = false; this.cdr.detectChanges(); });
       }
     });
   }

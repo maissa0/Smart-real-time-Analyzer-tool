@@ -37,11 +37,13 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+						.requestMatchers("/error").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/users/login").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
-						.requestMatchers("/api/analyze").permitAll()
-						.requestMatchers(HttpMethod.GET, "/api/frames").permitAll()
-						.requestMatchers(HttpMethod.GET, "/api/frames/**").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/users/avatars/**").permitAll()
+						.requestMatchers("/ws/**").permitAll()
+						.requestMatchers("/api/unity/**").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/analyze", "/api/analyze-stream", "/api/analyze/**").permitAll()
 						.anyRequest().authenticated())
 				.authenticationProvider(authenticationProvider())
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -53,9 +55,10 @@ public class SecurityConfig {
 		org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
 		configuration.setAllowedOrigins(java.util.Arrays.asList("http://localhost:4200"));
 		configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-		configuration.setAllowedHeaders(java.util.Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
+		configuration.setAllowedHeaders(java.util.Arrays.asList("Authorization", "Cache-Control", "Content-Type", "Last-Event-ID"));
 		configuration.setAllowCredentials(true);
-		
+		configuration.setExposedHeaders(java.util.Arrays.asList("Content-Type"));
+
 		org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", configuration);
 		return source;
@@ -63,7 +66,8 @@ public class SecurityConfig {
 
 	@Bean
 	public AuthenticationProvider authenticationProvider() {
-		DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+		provider.setUserDetailsService(userDetailsService);
 		provider.setPasswordEncoder(passwordEncoder());
 		return provider;
 	}

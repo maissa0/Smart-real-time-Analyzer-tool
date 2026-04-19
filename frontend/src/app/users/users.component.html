@@ -1,0 +1,202 @@
+<div class="page" [class.sidebar-open]="sidebarOpen">
+
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="toggleSidebar()"></div>
+
+  <nav class="sidebar" [class.open]="sidebarOpen">
+    <div class="sidebar-header">
+      <span class="sidebar-brand">SMART <span>ANALYSER</span></span>
+      <button class="sidebar-close" (click)="toggleSidebar()">✕</button>
+    </div>
+    <div class="sidebar-body">
+      <div class="sidebar-section-label">Navigation</div>
+      <ul class="sidebar-nav">
+        <li (click)="goToDashboard()"><span class="nav-icon">⬡</span> Dashboard</li>
+        <li (click)="goToSimulator()"><span class="nav-icon">⬡</span> Simulator</li>
+      </ul>
+      <ng-container *ngIf="isAdmin">
+        <div class="sidebar-section-label">Admin</div>
+        <ul class="sidebar-nav">
+          <li class="active"><span class="nav-icon">⬡</span> Users <span class="admin-badge">ADMIN</span></li>
+        </ul>
+      </ng-container>
+      <div class="sidebar-section-label">Account</div>
+      <ul class="sidebar-nav">
+        <li (click)="goToProfile()"><span class="nav-icon">⬡</span> My Profile</li>
+      </ul>
+    </div>
+    <div class="sidebar-footer">
+      <span class="sidebar-user">{{ username }}</span>
+      <button class="sidebar-logout" (click)="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="ham-btn" (click)="toggleSidebar()" type="button">
+        <span></span><span></span><span></span>
+      </button>
+      <span class="brand">SMART <span>ANALYSER</span></span>
+    </div>
+    <div class="topbar-right">
+      <span class="top-username">{{ username }}</span>
+      <button class="top-logout" (click)="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="um-body">
+
+    <!-- Page header -->
+    <div class="um-header">
+      <div class="um-title-group">
+        <h1 class="um-title">User management</h1>
+        <span class="um-admin-badge">ADMIN ONLY</span>
+      </div>
+      <button class="add-btn" (click)="openAddModal()">+ Add user</button>
+    </div>
+
+    <!-- API error banner -->
+    <div class="api-error" *ngIf="apiError">⚠ {{ apiError }}</div>
+
+    <!-- Loading -->
+    <div class="um-loading" *ngIf="loading">
+      <div class="big-spinner"></div>
+      <span>Loading users…</span>
+    </div>
+
+    <!-- Table -->
+    <div class="um-table-wrap" *ngIf="!loading">
+      <table class="um-table">
+        <thead>
+          <tr>
+            <th class="col-avatar"></th>
+            <th class="col-name">Username</th>
+            <th class="col-email">Email</th>
+            <th class="col-role">Role</th>
+            <th class="col-since">Member since</th>
+            <th class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of users" [class.editing-row]="editingUser?.id === user.id">
+            <!-- Avatar -->
+            <td class="col-avatar">
+              <div class="avatar-circle" *ngIf="!avatarUrl(user)">{{ initials(user.username) }}</div>
+              <img class="avatar-img" *ngIf="avatarUrl(user)" [src]="avatarUrl(user)" alt="" />
+            </td>
+            <!-- Username -->
+            <td class="col-name">{{ user.username }}</td>
+            <!-- Email -->
+            <td class="col-email">{{ user.email }}</td>
+            <!-- Role -->
+            <td class="col-role">
+              <span class="role-badge" [class.role-admin]="user.role === 'ADMIN'" [class.role-user]="user.role === 'USER'">
+                {{ user.role }}
+              </span>
+            </td>
+            <!-- Since -->
+            <td class="col-since">{{ formatDate(user.createdAt) }}</td>
+            <!-- Actions -->
+            <td class="col-actions">
+              <button class="action-btn edit-btn" title="Edit user" (click)="openEdit(user)">✎</button>
+              <button class="action-btn del-btn"  title="Delete user" (click)="confirmDelete(user)">🗑</button>
+            </td>
+          </tr>
+          <tr *ngIf="users.length === 0">
+            <td colspan="6" class="empty-row">No users found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- ════ ADD USER MODAL ════ -->
+  <div class="modal-overlay" *ngIf="showAddModal" (click)="$event.target === $event.currentTarget && closeAddModal()">
+    <div class="modal">
+      <div class="modal-head">
+        <span class="modal-ttl">Add user</span>
+        <button class="modal-x" (click)="closeAddModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="api-error" *ngIf="addApiError">⚠ {{ addApiError }}</div>
+
+        <div class="field-group">
+          <label class="field-label">Username</label>
+          <input class="field-input" [(ngModel)]="addForm.username" placeholder="e.g. johndoe"
+            [class.input-err]="addErrors.username">
+          <span class="field-err" *ngIf="addErrors.username">{{ addErrors.username }}</span>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Email</label>
+          <input class="field-input" type="email" [(ngModel)]="addForm.email" placeholder="user@example.com"
+            [class.input-err]="addErrors.email">
+          <span class="field-err" *ngIf="addErrors.email">{{ addErrors.email }}</span>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <input class="field-input" type="password" [(ngModel)]="addForm.password" placeholder="Min. 6 characters"
+            [class.input-err]="addErrors.password">
+          <span class="field-err" *ngIf="addErrors.password">{{ addErrors.password }}</span>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Role</label>
+          <select class="field-input" [(ngModel)]="addForm.role" [class.input-err]="addErrors.role">
+            <option value="USER">USER</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+          <span class="field-err" *ngIf="addErrors.role">{{ addErrors.role }}</span>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-cancel" (click)="closeAddModal()">Cancel</button>
+        <button class="btn-save" [disabled]="addSaving" (click)="submitAdd()">
+          <span *ngIf="!addSaving">Create user</span>
+          <span *ngIf="addSaving">Saving…</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ EDIT USER MODAL ════ -->
+  <div class="modal-overlay" *ngIf="editingUser" (click)="$event.target === $event.currentTarget && closeEditModal()">
+    <div class="modal">
+      <div class="modal-head">
+        <span class="modal-ttl">Edit — {{ editingUser.username }}</span>
+        <button class="modal-x" (click)="closeEditModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="api-error" *ngIf="editApiError">⚠ {{ editApiError }}</div>
+
+        <div class="field-group">
+          <label class="field-label">Username</label>
+          <input class="field-input" [(ngModel)]="editForm.username"
+            [class.input-err]="editErrors.username">
+          <span class="field-err" *ngIf="editErrors.username">{{ editErrors.username }}</span>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Email</label>
+          <input class="field-input" type="email" [(ngModel)]="editForm.email"
+            [class.input-err]="editErrors.email">
+          <span class="field-err" *ngIf="editErrors.email">{{ editErrors.email }}</span>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Role</label>
+          <select class="field-input" [(ngModel)]="editForm.role" [class.input-err]="editErrors.role">
+            <option value="USER">USER</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+          <span class="field-err" *ngIf="editErrors.role">{{ editErrors.role }}</span>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-cancel" (click)="closeEditModal()">Cancel</button>
+        <button class="btn-save" [disabled]="editSaving" (click)="submitEdit()">
+          <span *ngIf="!editSaving">Save changes</span>
+          <span *ngIf="editSaving">Saving…</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+</div>

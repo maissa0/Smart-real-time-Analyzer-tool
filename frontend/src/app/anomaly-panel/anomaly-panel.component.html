@@ -1,0 +1,45 @@
+<div class="anomaly-panel" [class.collapsed]="!isExpanded">
+
+  <div class="panel-header" (click)="toggle()">
+    <span class="panel-title">
+      <span class="dot" [class.dot-active]="alerts.length > 0"></span>
+      Anomaly Detection
+    </span>
+    <span class="badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+    <span class="controls">
+      <button class="btn-clear" (click)="clearAll(); $event.stopPropagation()"
+        *ngIf="alerts.length > 0">Clear</button>
+      <span class="chevron">{{ isExpanded ? '▲' : '▼' }}</span>
+    </span>
+  </div>
+
+  <div class="panel-body" *ngIf="isExpanded">
+    <div *ngIf="alerts.length === 0" class="empty-state">
+      No anomalies detected
+    </div>
+    <div
+      *ngFor="let alert of alerts; let i = index"
+      class="alert-card"
+      [ngClass]="severityClass(alert.severity)"
+    >
+      <div class="alert-header">
+        <span class="alert-type">{{ alert.type }}</span>
+        <span class="alert-severity">{{ alert.severity }}</span>
+        <span class="alert-time">{{ formatTime(alert.timestamp) }}</span>
+        <button class="btn-dismiss" (click)="dismiss(i)">✕</button>
+      </div>
+      <div class="alert-body">
+        <span class="frame-id">{{ alert.frame_id }}</span>
+        <span class="detail">{{ alert.detail }}</span>
+      </div>
+      <div class="alert-footer">
+        <span class="source">{{ alert.source }}</span>
+        <span *ngIf="alert.signal" class="signal">signal: {{ alert.signal }}</span>
+        <span *ngIf="alert.anomaly_score !== undefined" class="score">
+          score: {{ alert.anomaly_score | number:'1.4-4' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+</div>

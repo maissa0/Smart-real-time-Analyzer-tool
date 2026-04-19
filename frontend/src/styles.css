@@ -1,1 +1,25 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* ── SweetAlert2 dark-theme overrides ─────────────────────────────────────── */
+.swal-confirm-btn {
+  color: #07090b !important;
+  font-weight: 600 !important;
+}
+
+.swal-cancel-btn {
+  color: #c0d0b0 !important;
+  font-weight: 500 !important;
+}
+
+/* Keep the popup border subtle */
+.swal2-popup {
+  border: 1px solid #1e2e1e !important;
+  border-radius: 8px !important;
+}
+
+/* Icon colours that fit the dark bg */
+.swal2-icon.swal2-error { border-color: #ff4444 !important; color: #ff4444 !important; }
+.swal2-icon.swal2-success { border-color: #b0ff44 !important; color: #b0ff44 !important; }
+.swal2-icon.swal2-success [class^='swal2-success-line'] { background: #b0ff44 !important; }
+.swal2-icon.swal2-success .swal2-success-ring { border-color: rgba(176,255,68,.3) !important; }
+.swal2-icon.swal2-question { border-color: #c0d0b0 !important; color: #c0d0b0 !important; }

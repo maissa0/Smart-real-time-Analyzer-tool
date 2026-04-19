@@ -1,25 +1,36 @@
+<app-anomaly-panel></app-anomaly-panel>
 <div class="page" [class.sidebar-open]="sidebarOpen">
 
-  <!-- Nav overlay -->
   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="toggleSidebar()"></div>
 
-  <!-- Nav sidebar -->
   <nav class="sidebar" [class.open]="sidebarOpen">
     <div class="sidebar-header">
       <span class="sidebar-brand">SMART <span>ANALYSER</span></span>
       <button class="sidebar-close" (click)="toggleSidebar()">✕</button>
     </div>
-    <ul class="sidebar-nav">
-      <li class="active">⬡ Dashboard</li>
-      <li (click)="goToUsers()">⬡ Users</li>
-    </ul>
+    <div class="sidebar-body">
+      <div class="sidebar-section-label">Navigation</div>
+      <ul class="sidebar-nav">
+        <li class="active"><span class="nav-icon">⬡</span> Dashboard</li>
+        <li (click)="goToSimulator()"><span class="nav-icon">⬡</span> Simulator</li>
+      </ul>
+      <ng-container *ngIf="isAdmin">
+        <div class="sidebar-section-label">Admin</div>
+        <ul class="sidebar-nav">
+          <li (click)="goToUsers()"><span class="nav-icon">⬡</span> Users <span class="admin-badge">ADMIN</span></li>
+        </ul>
+      </ng-container>
+      <div class="sidebar-section-label">Account</div>
+      <ul class="sidebar-nav">
+        <li (click)="goToProfile()"><span class="nav-icon">⬡</span> My Profile</li>
+      </ul>
+    </div>
     <div class="sidebar-footer">
       <span class="sidebar-user">{{ username }}</span>
       <button class="sidebar-logout" (click)="logout()">Logout</button>
     </div>
   </nav>
 
-  <!-- Topbar -->
   <header class="topbar">
     <div class="topbar-left">
       <button class="ham-btn" (click)="toggleSidebar()" type="button">
@@ -33,16 +44,15 @@
     </div>
   </header>
 
-  <!-- App body -->
   <div class="app-body">
 
     <!-- ════ LEFT PANEL ════ -->
     <aside class="left-panel">
 
-      <!-- Upload -->
       <div class="lp-section">
         <div class="lp-section-title">UPLOAD</div>
 
+        <!-- Log file drop zone only — XML is auto-discovered server-side -->
         <div class="drop-zone"
           [class.drag-over]="isDragOverLog"
           [class.has-file]="!!logFile"
@@ -50,33 +60,34 @@
           (dragleave)="onDragLeaveLog($event)"
           (drop)="onDropLog($event)"
           (click)="logInput.click()">
-          <input #logInput type="file" accept=".txt" hidden (change)="onLogFileSelect($event)">
+          <input #logInput type="file" accept=".txt,.log,.asc,.blf" hidden
+            (change)="onLogFileSelect($event)">
           <div class="dz-icon">📄</div>
           <div class="dz-content">
             <span class="dz-label" *ngIf="!logFile">
-              Log file <span class="dz-hint">.txt</span>
+              Log file <span class="dz-hint">.txt / .log / .blf</span>
             </span>
             <span class="dz-label file-ok" *ngIf="logFile">{{ logFile.name }}</span>
           </div>
         </div>
 
-        <div class="drop-zone"
-          [class.drag-over]="isDragOverXml"
-          [class.has-file]="xmlFiles.length > 0"
-          (dragover)="onDragOverXml($event)"
-          (dragleave)="onDragLeaveXml($event)"
-          (drop)="onDropXml($event)"
-          (click)="xmlInput.click()">
-          <input #xmlInput type="file" accept=".xml" multiple hidden
-            (change)="onXmlFilesSelect($event)">
-          <div class="dz-icon">📋</div>
-          <div class="dz-content">
-            <span class="dz-label" *ngIf="xmlFiles.length === 0">
-              XML files <span class="dz-hint">multiple</span>
-            </span>
-            <ng-container *ngIf="xmlFiles.length > 0">
-              <span class="dz-label file-ok" *ngFor="let f of xmlFiles">{{ f.name }}</span>
-            </ng-container>
+        <div class="mode-toggle">
+          <button class="mode-btn" [class.active]="analyzeMode === 'stream'"
+            (click)="setAnalyzeMode('stream')"
+            title="Streaming: frames appear live one by one">📡</button>
+          <button class="mode-btn" [class.active]="analyzeMode === 'batch'"
+            (click)="setAnalyzeMode('batch')"
+            title="Batch: decode all at once">⚡</button>
+        </div>
+
+        <div class="speed-control" *ngIf="analyzeMode === 'stream'">
+          <div class="lp-section-title">SPEED</div>
+          <div class="speed-toggle">
+            <button *ngFor="let opt of speedOptions"
+              class="speed-btn"
+              [class.active]="streamDelay === opt.delay"
+              (click)="streamDelay = opt.delay"
+              [title]="opt.label">{{ opt.label }}</button>
           </div>
         </div>
 
@@ -90,27 +101,39 @@
         </button>
       </div>
 
-      <!-- Status -->
+      <!-- Status after analysis -->
       <div class="lp-section" *ngIf="showResults">
-        <div class="status-ok">✅ {{ allFrames.length }} frames decoded</div>
+        <div class="status-ok">
+          ✅ {{ allFrames.length }} frames decoded
+        </div>
+        <div class="status-sub" *ngIf="xmlFilesUsed.length > 0">
+          XML: {{ xmlFilesUsed.join(', ') }}
+        </div>
         <div class="status-sub">
           {{ uniqueAddresses.length }} addresses · {{ uniqueBuses.length }} buses
         </div>
+
+        <!-- Error report button — only shows if there are errors -->
+        <button class="error-report-btn"
+          *ngIf="totalErrorCount > 0"
+          (click)="downloadErrorReport()"
+          [title]="'Download error/warning report (' + totalErrorCount + ' issues found)'">
+          ⚠ {{ totalErrorCount }} issue{{ totalErrorCount > 1 ? 's' : '' }} — Download report
+        </button>
+
         <button class="clear-btn" (click)="clearAnalysis()">🗑 Clear &amp; reset</button>
       </div>
 
       <!-- Filters -->
       <div class="lp-section" *ngIf="showResults">
         <div class="lp-section-title">FILTER</div>
-
         <div class="filter-group">
-          <label class="filter-label">Address</label>
+          <label class="filter-label">Frame ID</label>
           <select class="filter-select" [(ngModel)]="filterAddress" (change)="applyFilters()">
             <option value="">All</option>
             <option *ngFor="let a of uniqueAddresses" [value]="a">{{ a }}</option>
           </select>
         </div>
-
         <div class="filter-group">
           <label class="filter-label">Bus</label>
           <select class="filter-select" [(ngModel)]="filterBus" (change)="applyFilters()">
@@ -118,40 +141,37 @@
             <option *ngFor="let b of uniqueBuses" [value]="b">{{ b }}</option>
           </select>
         </div>
-
-        <div class="filter-group">
-          <label class="filter-label">Signal search</label>
-          <input class="filter-input" type="text" placeholder="name or value..."
-            [(ngModel)]="filterSignal" (input)="applyFilters()">
-        </div>
-
         <button class="filter-clear-btn" (click)="clearFilters()"
-          *ngIf="filterAddress || filterBus || filterSignal">
-          Clear filters
-        </button>
-
-        <div class="filter-count"
-          *ngIf="filterAddress || filterBus || filterSignal">
+          *ngIf="filterAddress || filterBus || !allSignalsChecked()">Clear filters</button>
+        <div class="filter-count" *ngIf="filterAddress || filterBus">
           {{ filteredFrames.length }} / {{ allFrames.length }} frames shown
         </div>
       </div>
 
-      <!-- Message visibility toggles (charts view only) -->
-      <div class="lp-section"
-        *ngIf="showResults && activeView === 'charts'">
-        <div class="lp-section-title">MESSAGES</div>
-        <div class="msg-toggle-list">
-          <label class="msg-toggle-item" *ngFor="let group of messageGroups">
-            <input type="checkbox" [checked]="group.visible"
-              (change)="toggleGroupVisibility(group)">
-            <div class="msg-toggle-info">
-              <span class="msg-toggle-name">{{ group.messageName }}</span>
-              <span class="msg-toggle-addr">
-                {{ group.address }} · {{ group.cards.length }}
-                chart{{ group.cards.length > 1 ? 's' : '' }}
-              </span>
+      <!-- Message/Signal tree -->
+      <div class="lp-section" *ngIf="showResults">
+        <div class="lp-section-title">SIGNALS</div>
+        <div class="msg-tree">
+          <div class="msg-tree-node" *ngFor="let node of msgTree">
+            <div class="msg-tree-row">
+              <input type="checkbox" class="msg-tree-cb msg-cb"
+                [checked]="isMsgChecked(node)"
+                [indeterminate]="isMsgIndeterminate(node)"
+                (change)="onMsgCheckChange(node, $event)">
+              <span class="msg-tree-chevron" [class.expanded]="node.expanded"
+                (click)="toggleMsgExpand(node)">▶</span>
+              <span class="msg-tree-label" (click)="toggleMsgExpand(node)">{{ node.messageName }}</span>
+              <span class="msg-tree-addr" (click)="toggleMsgExpand(node)">{{ node.address }}</span>
             </div>
-          </label>
+            <div class="msg-tree-signals" *ngIf="node.expanded">
+              <div class="msg-tree-signal-row" *ngFor="let sig of node.signals">
+                <input type="checkbox" class="msg-tree-cb sig-cb"
+                  [(ngModel)]="sig.checked"
+                  (change)="onSignalCheckChange(node)">
+                <span class="msg-tree-sig-name">{{ sig.name }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -160,62 +180,55 @@
     <!-- ════ RIGHT PANEL ════ -->
     <main class="right-panel">
 
-      <!-- Empty state -->
       <div class="empty-state" *ngIf="!showResults && !analyzing">
         <div class="empty-icon">⚡</div>
         <div class="empty-title">Ready to analyze</div>
         <div class="empty-sub">
-          Upload a log file and XML definitions,<br>then click Analyze
+          Upload a log file and click Analyze<br>
+          <span class="empty-xml">XML files are loaded automatically from <code>python_parser/</code></span>
         </div>
       </div>
 
-      <!-- Loading -->
-      <div class="empty-state" *ngIf="analyzing">
+      <div class="empty-state" *ngIf="analyzing && !showResults">
         <div class="big-spinner"></div>
-        <div class="empty-title">Analyzing...</div>
-        <div class="empty-sub">Decoding frames and signals</div>
+        <div class="empty-title">Connecting...</div>
+        <div class="empty-sub">Starting analysis</div>
       </div>
 
-      <!-- Results -->
       <ng-container *ngIf="showResults">
 
-        <!-- View / mode bar -->
+        <!-- View bar -->
         <div class="view-bar">
-          <button class="view-btn"
-            [class.active]="activeView === 'table'"
+          <button class="view-btn" [class.active]="activeView === 'table'"
             (click)="switchView('table')">📋 TABLE</button>
-
-          <button class="view-btn"
-            [class.active]="activeView === 'charts'"
+          <button class="view-btn" [class.active]="activeView === 'charts'"
             (click)="switchView('charts')">📊 CHARTS</button>
 
-          <!-- Chart mode toggle — visible only in charts view -->
+          <button class="view-btn" [class.active]="activeView === '3d'"
+            (click)="switchView('3d')">⬡ 3D</button>
+
           <div class="chart-mode-toggle" *ngIf="activeView === 'charts'">
-            <button class="cmt-btn"
-              [class.active]="chartMode === 'grouped'"
+            <button class="cmt-btn" [class.active]="chartMode === 'grouped'"
               (click)="setChartMode('grouped')"
-              title="Grouped — signals with identical states share one chart">
-              ⊞
-            </button>
-            <button class="cmt-btn"
-              [class.active]="chartMode === 'separate'"
+              title="Grouped — signals with identical states share one chart">⊞</button>
+            <button class="cmt-btn" [class.active]="chartMode === 'separate'"
               (click)="setChartMode('separate')"
-              title="Separate — one chart per signal">
-              ⊟
-            </button>
+              title="Separate — one chart per signal">⊟</button>
           </div>
 
           <div class="view-bar-stats">
-            <span class="vbs-item">{{ allFrames.length }} frames</span>
+            <span class="vbs-item">{{ streamingFrameCount }} frame{{ streamingFrameCount !== 1 ? 's' : '' }}</span>
             <span class="vbs-sep">·</span>
             <span class="vbs-item">{{ filteredFrames.length }} shown</span>
+            <span class="vbs-streaming" *ngIf="analyzing && !streamingDone">● live</span>
+            <span class="vbs-done" *ngIf="streamingDone">✓ done</span>
           </div>
 
           <button class="export-btn" (click)="exportResults()">⬇ Export JSON</button>
         </div>
 
         <!-- ═══ TABLE VIEW ═══ -->
-        <div class="table-view" *ngIf="activeView === 'table'">
+        <div class="table-view" #framesWrap (scroll)="onTableScroll()" *ngIf="activeView === 'table'">
           <div class="frames-table-wrap">
             <table class="frames-table">
               <thead>
@@ -231,8 +244,6 @@
               </thead>
               <tbody>
                 <ng-container *ngFor="let frame of filteredFrames; let i = index">
-
-                  <!-- Frame header row -->
                   <tr class="frame-main-row">
                     <td class="td-num">{{ i + 1 }}</td>
                     <td class="td-ts">
@@ -240,13 +251,9 @@
                       <span class="td-rel">{{ formatRelative(frame.timestamp) }}</span>
                     </td>
                     <td class="td-ch">CAN{{ frame.channel }}</td>
-                    <td class="td-id">
-                      <span class="badge addr-badge">{{ frame.address }}</span>
-                    </td>
+                    <td class="td-id"><span class="badge addr-badge">{{ frame.address }}</span></td>
                     <td class="td-msg">
-                      <span [ngClass]="'msg-name ' + msgColor(frame.bus)">
-                        {{ frame.message }}
-                      </span>
+                      <span [ngClass]="'msg-name ' + msgColor(frame.bus)">{{ frame.message }}</span>
                     </td>
                     <td class="td-dir">
                       <span class="badge"
@@ -257,112 +264,124 @@
                     </td>
                     <td class="td-raw">{{ frame.rawData | json }}</td>
                   </tr>
-
-                  <!-- Signal sub-header -->
-                  <tr class="sig-header-row"
-                    *ngIf="frame.parsedSignals.length > 0">
+                  <tr class="sig-header-row" *ngIf="frame.parsedSignals.length > 0">
                     <td></td>
                     <td class="sig-col-h">signal</td>
                     <td class="sig-col-h">raw</td>
                     <td class="sig-col-h" colspan="4">decoded</td>
                   </tr>
-
-                  <!-- Signal rows — always visible -->
-                  <tr class="sig-row"
-                    *ngFor="let sig of frame.parsedSignals"
-                    [class.sig-row-warn]="!sig.isValid">
-                    <td></td>
-                    <td class="sig-name-cell">{{ sig.name }}</td>
-                    <td class="sig-raw-cell">{{ sig.rawVal }}</td>
-                    <td class="sig-val-cell" colspan="4"
-                      [class.sig-val-warn]="!sig.isValid">
-                      {{ sig.value }}
-                      <span class="sig-warn-icon" *ngIf="!sig.isValid">⚠</span>
-                    </td>
-                  </tr>
-
-                  <!-- Spacer -->
+                  <ng-container *ngFor="let sig of frame.parsedSignals">
+                    <tr class="sig-row" *ngIf="isSignalVisible(frame.message, sig.name)"
+                      [class.sig-row-warn]="!sig.isValid">
+                      <td></td>
+                      <td class="sig-name-cell">{{ sig.name }}</td>
+                      <td class="sig-raw-cell">{{ sig.rawVal }}</td>
+                      <td class="sig-val-cell" colspan="4" [class.sig-val-warn]="!sig.isValid">
+                        {{ sig.value }}
+                        <span class="sig-warn-icon" *ngIf="!sig.isValid">⚠</span>
+                      </td>
+                    </tr>
+                  </ng-container>
                   <tr class="frame-spacer"><td colspan="7"></td></tr>
-
                 </ng-container>
-
                 <tr *ngIf="filteredFrames.length === 0">
-                  <td colspan="7" class="empty-row">
-                    No frames match the current filters.
-                  </td>
+                  <td colspan="7" class="empty-row">No frames match the current filters.</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Floating pill — appears when user scrolled up during live streaming -->
+          <div class="live-pill-anchor" *ngIf="analyzing && !autoScroll">
+            <button class="live-scroll-pill" (click)="resumeAutoScroll()">↓ Live</button>
           </div>
         </div>
 
         <!-- ═══ CHARTS VIEW ═══ -->
         <div class="charts-view" *ngIf="activeView === 'charts'">
-
           <ng-container *ngFor="let group of messageGroups">
-            <div class="msg-section" *ngIf="group.visible">
-
-              <!-- Message section header -->
+            <div class="msg-section" *ngIf="isMsgGroupVisible(group)">
               <div class="msg-section-header">
                 <span class="msg-section-name">{{ group.messageName }}</span>
                 <span class="msg-section-id">{{ group.address }}</span>
                 <span class="msg-section-count">
-                  {{ group.cards.length }}
-                  chart{{ group.cards.length > 1 ? 's' : '' }}
+                  {{ group.cards.length }} chart{{ group.cards.length > 1 ? 's' : '' }}
                 </span>
               </div>
-
-              <!-- 2-column chart grid -->
               <div class="signals-grid">
-                <div class="signal-chart-card"
-                  *ngFor="let card of group.cards">
-
+                <ng-container *ngFor="let card of group.cards">
+                <div class="signal-chart-card" [hidden]="!isCardVisible(group.messageName, card)">
                   <div class="signal-chart-header">
-                    <span class="signal-chart-name" [title]="card.title">
-                      {{ card.title }}
-                    </span>
+                    <span class="signal-chart-name" [title]="card.title">{{ card.title }}</span>
                     <div class="signal-chart-actions">
-                      <span class="sc-state-count">
-                        {{ card.defVals.length }} states
-                      </span>
-                      <button class="sc-expand-btn"
-                        title="Expand chart"
-                        (click)="expandCard(card, group.messageName, $event)">
-                        ⛶
-                      </button>
+                      <span class="sc-state-count">{{ card.defVals.length }} states</span>
+                      <button class="sc-expand-btn" title="Expand chart"
+                        (click)="expandCard(card, group.messageName, $event)">⛶</button>
                     </div>
                   </div>
-
                   <div class="signal-chart-body">
                     <canvas [id]="card.cardId"></canvas>
                   </div>
-
-                  <!-- Legend — only for grouped cards with multiple signals -->
-                  <div class="card-legend" *ngIf="card.signals.length > 1">
+                  <div class="card-legend">
                     <div class="leg-item" *ngFor="let s of card.signals">
-                      <svg width="20" height="10" style="flex-shrink:0">
-                        <line x1="0" y1="5" x2="20" y2="5"
-                          [attr.stroke]="s.color" stroke-width="2"/>
-                        <circle cx="10" cy="5" r="3"
-                          [attr.fill]="s.color"/>
-                      </svg>
+                      <div class="leg-dot" [style.background]="s.color"></div>
                       <span>{{ s.signalName }}</span>
                     </div>
                   </div>
-
-                  <div class="sc-hint">
-                    ⛶ expand to zoom · x-axis: seconds from log start
-                  </div>
-
+                  <div class="sc-hint">Ctrl+scroll to zoom · drag to pan · ⛶ expand</div>
                 </div>
+                </ng-container>
               </div>
-
             </div>
           </ng-container>
-
-          <div class="charts-empty"
-            *ngIf="messageGroups.every(g => !g.visible)">
+          <div class="charts-empty" *ngIf="messageGroups.every(g => !isMsgGroupVisible(g))">
             <p>All messages hidden. Use the toggles in the left panel.</p>
+          </div>
+        </div>
+
+        <!-- ═══ 3D VIEW ═══ -->
+        <div class="view-3d" *ngIf="activeView === '3d'">
+
+          <!-- Status row -->
+          <div class="unity-status-row">
+            <span class="unity-dot" [class.conn]="unityConnected"></span>
+            <span class="unity-status-text">Unity {{ unityConnected ? 'connected' : 'disconnected' }}</span>
+          </div>
+
+          <!-- Speed -->
+          <div class="unity-speed-group">
+            <span class="unity-speed-label">REPLAY SPEED</span>
+            <div class="unity-speed-btns">
+              <button *ngFor="let s of replaySpeedOptions" class="unity-speed-btn"
+                [class.active]="replaySpeed === s"
+                (click)="replaySpeed = s">{{ s }}x</button>
+            </div>
+          </div>
+
+          <!-- Replay button -->
+          <button class="unity-replay-btn"
+            (click)="sendUnityReplay()"
+            [disabled]="!allFrames.length || replayInProgress">⟳ Replay 3D</button>
+
+          <!-- Progress during replay -->
+          <div class="unity-replay-progress" *ngIf="replayInProgress">
+            <div class="unity-replay-bar-track">
+              <div class="unity-replay-bar-fill"
+                [style.width.%]="replayTotal ? (replayCurrentFrame / replayTotal * 100) : 0">
+              </div>
+            </div>
+            <div class="unity-replay-info">
+              <span class="unity-replay-count">{{ replayCurrentFrame }} / {{ replayTotal }} frames</span>
+              <button class="unity-stop-btn" (click)="stopReplay()">⏹ Stop replay</button>
+            </div>
+          </div>
+
+          <!-- Completion -->
+          <div class="unity-replay-done" *ngIf="replayDone && !replayInProgress">✓ Replay complete</div>
+
+          <!-- Hint -->
+          <div class="unity-hint">
+            Make sure Unity is open and the scene is running before starting replay.
           </div>
 
         </div>
@@ -373,11 +392,8 @@
   </div>
 
   <!-- ════ EXPANDED CHART OVERLAY ════ -->
-  <div class="chart-expand-overlay"
-    *ngIf="expandedCard"
-    (click)="onOverlayClick($event)">
+  <div class="chart-expand-overlay" *ngIf="expandedCard" (click)="onOverlayClick($event)">
     <div class="chart-expand-modal">
-
       <div class="modal-header">
         <div class="modal-title-group">
           <span class="modal-msg">{{ expandedCardMsgName }}</span>
@@ -385,37 +401,25 @@
           <span class="modal-sig">{{ expandedCard.title }}</span>
         </div>
         <div class="modal-actions">
-          <button class="reset-zoom-btn" (click)="resetZoom()">
-            ⟳ Reset zoom
-          </button>
+          <button class="reset-zoom-btn" (click)="resetZoom()">⟳ Reset zoom</button>
           <button class="modal-close-btn" (click)="closeExpanded()">✕</button>
         </div>
       </div>
-
       <div class="modal-chart-body">
         <canvas [id]="expandedCard.cardId + '-exp'"></canvas>
       </div>
-
-      <!-- Legend in expanded view -->
       <div class="modal-legend" *ngIf="expandedCard.signals.length > 1">
         <div class="leg-item" *ngFor="let s of expandedCard.signals">
-          <svg width="24" height="10" style="flex-shrink:0">
-            <line x1="0" y1="5" x2="24" y2="5"
-              [attr.stroke]="s.color" stroke-width="2"/>
-            <circle cx="12" cy="5" r="3"
-              [attr.fill]="s.color"/>
-          </svg>
+          <div class="leg-dot" [style.background]="s.color"></div>
           <span>{{ s.signalName }}</span>
         </div>
       </div>
-
       <div class="modal-footer">
         <span>🖱 Scroll to zoom</span>
         <span>✋ Drag to pan</span>
         <span>⟳ Reset to see full timeline</span>
         <span>ESC or click outside to close</span>
       </div>
-
     </div>
   </div>
 

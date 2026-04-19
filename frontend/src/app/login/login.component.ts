@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpErrorResponse } from '@angular/common/http';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { swal } from '../utils/swal';
 
 @Component({
   selector: 'app-login',
@@ -15,10 +15,9 @@ import { AuthService } from '../services/auth.service';
 export class LoginComponent {
   form: FormGroup;
   loading = false;
-  error = '';
   showPassword = false;
 
-  constructor(private fb: FormBuilder, private auth: AuthService, private router: Router) {
+  constructor(private fb: FormBuilder, private auth: AuthService, private router: Router, private cdr: ChangeDetectorRef) {
     this.form = this.fb.group({
       username: ['', Validators.required],
       password: ['', Validators.required]
@@ -32,13 +31,14 @@ export class LoginComponent {
   submit() {
     if (this.form.invalid) return;
     this.loading = true;
-    this.error = '';
     const { username, password } = this.form.value;
     this.auth.login(username, password).subscribe({
       next: () => this.router.navigate(['/dashboard']),
-      error: (error: HttpErrorResponse) => {
-        this.error = error.error?.message || error.error || 'Login failed. Please check your credentials.';
-        this.loading = false;
+      error: (err) => {
+        const popup = err?.status === 500
+          ? swal.error('Something went wrong', 'Please try again.')
+          : swal.error('Login failed', 'Invalid username or password.');
+        popup.then(() => { this.loading = false; this.cdr.detectChanges(); });
       }
     });
   }
