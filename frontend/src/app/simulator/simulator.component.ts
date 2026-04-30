@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import {
   Component, OnDestroy, OnInit, inject, NgZone,
-  ChangeDetectorRef, HostListener
+  ChangeDetectorRef, HostListener, ViewChild, ElementRef
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
@@ -13,6 +13,7 @@ import SockJS from 'sockjs-client';
 import { AuthService } from '../services/auth.service';
 import { SimulatorStateService } from '../services/simulator-state.service';
 import { API_BASE_URL } from '../config/api.config';
+import { AnomalyPanelComponent } from '../anomaly-panel/anomaly-panel.component';
 
 Chart.register(...registerables, zoomPlugin);
 
@@ -78,7 +79,7 @@ interface MessageGroup {
 @Component({
   selector: 'app-simulator',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AnomalyPanelComponent],
   templateUrl: './simulator.component.html',
   styleUrl: './simulator.component.css',
 })
@@ -108,6 +109,43 @@ export class SimulatorComponent implements OnInit, OnDestroy {
     { label: '10x',  value: 10.0 },
   ];
 
+  // Scenario
+  scenarioType: 'RANDOM' | 'KEY_APPROACH' | 'ALL_DOORS_OPEN' | 'FULL_SEQUENCE' = 'RANDOM';
+  scenarioComplete = false;
+  readonly scenarioOptions = [
+    { label: 'Random',          value: 'RANDOM',         frames: 0,  duration: 0  },
+    { label: 'Key Approach',    value: 'KEY_APPROACH',   frames: 8,  duration: 8  },
+    { label: 'All Doors Open',  value: 'ALL_DOORS_OPEN', frames: 8,  duration: 8  },
+    { label: 'Full Sequence',   value: 'FULL_SEQUENCE',  frames: 12, duration: 12 },
+  ];
+
+  get selectedScenario() {
+    return this.scenarioOptions.find(o => o.value === this.scenarioType);
+  }
+
+  // Fault injection
+  faultValueErrors   = false;
+  faultTimingGaps    = false;
+  faultCounterErrors = false;
+
+  get anyFaultActive(): boolean {
+    return this.faultValueErrors || this.faultTimingGaps || this.faultCounterErrors;
+  }
+
+  onFaultChange(): void {
+    if (this.simState === 'running') {
+      this.sendFaultState();
+    }
+  }
+
+  private sendFaultState(): void {
+    this.publish('/app/simulate/fault', {
+      valueErrors:   this.faultValueErrors,
+      timingGaps:    this.faultTimingGaps,
+      counterErrors: this.faultCounterErrors,
+    });
+  }
+
   // View
   activeView: 'table' | 'charts' | '3d' = 'table';
   chartMode: 'grouped' | 'separate' = 'grouped';
@@ -126,6 +164,10 @@ export class SimulatorComponent implements OnInit, OnDestroy {
 
   // Charts
   messageGroups: MessageGroup[] = [];
+
+  // Auto-scroll
+  @ViewChild('framesWrap') framesWrap?: ElementRef<HTMLDivElement>;
+  autoScroll = true;
 
   // Expand overlay
   expandedCard: ChartCard | null = null;
@@ -243,15 +285,37 @@ export class SimulatorComponent implements OnInit, OnDestroy {
     this.stompClient = new Client({
       webSocketFactory: () => new SockJS(`${API_BASE_URL}/ws`),
       reconnectDelay: 3000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
       onConnect: () => {
         console.log('[STOMP] Connected to WebSocket broker');
         this.stompClient!.subscribe('/topic/frames', (msg) => {
           console.log('[STOMP] Frame received from /topic/frames:', msg.body.slice(0, 120));
           try {
             const raw = JSON.parse(msg.body);
-            this.zone.run(() => this.onFrameReceived(raw));
+            this.zone.run(() => {
+              try {
+                this.onFrameReceived(raw);
+              } catch (innerErr) {
+                console.error('[STOMP] Error in onFrameReceived:', innerErr);
+              }
+            });
           } catch (e) {
             console.error('[STOMP] Failed to parse frame:', e);
+          }
+        });
+        this.stompClient!.subscribe('/topic/sim-status', (msg) => {
+          try {
+            const data = JSON.parse(msg.body);
+            if (data.type === 'SCENARIO_DONE') {
+              this.zone.run(() => {
+                this.scenarioComplete = true;
+                this.simState = 'idle';
+                this.cdr.detectChanges();
+              });
+            }
+          } catch (e) {
+            console.error('[STOMP] Failed to parse sim-status:', e);
           }
         });
       },
@@ -267,15 +331,18 @@ export class SimulatorComponent implements OnInit, OnDestroy {
 
   startSim(): void {
     if (this.simState === 'idle') {
-      this.allFrames     = [];
+      this.allFrames      = [];
       this.filteredFrames = [];
-      this.msgTree       = [];
-      this.messageGroups = [];
-      this.frameCount    = 0;
-      this.showResults   = true;
-      this.activeView    = 'table';
+      this.msgTree        = [];
+      this.messageGroups  = [];
+      this.frameCount     = 0;
+      this.showResults    = true;
+      this.activeView     = 'table';
+      this.scenarioComplete = false;
       this.destroyAllCharts();
       this.sendSpeed();
+      // Send scenario type BEFORE start so the engine knows the mode
+      this.publish('/app/simulate/scenario', this.scenarioType);
       this.publish('/app/simulate/start', {});
     } else if (this.simState === 'paused') {
       this.publish('/app/simulate/resume', {});
@@ -291,13 +358,19 @@ export class SimulatorComponent implements OnInit, OnDestroy {
 
   stopSim(): void {
     this.publish('/app/simulate/stop', {});
-    this.simState          = 'idle';
+    this.simState           = 'idle';
+    this.scenarioComplete   = false;
     this.liveSendingToUnity = false;
   }
 
   resetSim(): void {
     this.publish('/app/simulate/reset', {});
     this.simState           = 'idle';
+    this.scenarioType       = 'RANDOM';
+    this.scenarioComplete   = false;
+    this.faultValueErrors   = false;
+    this.faultTimingGaps    = false;
+    this.faultCounterErrors = false;
     this.allFrames          = [];
     this.filteredFrames     = [];
     this.msgTree            = [];
@@ -323,7 +396,10 @@ export class SimulatorComponent implements OnInit, OnDestroy {
   private publish(destination: string, body: any): void {
     if (this.stompClient?.connected) {
       console.log('[STOMP] Publishing to', destination, body);
-      this.stompClient.publish({ destination, body: JSON.stringify(body) });
+      // Strings must be sent as-is — JSON.stringify('RANDOM') produces '"RANDOM"'
+      // which makes ScenarioType.valueOf() throw on the server.
+      const bodyStr = typeof body === 'string' ? body : JSON.stringify(body);
+      this.stompClient.publish({ destination, body: bodyStr });
     } else {
       console.warn('[STOMP] Cannot publish — not connected. destination=', destination);
     }
@@ -332,6 +408,7 @@ export class SimulatorComponent implements OnInit, OnDestroy {
   // ─── Frame received ──────────────────────────────────────────────────────────
 
   private onFrameReceived(raw: any): void {
+    console.log('[SIMULATOR] Frame received:', raw);
     const frame = this.mapFrame(raw, this.allFrames.length);
     if (this.allFrames.length === 0) this.logStartTs = frame.timestamp;
 
@@ -350,35 +427,48 @@ export class SimulatorComponent implements OnInit, OnDestroy {
       this.http.post(`${API_BASE_URL}/api/unity/frame`, raw).subscribe();
     }
 
+    if (this.autoScroll && this.activeView === 'table') {
+      setTimeout(() => this.scrollToBottom(), 0);
+    }
+
     this.cdr.detectChanges();
   }
 
   private mapFrame(f: any, i: number): SimFrame {
+    // Server sends parsed_signals as an array (SimulatorFrame.java).
+    // Normalise to a dict keyed by signal name so chart/table code is uniform.
     const rawSignals: Record<string, any> = {};
-    const parsedSignals: SimSignalEntry[] = [];
 
-    if (Array.isArray(f.parsed_signals)) {
-      for (const s of f.parsed_signals) {
-        const allStates: Record<number, string> = {};
-        if (s.all_states) {
-          Object.entries(s.all_states).forEach(([k, v]) => {
-            allStates[Number(k)] = String(v);
-          });
-        }
-        rawSignals[s.name] = {
-          raw_value:  s.raw_value,
-          value:      s.value,
-          is_valid:   s.is_valid,
-          all_states: allStates,
+    if (Array.isArray(f.parsed_signals) && f.parsed_signals.length > 0) {
+      for (const sv of f.parsed_signals as any[]) {
+        rawSignals[sv.name] = {
+          raw_value:  sv.raw_value,
+          label:      sv.value,      // SimulatorFrame uses "value", parser uses "label"
+          is_valid:   sv.is_valid,
+          all_states: sv.all_states ?? {},
         };
-        parsedSignals.push({
-          name:      s.name,
-          value:     s.value ?? String(s.raw_value),
-          rawVal:    s.raw_value,
-          isValid:   s.is_valid !== false,
-          allStates,
+      }
+    } else if (f.signals && typeof f.signals === 'object') {
+      // Fallback: handle dict-style signals from the parser pipeline
+      Object.assign(rawSignals, f.signals);
+    }
+
+    const parsedSignals: SimSignalEntry[] = [];
+    for (const [sigName, sigData] of Object.entries(rawSignals)) {
+      const s = sigData as any;
+      const allStates: Record<number, string> = {};
+      if (s?.all_states) {
+        Object.entries(s.all_states).forEach(([k, v]) => {
+          allStates[Number(k)] = String(v);
         });
       }
+      parsedSignals.push({
+        name:     sigName,
+        value:    String(s?.label ?? s?.raw_value ?? '-'),
+        rawVal:   s?.raw_value ?? 0,
+        isValid:  s?.is_valid !== false,
+        allStates,
+      });
     }
 
     return {
@@ -829,6 +919,24 @@ export class SimulatorComponent implements OnInit, OnDestroy {
 
   resetZoom(): void {
     (this.expandedChartInst as any)?.resetZoom?.();
+  }
+
+  // ─── Auto-scroll ─────────────────────────────────────────────────────────────
+
+  onTableScroll(): void {
+    const el = this.framesWrap?.nativeElement;
+    if (!el) return;
+    this.autoScroll = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+  }
+
+  resumeAutoScroll(): void {
+    this.autoScroll = true;
+    this.scrollToBottom();
+  }
+
+  private scrollToBottom(): void {
+    const el = this.framesWrap?.nativeElement;
+    if (el) el.scrollTop = el.scrollHeight;
   }
 
   // ─── Template helpers ────────────────────────────────────────────────────────

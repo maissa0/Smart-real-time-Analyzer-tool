@@ -1,0 +1,43 @@
+<div class="mfa-page">
+  <div class="mfa-card">
+
+    <div class="mfa-logo">SMART <span>ANALYSER</span></div>
+
+    <div class="mfa-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="1.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+    </div>
+
+    <h2 class="mfa-title">Two-factor authentication</h2>
+    <p class="mfa-sub">Enter the 6-digit code from your authenticator app.</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" autocomplete="off">
+      <div class="mfa-field">
+        <input
+          class="mfa-input"
+          [class.mfa-input-err]="error"
+          type="text"
+          inputmode="numeric"
+          maxlength="6"
+          placeholder="000000"
+          formControlName="code"
+          autofocus>
+        <span class="mfa-err" *ngIf="error">{{ error }}</span>
+      </div>
+
+      <button class="mfa-btn" type="submit" [disabled]="loading || form.invalid">
+        <span *ngIf="!loading">Verify</span>
+        <span *ngIf="loading" class="mfa-spin"></span>
+      </button>
+    </form>
+
+    <button class="mfa-back" type="button" (click)="back()">
+      ← Back to login
+    </button>
+
+  </div>
+</div>

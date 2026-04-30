@@ -1,6 +1,7 @@
 package com.molka.smart_analyzer_backend.simulator;
 
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
 
 @Controller
@@ -40,5 +41,23 @@ public class SimulationController {
 	@MessageMapping("/simulate/speed")
 	public void speed(SpeedPayload payload) {
 		engine.setSpeed(payload.multiplier());
+	}
+
+	@MessageMapping("/simulate/scenario")
+	public void setScenario(@Payload String scenarioType) {
+		try {
+			engine.setScenario(ScenarioType.valueOf(scenarioType));
+		} catch (IllegalArgumentException e) {
+			// ignore unknown scenario names
+		}
+	}
+
+	@MessageMapping("/simulate/fault")
+	public void setFaultInjection(@Payload FaultPayload payload) {
+		engine.setFaultInjection(
+			payload.valueErrors(),
+			payload.timingGaps(),
+			payload.counterErrors()
+		);
 	}
 }

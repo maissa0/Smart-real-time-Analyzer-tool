@@ -130,6 +130,16 @@
 
 /* Analyze mode toggle */
 .mode-toggle { display: flex; gap: 5px; }
+.mode-btn-wrap { position: relative; display: inline-flex; flex: 1; }
+.mode-btn-wrap .mode-btn { flex: 1; }
+.kafka-dot {
+  position: absolute; top: 3px; right: 3px;
+  width: 7px; height: 7px; border-radius: 50%;
+  border: 1px solid rgba(0,0,0,.5);
+  pointer-events: none;
+}
+.kafka-dot-up   { background: #4cff6e; box-shadow: 0 0 5px #4cff6e88; }
+.kafka-dot-down { background: #555; }
 .mode-btn {
   flex: 1; height: 28px; border-radius: 6px;
   border: 1px solid rgba(176,255,68,.18); background: transparent;
@@ -150,6 +160,20 @@
 }
 .speed-btn:hover:not(.active) { border-color: rgba(176,255,68,.38); color: #8a9ab0; }
 .speed-btn.active { border-color: #b0ff44; color: #b0ff44; background: rgba(176,255,68,.1); }
+
+/* Live mode transport indicator */
+.live-transport { display: flex; align-items: center; gap: 4px; margin-top: 5px; font-size: 10.5px; color: #8a9ab0; }
+.lt-dot { font-size: 9px; }
+.lt-dot.lt-kafka { color: #b0ff44; }
+.lt-dot.lt-sse   { color: #60cfff; }
+.lt-via { font-weight: 600; color: #d0d8e4; }
+
+/* Async mode info & progress */
+.async-info { margin-top: 4px; }
+.async-hint { font-size: 9.5px; color: rgba(138,154,176,.65); font-style: italic; }
+.async-progress-wrap { margin-top: 6px; }
+.async-progress-label { font-size: 11px; color: #b0ff44; animation: pulse-opacity 1.2s ease-in-out infinite; }
+@keyframes pulse-opacity { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
 
 /* Message toggles (legacy — kept for reference) */
 .msg-toggle-list { display: flex; flex-direction: column; gap: 6px; }
@@ -223,6 +247,9 @@
 .vbs-sep       { font-size: 10px; color: #3a4a5a; }
 .vbs-streaming { font-size: 10px; color: #b0ff44; font-weight: 700; animation: pulse 1s ease-in-out infinite; }
 .vbs-done      { font-size: 10px; color: #60cfff; }
+.vbs-transport { font-size: 10px; font-weight: 700; border-radius: 4px; padding: 1px 5px; }
+.vbs-kafka     { color: #07090b; background: #b0ff44; }
+.vbs-sse       { color: #07090b; background: #60cfff; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
 .export-btn { margin-left: auto; background: transparent; border: 1px solid rgba(176,255,68,.25); color: #b0ff44; border-radius: 7px; padding: .4rem .85rem; cursor: pointer; font-size: 11px; font-weight: 700; transition: all .2s; }

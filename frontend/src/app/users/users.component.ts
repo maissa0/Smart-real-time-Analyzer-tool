@@ -65,9 +65,21 @@ export class UsersComponent implements OnInit {
   private loadUsers(): void {
     this.loading  = true;
     this.apiError = '';
+    console.log('[Users] Calling GET /api/users …');
     this.api.getAll().subscribe({
-      next:  (users) => { this.users = users; this.loading = false; this.cdr.detectChanges(); },
-      error: (err)   => { this.apiError = err?.error?.message ?? 'Failed to load users.'; this.loading = false; this.cdr.detectChanges(); },
+      next: (users) => {
+        console.log('[Users] Response OK — received', users.length, 'user(s):', users);
+        this.users   = users;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('[Users] Error loading users:', err);
+        console.error('[Users] Status:', err?.status, '| Body:', err?.error);
+        this.apiError = err?.error?.message ?? `Failed to load users (HTTP ${err?.status ?? 'unknown'}).`;
+        this.loading  = false;
+        this.cdr.detectChanges();
+      },
     });
   }
 

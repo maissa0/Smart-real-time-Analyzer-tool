@@ -1,5 +1,7 @@
 package com.molka.smart_analyzer_backend.config;
 
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -62,5 +64,16 @@ public class KafkaConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         return factory;
+    }
+
+    // ── Admin client (used by HealthController for liveness probes) ───────────
+
+    @Bean
+    public AdminClient kafkaAdminClient() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 3000);
+        props.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 3000);
+        return AdminClient.create(props);
     }
 }

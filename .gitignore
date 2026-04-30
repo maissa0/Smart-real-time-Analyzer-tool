@@ -10,14 +10,22 @@ frontend/.angular/
 smart-analyzer-backend/target/
 
 # Python
-python_parser/__pycache__/
+**/__pycache__/
+*.pyc
 python_parser/decoded_frames.json
-python_parser/*.pyc
 uploads/
 
 # Environment
 .env
 *.env
+
+# Claude Code local settings
+.claude/
+*.local.json
+
+# Dev/audit artifacts
+profile-audit-shots/
+profile-audit.mjs
 
 # OS
 .DS_Store

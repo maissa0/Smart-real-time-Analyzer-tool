@@ -7,12 +7,14 @@ const JWT_KEY      = 'jwt';
 const USER_INFO_KEY = 'user_info';
 
 export interface LoginResponse {
-  accessToken: string;
-  tokenType:   string;
-  userId:      number;
-  username:    string;
-  email:       string;
-  role:        string;
+  accessToken:  string;
+  tokenType:    string;
+  userId:       number;
+  username:     string;
+  email:        string;
+  role:         string;
+  mfaRequired?: boolean;
+  mfaToken?:    string;
 }
 
 export interface RegisterResponse {
@@ -38,6 +40,22 @@ export class AuthService {
     return this.http
       .post<LoginResponse>(`${API_BASE_URL}/api/users/login`, { username, password })
       .pipe(tap((res) => {
+        if (!res.mfaRequired) {
+          localStorage.setItem(JWT_KEY, res.accessToken);
+          localStorage.setItem(USER_INFO_KEY, JSON.stringify({
+            userId:   res.userId,
+            username: res.username,
+            email:    res.email,
+            role:     res.role,
+          } satisfies StoredUserInfo));
+        }
+      }));
+  }
+
+  mfaVerify(mfaToken: string, code: string): Observable<LoginResponse> {
+    return this.http
+      .post<LoginResponse>(`${API_BASE_URL}/api/users/login/mfa`, { mfaToken, code })
+      .pipe(tap((res) => {
         localStorage.setItem(JWT_KEY, res.accessToken);
         localStorage.setItem(USER_INFO_KEY, JSON.stringify({
           userId:   res.userId,
@@ -54,7 +72,22 @@ export class AuthService {
     });
   }
 
+  forgotPassword(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${API_BASE_URL}/api/users/forgot-password`, { email });
+  }
+
+  resetPassword(email: string, otp: string, newPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${API_BASE_URL}/api/users/reset-password`, {
+      email, otp, newPassword,
+    });
+  }
+
   logout(): void {
+    // Fire-and-forget logout audit on the backend, then clear local state
+    const token = this.getToken();
+    if (token) {
+      this.http.post(`${API_BASE_URL}/api/users/logout`, {}).subscribe({ error: () => {} });
+    }
     localStorage.removeItem(JWT_KEY);
     localStorage.removeItem(USER_INFO_KEY);
   }

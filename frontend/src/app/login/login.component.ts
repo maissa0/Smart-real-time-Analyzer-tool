@@ -33,7 +33,14 @@ export class LoginComponent {
     this.loading = true;
     const { username, password } = this.form.value;
     this.auth.login(username, password).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+      next: (res) => {
+        if (res.mfaRequired && res.mfaToken) {
+          sessionStorage.setItem('mfa_token', res.mfaToken);
+          this.router.navigate(['/mfa-verify']);
+        } else {
+          this.router.navigate(['/dashboard']);
+        }
+      },
       error: (err) => {
         const popup = err?.status === 500
           ? swal.error('Something went wrong', 'Please try again.')

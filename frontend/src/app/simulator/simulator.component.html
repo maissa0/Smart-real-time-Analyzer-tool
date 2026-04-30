@@ -1,3 +1,4 @@
+<app-anomaly-panel></app-anomaly-panel>
 <div class="page" [class.sidebar-open]="sidebarOpen">
 
   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="toggleSidebar()"></div>
@@ -47,6 +48,57 @@
 
     <!-- ════ LEFT PANEL ════ -->
     <aside class="left-panel">
+
+      <!-- Scenario picker -->
+      <div class="lp-section">
+        <div class="lp-section-title">SCENARIO</div>
+        <select class="scenario-select"
+          [(ngModel)]="scenarioType"
+          [disabled]="simState !== 'idle'">
+          <option *ngFor="let opt of scenarioOptions" [value]="opt.value">{{ opt.label }}</option>
+        </select>
+        <div class="scenario-meta" *ngIf="scenarioType !== 'RANDOM'">
+          <span class="scenario-frames">{{ selectedScenario?.frames }} frames</span>
+          <span class="scenario-dur">~{{ selectedScenario?.duration }}s</span>
+        </div>
+        <div class="scenario-done-banner" *ngIf="scenarioComplete">✓ Scenario complete</div>
+      </div>
+
+      <!-- Fault injection -->
+      <div class="lp-section">
+        <div class="lp-section-title">
+          FAULT INJECTION
+          <span class="fault-active-badge" *ngIf="anyFaultActive">⚠ Faults active</span>
+        </div>
+        <div class="fault-checks">
+          <label class="fault-label" [class.disabled]="simState !== 'running'">
+            <input type="checkbox" [(ngModel)]="faultValueErrors"
+              [disabled]="simState !== 'running'"
+              (change)="onFaultChange()">
+            <span class="fault-name">Value errors</span>
+            <span class="fault-rate">10%</span>
+          </label>
+          <div class="fault-desc">Corrupts a random signal byte</div>
+
+          <label class="fault-label" [class.disabled]="simState !== 'running'">
+            <input type="checkbox" [(ngModel)]="faultTimingGaps"
+              [disabled]="simState !== 'running'"
+              (change)="onFaultChange()">
+            <span class="fault-name">Timing gaps</span>
+            <span class="fault-rate">5%</span>
+          </label>
+          <div class="fault-desc">Adds 2-5 s artificial delay</div>
+
+          <label class="fault-label" [class.disabled]="simState !== 'running'">
+            <input type="checkbox" [(ngModel)]="faultCounterErrors"
+              [disabled]="simState !== 'running'"
+              (change)="onFaultChange()">
+            <span class="fault-name">Counter errors</span>
+            <span class="fault-rate">8%</span>
+          </label>
+          <div class="fault-desc">Duplicates frame counter value</div>
+        </div>
+      </div>
 
       <div class="lp-section">
         <div class="lp-section-title">SIMULATION</div>
@@ -185,7 +237,7 @@
         </div>
 
         <!-- ═══ TABLE VIEW ═══ -->
-        <div class="table-view" *ngIf="activeView === 'table'">
+        <div class="table-view" #framesWrap (scroll)="onTableScroll()" *ngIf="activeView === 'table'">
           <div class="frames-table-wrap">
             <table class="frames-table">
               <thead>
@@ -246,6 +298,11 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Floating pill — appears when user has scrolled up during live simulation -->
+          <div class="live-pill-anchor" *ngIf="simState === 'running' && !autoScroll">
+            <button class="live-scroll-pill" (click)="resumeAutoScroll()">↓ Live</button>
           </div>
         </div>
 

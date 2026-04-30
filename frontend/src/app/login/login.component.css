@@ -273,3 +273,9 @@
 .auth-link:hover {
   color: #b0ff44;
 }
+
+.forgot-link {
+  margin-top: 0.5rem;
+  text-align: right;
+  font-size: 0.8rem;
+}

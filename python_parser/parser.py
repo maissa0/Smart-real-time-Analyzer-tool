@@ -4,7 +4,7 @@ import re
 import os
 import sys
 from pathlib import Path
-from kafka import KafkaProducer
+from kafka import KafkaProducer, KafkaConsumer
 
 try:
     from anomaly.rule_engine import check as rule_check
@@ -165,11 +165,56 @@ def parse_bit_mask(bit_str):
     return mask, shift
 
 
-def load_xml_files(xml_paths, report: ErrorReport):
+def _parse_bit_pattern(pattern: str) -> tuple:
+    """Return (mask, shift) for an eight-character x/1 bit layout string."""
+    pat = pattern.strip()
+    mask = 0
+    for i, ch in enumerate(pat):
+        if ch == "1":
+            mask |= 1 << (7 - i)
+    if mask == 0:
+        return 0, 0
+    low = mask & -mask
+    shift = low.bit_length() - 1
+    return mask, shift
+
+
+def encode_frame(msg_id: str, signals_dict: dict, catalog: dict) -> list:
+    """Pack signal values back into 8 raw bytes using bit positions from the XML catalog.
+
+    Args:
+        msg_id: CAN message ID string (e.g. '0X2FC')
+        signals_dict: dict mapping signal name to integer value
+        catalog: loaded catalog dict from load_xml_files()
+
+    Returns:
+        list of 8 ints with signal values packed into correct bit positions
+    """
+    raw = [0] * 8
+    key = msg_id.strip().upper()
+    if key not in catalog:
+        return raw
+    msg_def = catalog[key]
+    for byte_num, signals in msg_def["bytes"].items():
+        if byte_num >= 8:
+            continue
+        for sig in signals:
+            sig_name = sig["signal"]
+            if sig_name not in signals_dict:
+                continue
+            value = int(signals_dict[sig_name])
+            packed = (value << sig["shift"]) & sig["mask"]
+            raw[byte_num] |= packed
+    return raw
+
+
+def load_xml_files(xml_paths, report: ErrorReport = None):
     """
     Load all XML signal definition files.
     Skips files that fail to parse and logs the error.
     """
+    if report is None:
+        report = ErrorReport()
     db = {}
     for path in xml_paths:
         try:
@@ -204,18 +249,38 @@ def load_xml_files(xml_paths, report: ErrorReport):
 
                         val_map = {}
                         for v_el in sig_el.findall("values"):
-                            val_node = v_el.find("value")
-                            n_node   = v_el.find("n") or v_el.find("name")
-                            if val_node is not None and n_node is not None:
-                                raw   = val_node.text.strip()
-                                label = n_node.text.strip()
-                                if "..." in raw:
-                                    val_map["range"] = label
-                                else:
-                                    try:
-                                        val_map[int(float(raw))] = label
-                                    except ValueError:
-                                        val_map[raw] = label
+                            values_list = v_el.findall("value")
+                            names_list  = v_el.findall("name") or v_el.findall("n")
+                            if len(values_list) > 1 or len(names_list) > 1:
+                                # Format 2: multiple <value>/<name> pairs inside one <values> block
+                                for vnode, nnode in zip(values_list, names_list):
+                                    raw   = (vnode.text or "").strip()
+                                    label = (nnode.text or "").strip()
+                                    if not raw:
+                                        continue
+                                    if "..." in raw:
+                                        val_map["range"] = label
+                                    else:
+                                        try:
+                                            val_map[int(float(raw))] = label
+                                        except ValueError:
+                                            val_map[raw] = label
+                            else:
+                                # Format 1: single <value>/<name> per <values> block
+                                val_node = v_el.find("value")
+                                n_node   = v_el.find("name")
+                                if n_node is None:
+                                    n_node = v_el.find("n")
+                                if val_node is not None and n_node is not None:
+                                    raw   = (val_node.text or "").strip()
+                                    label = (n_node.text or "").strip()
+                                    if "..." in raw:
+                                        val_map["range"] = label
+                                    else:
+                                        try:
+                                            val_map[int(float(raw))] = label
+                                        except ValueError:
+                                            val_map[raw] = label
 
                         signals.append({
                             "signal":      sig_name,
@@ -341,8 +406,8 @@ def decode_frame(frame, db, frame_num, report: ErrorReport):
                 if "range" in val_map:
                     label    = f"{extracted} ({val_map['range']})"
                     is_valid = True
-                elif extracted in val_map:
-                    label    = val_map[extracted]
+                elif val_map.get(str(extracted)) is not None or extracted in val_map:
+                    label    = val_map.get(str(extracted)) or val_map.get(extracted)
                     is_valid = True
                 else:
                     label    = f"Unknown({extracted})"
@@ -666,13 +731,148 @@ def worker_mode(xml_paths):
     )
 
 
+# ─── Kafka async worker mode ──────────────────────────────────────────────────
+
+def kafka_worker_mode(xml_paths):
+    """
+    Kafka async worker mode — loads the XML catalog once, then listens on the
+    'file-processing-jobs' topic for analysis jobs published by the Spring Boot
+    backend (POST /api/analyze/async).
+
+    For each job it:
+      1. Decodes the CAN log file.
+      2. Publishes each decoded frame to 'can-frames-decoded' (key = sessionId).
+      3. Sends periodic progress events to 'log-file-events' (key = sessionId).
+      4. Sends a final 'done' event with the error report.
+
+    Spring Boot's AsyncAnalysisConsumer picks up those Kafka messages and
+    forwards them to the Angular client via per-session WebSocket topics:
+      /topic/async-frames/{sessionId}
+      /topic/async-progress/{sessionId}
+
+    Job message schema (published by AnalysisController):
+      {"sessionId": "...", "filePath": "/abs/path/to/file", "sourceFilename": "..."}
+    """
+    bootstrap = ['localhost:9092']
+
+    # ── Init XML catalog ─────────────────────────────────────────────────────
+    init_report = ErrorReport()
+    db = load_xml_files(xml_paths, init_report)
+    xml_names = [os.path.basename(p) for p in xml_paths]
+    for err in init_report.xml_errors:
+        print(f"[KAFKA-WORKER] XML error: {err['file']}: {err['reason']}",
+              file=sys.stderr, flush=True)
+
+    # ── Kafka clients ─────────────────────────────────────────────────────────
+    consumer = KafkaConsumer(
+        'file-processing-jobs',
+        bootstrap_servers=bootstrap,
+        group_id='python-file-workers',
+        value_deserializer=lambda v: json.loads(v.decode('utf-8')),
+        auto_offset_reset='earliest',
+        enable_auto_commit=True,
+        consumer_timeout_ms=-1,   # block forever
+    )
+
+    producer = KafkaProducer(
+        bootstrap_servers=bootstrap,
+        key_serializer=lambda k: k.encode('utf-8') if isinstance(k, str) else k,
+        value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+        retries=3,
+        request_timeout_ms=10_000,
+    )
+
+    print("[KAFKA-WORKER] Ready — waiting for jobs on 'file-processing-jobs'...", flush=True)
+
+    for message in consumer:
+        job        = message.value
+        session_id = job.get('sessionId')
+        file_path  = job.get('filePath')
+        source_fn  = job.get('sourceFilename', 'unknown.txt')
+
+        if not session_id or not file_path:
+            print(f"[KAFKA-WORKER] Skipping malformed job: {job}", file=sys.stderr, flush=True)
+            continue
+
+        print(f"[KAFKA-WORKER] Processing job {session_id}: {file_path}", flush=True)
+
+        job_report = ErrorReport()
+        frame_num  = 0
+
+        try:
+            # Notify client that processing has started
+            producer.send('log-file-events', key=session_id, value={
+                'event':          'started',
+                'sessionId':      session_id,
+                'sourceFilename': source_fn,
+            })
+
+            # Publish session metadata
+            producer.send('session-meta', key=session_id, value={
+                'sessionId':    session_id,
+                'sourceFilename': source_fn,
+                'xmlFilesUsed': xml_names,
+            })
+
+            for frame in _iter_raw_frames(Path(file_path), job_report):
+                frame_num += 1
+                decoded = decode_frame(frame, db, frame_num, job_report)
+                producer.send('can-frames-decoded', key=session_id, value=decoded)
+
+                # Send a progress event every 100 frames so the client can show a counter
+                if frame_num % 100 == 0:
+                    producer.send('log-file-events', key=session_id, value={
+                        'event':     'progress',
+                        'sessionId': session_id,
+                        'processed': frame_num,
+                    })
+
+            producer.flush()
+
+            # Final done event — includes the full error report
+            producer.send('log-file-events', key=session_id, value={
+                'event':       'done',
+                'sessionId':   session_id,
+                'frameCount':  frame_num,
+                'errorReport': job_report.to_dict(),
+            })
+            producer.flush()
+
+            print(f"[KAFKA-WORKER] Done {session_id}: {frame_num} frames", flush=True)
+
+        except FileNotFoundError:
+            print(f"[KAFKA-WORKER] File not found for job {session_id}: {file_path}",
+                  file=sys.stderr, flush=True)
+            producer.send('log-file-events', key=session_id, value={
+                'event':     'error',
+                'sessionId': session_id,
+                'message':   f"File not found: {file_path}",
+            })
+            producer.flush()
+
+        except Exception as e:
+            print(f"[KAFKA-WORKER] Error in job {session_id}: {e}",
+                  file=sys.stderr, flush=True)
+            try:
+                producer.send('log-file-events', key=session_id, value={
+                    'event':     'error',
+                    'sessionId': session_id,
+                    'message':   str(e),
+                })
+                producer.flush()
+            except Exception:
+                pass
+
+
 # ─── Entry point ──────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    worker_mode_flag = "--worker"   in sys.argv
-    metadata_mode    = "--metadata" in sys.argv
-    stream_mode      = "--stream"   in sys.argv
-    args = [a for a in sys.argv[1:] if a not in ("--stream", "--metadata", "--worker")]
+    worker_mode_flag  = "--worker"        in sys.argv
+    kafka_worker_flag = "--kafka-worker"  in sys.argv
+    metadata_mode     = "--metadata"      in sys.argv
+    stream_mode       = "--stream"        in sys.argv
+    args = [a for a in sys.argv[1:]
+            if a not in ("--stream", "--metadata", "--worker", "--kafka-worker")]
 
     def _auto_discover_xml():
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -685,6 +885,12 @@ if __name__ == "__main__":
             print(json.dumps({"error": "No XML files found in python_parser/ directory"}), flush=True)
             sys.exit(1)
         return found
+
+    # ── Kafka async worker mode — long-running Kafka consumer/producer ────────
+    if kafka_worker_flag:
+        XML_FILES = args if args else _auto_discover_xml()
+        kafka_worker_mode(XML_FILES)
+        sys.exit(0)
 
     # ── Worker mode — no log file arg, XML files are positional ──────────────
     if worker_mode_flag:

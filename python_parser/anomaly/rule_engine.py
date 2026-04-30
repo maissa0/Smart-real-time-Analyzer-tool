@@ -104,4 +104,19 @@ def check(frame: dict, prev_frame_same_id: dict | None) -> list[dict]:
                         'timestamp': timestamp,
                     })
 
+    # Rule 5 — duplicate frame detection
+    if prev_frame_same_id is not None:
+        delta_ms = (timestamp - float(prev_frame_same_id.get('timestamp', 0))) * 1000
+        if delta_ms < 1.0:
+            prev_raw = prev_frame_same_id.get('raw_bytes', [])
+            curr_raw = frame.get('raw_bytes', [])
+            if prev_raw == curr_raw:
+                alerts.append({
+                    'type': 'DUPLICATE_FRAME',
+                    'severity': 'MEDIUM',
+                    'frame_id': frame_id,
+                    'detail': f'Identical frame received {delta_ms:.3f}ms after previous',
+                    'timestamp': timestamp,
+                })
+
     return alerts

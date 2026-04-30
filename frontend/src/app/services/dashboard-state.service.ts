@@ -20,9 +20,16 @@ export interface DashboardSnapshot {
   analyzeMode:        'stream' | 'batch';
 }
 
+export interface PendingAnalysisResult {
+  frames:       any[];
+  errorReport:  any;
+  xmlFilesUsed: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class DashboardStateService {
-  snapshot: DashboardSnapshot | null = null;
+  snapshot:      DashboardSnapshot | null     = null;
+  pendingResult: PendingAnalysisResult | null = null;
 
   clear(): void { this.snapshot = null; }
 }

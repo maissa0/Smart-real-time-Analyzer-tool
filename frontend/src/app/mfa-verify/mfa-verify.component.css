@@ -1,0 +1,119 @@
+.mfa-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d0d0d;
+  padding: 1rem;
+}
+
+.mfa-card {
+  background: #141414;
+  border: 1px solid #1f1f1f;
+  border-radius: 12px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+}
+
+.mfa-logo {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #e0e0e0;
+  margin-bottom: 1.5rem;
+}
+.mfa-logo span { color: #3b82f6; }
+
+.mfa-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+  color: #3b82f6;
+}
+
+.mfa-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin: 0 0 0.4rem;
+}
+
+.mfa-sub {
+  font-size: 0.82rem;
+  color: #666;
+  margin: 0 0 1.6rem;
+  line-height: 1.5;
+}
+
+.mfa-field {
+  margin-bottom: 1rem;
+}
+
+.mfa-input {
+  width: 100%;
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 1.5rem;
+  letter-spacing: 0.4em;
+  text-align: center;
+  padding: 0.65rem 1rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.mfa-input:focus { border-color: #3b82f6; }
+.mfa-input-err  { border-color: #ef4444 !important; }
+
+.mfa-err {
+  display: block;
+  font-size: 0.78rem;
+  color: #ef4444;
+  margin-top: 0.35rem;
+  text-align: left;
+}
+
+.mfa-btn {
+  width: 100%;
+  padding: 0.65rem;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+}
+.mfa-btn:hover:not(:disabled) { background: #2563eb; }
+.mfa-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.mfa-spin {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.mfa-back {
+  margin-top: 1.2rem;
+  background: none;
+  border: none;
+  color: #555;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.mfa-back:hover { color: #888; }

@@ -1,6 +1,8 @@
 package com.molka.smart_analyzer_backend.controller;
 
+import com.molka.smart_analyzer_backend.repository.UserRepository;
 import com.molka.smart_analyzer_backend.service.AnalysisService;
+import com.molka.smart_analyzer_backend.service.AuditLogService;
 import io.github.bucket4j.Bucket;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,24 +15,32 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.core.Authentication;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
 public class AnalysisController {
 
 	private final AnalysisService analysisService;
+	private final AuditLogService auditLogService;
+	private final UserRepository  userRepository;
 
 	@Autowired private Bucket analysisRateLimiter;
 
-	public AnalysisController(AnalysisService analysisService) {
+	public AnalysisController(AnalysisService analysisService,
+			AuditLogService auditLogService, UserRepository userRepository) {
 		this.analysisService = analysisService;
+		this.auditLogService = auditLogService;
+		this.userRepository  = userRepository;
 	}
 
 	// ── BATCH ENDPOINT ────────────────────────────────────────────────────────
@@ -42,13 +52,25 @@ public class AnalysisController {
 	@PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<?> analyze(
 			@RequestPart("logFile") MultipartFile logFile,
-			@RequestPart(value = "sessionId", required = false) String sessionId) {
+			@RequestPart(value = "sessionId", required = false) String sessionId,
+			Authentication authentication,
+			HttpServletRequest httpRequest) {
 		if (!analysisRateLimiter.tryConsume(1)) {
 			return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
 				.body("Rate limit exceeded. Max 10 requests per minute.");
 		}
 		try {
-			Map<String, Object> result = analysisService.analyzeFiles(logFile, sessionId);
+			String username = authentication != null ? authentication.getName() : null;
+			Map<String, Object> result = analysisService.analyzeFiles(logFile, sessionId, username);
+			// Audit log the analysis
+			if (username != null) {
+				Long userId = userRepository.findByUsername(username).map(u -> u.getId()).orElse(null);
+				Object frameCount = result.get("totalFrames");
+				String details = "{\"filename\":\"" + logFile.getOriginalFilename() + "\""
+						+ (frameCount != null ? ",\"frames\":" + frameCount : "") + "}";
+				auditLogService.log(userId, username, "FILE_ANALYZED", "FILE",
+						logFile.getOriginalFilename(), details, httpRequest);
+			}
 			return ResponseEntity.ok(result);
 		} catch (Exception e) {
 			String errorMsg = e.getMessage() == null
@@ -57,6 +79,31 @@ public class AnalysisController {
 			return ResponseEntity.status(500)
 					.header("Reason", errorMsg)
 					.body(Collections.singletonMap("error", errorMsg));
+		}
+	}
+
+	// ── ASYNC ENDPOINT ───────────────────────────────────────────────────────
+	// POST /api/analyze/async
+	// Accepts a log file, saves it to disk, publishes a job to Kafka topic
+	// 'file-processing-jobs', and returns {sessionId} immediately.
+	// Angular then subscribes to /topic/async-frames/{sessionId} via WebSocket.
+
+	@PostMapping(value = "/analyze/async", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<?> analyzeAsync(
+			@RequestPart("logFile") MultipartFile logFile,
+			@RequestPart(value = "sessionId", required = false) String sessionId,
+			Authentication authentication) {
+		try {
+			// Use client-supplied sessionId if present (allows subscribe-before-post);
+			// fall back to server-generated UUID for backwards compatibility.
+			String effectiveSessionId = (sessionId != null && !sessionId.isBlank())
+					? sessionId
+					: UUID.randomUUID().toString();
+			Map<String, Object> result = analysisService.submitAsyncJob(logFile, effectiveSessionId);
+			return ResponseEntity.ok(result);
+		} catch (Exception e) {
+			String msg = e.getMessage() == null ? "Failed to submit async job" : e.getMessage();
+			return ResponseEntity.status(500).body(Collections.singletonMap("error", msg));
 		}
 	}
 

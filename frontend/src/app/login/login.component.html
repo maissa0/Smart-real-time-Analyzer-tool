@@ -63,6 +63,9 @@
           <span class="validation-error" *ngIf="form.get('password')?.invalid && form.get('password')?.touched">
             Password is required
           </span>
+          <div class="forgot-link">
+            <a routerLink="/forgot-password" class="auth-link">Forgot password?</a>
+          </div>
         </div>
 
         <button type="submit" class="btn-primary" [disabled]="form.invalid || loading">

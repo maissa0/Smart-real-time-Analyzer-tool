@@ -310,6 +310,60 @@
 
 .unity-hint { font-size: 11px; color: #2a4a5a; font-style: italic; }
 
+/* ── Scenario section ─────────────────────────────────────── */
+.scenario-select {
+  width: 100%; padding: 7px 10px; border-radius: 7px;
+  border: 1px solid rgba(96,207,255,.25); background: rgba(96,207,255,.06);
+  color: #c8e6ff; font-size: 12px; cursor: pointer; outline: none;
+  transition: border-color .15s;
+}
+.scenario-select:hover:not(:disabled) { border-color: rgba(96,207,255,.5); }
+.scenario-select:disabled { opacity: .5; cursor: not-allowed; }
+
+.scenario-meta {
+  display: flex; gap: 10px; margin-top: 6px; align-items: center;
+}
+.scenario-frames, .scenario-dur {
+  font-size: 11px; color: #5aaccf; background: rgba(96,207,255,.07);
+  padding: 2px 8px; border-radius: 5px; border: 1px solid rgba(96,207,255,.15);
+}
+
+.scenario-done-banner {
+  margin-top: 8px; padding: 6px 10px; border-radius: 7px;
+  background: rgba(96,255,160,.08); border: 1px solid rgba(96,255,160,.3);
+  color: #60ffa0; font-size: 12px; font-weight: 700; text-align: center;
+}
+
+/* ── Fault injection section ──────────────────────────────── */
+.fault-active-badge {
+  margin-left: 6px; padding: 1px 7px; border-radius: 5px;
+  background: rgba(255,80,80,.15); border: 1px solid rgba(255,80,80,.4);
+  color: #ff5050; font-size: 10px; font-weight: 700; letter-spacing: .3px;
+  vertical-align: middle;
+}
+
+.fault-checks { display: flex; flex-direction: column; gap: 2px; }
+
+.fault-label {
+  display: flex; align-items: center; gap: 7px; cursor: pointer;
+  padding: 4px 0; user-select: none;
+}
+.fault-label.disabled { opacity: .45; cursor: not-allowed; }
+.fault-label input[type="checkbox"] { accent-color: #ff5050; cursor: pointer; }
+.fault-label.disabled input[type="checkbox"] { cursor: not-allowed; }
+
+.fault-name { font-size: 12px; color: #c8e6ff; flex: 1; }
+
+.fault-rate {
+  font-size: 10px; color: #ff7a7a; background: rgba(255,80,80,.1);
+  border: 1px solid rgba(255,80,80,.25); border-radius: 4px;
+  padding: 1px 6px; font-variant-numeric: tabular-nums;
+}
+
+.fault-desc {
+  font-size: 10px; color: #3a5a70; margin-left: 22px; margin-bottom: 4px;
+}
+
 /* ── Scrollbars ───────────────────────────────────────────── */
 .left-panel::-webkit-scrollbar,.right-panel::-webkit-scrollbar,.table-view::-webkit-scrollbar,.charts-view::-webkit-scrollbar { width: 4px; }
 .left-panel::-webkit-scrollbar-track,.right-panel::-webkit-scrollbar-track,.table-view::-webkit-scrollbar-track,.charts-view::-webkit-scrollbar-track { background: transparent; }

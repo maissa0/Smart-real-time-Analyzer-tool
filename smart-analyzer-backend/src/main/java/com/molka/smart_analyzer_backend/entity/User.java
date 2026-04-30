@@ -49,6 +49,12 @@ public class User {
 	@Column
 	private String avatarPath;
 
+	@Column(nullable = false)
+	private boolean mfaEnabled;
+
+	@Column
+	private String mfaSecret;
+
 	@PrePersist
 	protected void onCreate() {
 		if (createdAt == null) {

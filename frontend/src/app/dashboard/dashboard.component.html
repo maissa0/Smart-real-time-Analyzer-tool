@@ -72,12 +72,24 @@
         </div>
 
         <div class="mode-toggle">
-          <button class="mode-btn" [class.active]="analyzeMode === 'stream'"
-            (click)="setAnalyzeMode('stream')"
-            title="Streaming: frames appear live one by one">📡</button>
+          <div class="mode-btn-wrap">
+            <button class="mode-btn" [class.active]="analyzeMode === 'stream'"
+              (click)="setAnalyzeMode('stream')"
+              title="Streaming: frames appear live one by one">📡</button>
+            <span class="kafka-dot"
+              *ngIf="kafkaStatus"
+              [class.kafka-dot-up]="kafkaStatus === 'up'"
+              [class.kafka-dot-down]="kafkaStatus === 'down'"></span>
+          </div>
           <button class="mode-btn" [class.active]="analyzeMode === 'batch'"
             (click)="setAnalyzeMode('batch')"
-            title="Batch: decode all at once">⚡</button>
+            title="Batch: decode all at once, delivered via WebSocket">⚡</button>
+        </div>
+
+        <div class="live-transport" *ngIf="analyzeMode === 'stream' && liveTransport">
+          <span class="lt-dot" [class.lt-kafka]="liveTransport === 'kafka'" [class.lt-sse]="liveTransport === 'sse'">●</span>
+          live &nbsp;
+          <span class="lt-via">via {{ liveTransport === 'kafka' ? 'Kafka' : 'SSE' }}</span>
         </div>
 
         <div class="speed-control" *ngIf="analyzeMode === 'stream'">
@@ -222,6 +234,8 @@
             <span class="vbs-item">{{ filteredFrames.length }} shown</span>
             <span class="vbs-streaming" *ngIf="analyzing && !streamingDone">● live</span>
             <span class="vbs-done" *ngIf="streamingDone">✓ done</span>
+            <span class="vbs-transport vbs-kafka" *ngIf="analyzeMode === 'stream' && liveTransport === 'kafka'">⬡ Kafka</span>
+            <span class="vbs-transport vbs-sse"   *ngIf="analyzeMode === 'stream' && liveTransport === 'sse'">〜 SSE</span>
           </div>
 
           <button class="export-btn" (click)="exportResults()">⬇ Export JSON</button>

@@ -114,8 +114,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   analyzing     = false;
   analyzeError  = '';
 
-  // Analyze mode
+  // Analyze mode (Live = probes Kafka → async if up, SSE if down; Batch = WebSocket)
   analyzeMode: 'stream' | 'batch' = 'batch';
+
+  // Async mode state
+  asyncProgress  = 0;
+  asyncSessionId = '';
+
+  // Live mode transport indicator ('kafka' | 'sse' | null)
+  liveTransport: 'kafka' | 'sse' | null = null;
+
+  // Kafka availability indicator (probed when stream mode is selected)
+  kafkaStatus: 'up' | 'down' | null = null;
 
   // Streaming speed (delay in ms between rendered frames; default 1x)
   streamDelay = 1000;
@@ -188,6 +198,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Live forwarding to Unity
   liveSendingToUnity = false;
 
+  private asyncTimeoutHandle?: ReturnType<typeof setTimeout>;
+  private sseAbortController?: AbortController;
+
   private readonly PAL = [
     '#b0ff44','#60cfff','#ffb347','#ff6b9d',
     '#c77dff','#4cc9f0','#f72585','#7bed9f',
@@ -200,13 +213,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.username = this.auth.getCurrentUser() ?? 'user';
     this.isAdmin  = this.auth.isAdmin();
     this.restoreState();
+    this.checkKafkaStatus();
   }
 
   ngOnDestroy(): void {
     this.saveState();
     this.destroyAllCharts();
-    if (this.chartUpdateTimer) clearTimeout(this.chartUpdateTimer);
-    if (this._statusInterval) clearInterval(this._statusInterval);
+    if (this.chartUpdateTimer)   clearTimeout(this.chartUpdateTimer);
+    if (this._statusInterval)    clearInterval(this._statusInterval);
+    if (this.asyncTimeoutHandle) clearTimeout(this.asyncTimeoutHandle);
+    this.sseAbortController?.abort();
     this.stompClient?.deactivate();
   }
 
@@ -239,6 +255,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private restoreState(): void {
+    // Re-analysis result pushed from the profile page takes priority
+    const pending = this.dashState$.pendingResult;
+    if (pending) {
+      this.dashState$.pendingResult = null;
+      this.loadReanalysisResult(pending.frames, pending.errorReport, pending.xmlFilesUsed);
+      return;
+    }
+
     const snap = this.dashState$.snapshot;
     if (!snap || snap.allFrames.length === 0) return;
 
@@ -263,6 +287,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (this.activeView === 'charts' && this.showResults) {
       setTimeout(() => this.renderAllCharts(), 150);
     }
+  }
+
+  private loadReanalysisResult(rawFrames: any[], errorReport: any, xmlFilesUsed: string[]): void {
+    this.dashState$.clear();
+    this.destroyAllCharts();
+    this.allFrames           = rawFrames.map((f, i) => this.mapFrame(f, i));
+    this.filteredFrames      = [...this.allFrames];
+    this.errorReport         = errorReport ?? null;
+    this.xmlFilesUsed        = xmlFilesUsed ?? [];
+    this.logStartTs          = this.allFrames[0]?.timestamp ?? 0;
+    this.showResults         = true;
+    this.activeView          = 'table';
+    this.streamingDone       = true;
+    this.streamingFrameCount = this.allFrames.length;
+    this.analyzing           = false;
+    this.msgTree             = [];
+    this.allFrames.forEach(f => this.updateMsgTree(f));
+    this.buildMessageGroups();
+    this.cdr.detectChanges();
   }
 
   @HostListener('document:keydown.escape')
@@ -296,7 +339,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // ─── Analyze ─────────────────────────────────────────────────────────────
 
-  setAnalyzeMode(mode: 'stream' | 'batch'): void { this.analyzeMode = mode; }
+  setAnalyzeMode(mode: 'stream' | 'batch'): void {
+    this.analyzeMode = mode;
+    if (mode === 'stream') this.checkKafkaStatus();
+  }
+
+  checkKafkaStatus(): void {
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), 2000);
+    fetch(`${API_BASE_URL}/api/health/kafka`, { signal: controller.signal })
+      .then(res => res.json())
+      .then((data: any) => {
+        clearTimeout(timeoutId);
+        this.zone.run(() => {
+          this.kafkaStatus = data?.status === 'up' ? 'up' : 'down';
+          this.cdr.detectChanges();
+        });
+      })
+      .catch(() => {
+        clearTimeout(timeoutId);
+        this.zone.run(() => { this.kafkaStatus = 'down'; this.cdr.detectChanges(); });
+      });
+  }
 
   analyze(): void {
     if (!this.canAnalyze()) return;
@@ -314,21 +378,55 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.errorReport         = null;
     this.frontendErrors      = [];
     this.xmlFilesUsed        = [];
+    this.asyncProgress       = 0;
+    this.asyncSessionId      = '';
+    this.liveTransport       = null;
     this.destroyAllCharts();
     if (this.analyzeMode === 'stream') this.analyzeStream();
     else                               this.analyzeBatch();
   }
 
-  // ─── STREAMING MODE ───────────────────────────────────────────────────────
+  // ─── STREAMING / LIVE MODE ────────────────────────────────────────────────
+  // Probes Kafka health with a 2-second timeout.
+  // → Kafka up   : routes to analyzeAsync()  (Kafka pipeline, liveTransport='kafka')
+  // → Kafka down : routes to analyzeStreamViaSse() (SSE, liveTransport='sse')
 
   private analyzeStream(): void {
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), 2000);
+
+    fetch(`${API_BASE_URL}/api/health/kafka`, { signal: controller.signal })
+      .then(res => res.json())
+      .then((data: any) => {
+        clearTimeout(timeoutId);
+        if (data?.status === 'up') {
+          this.zone.run(() => { this.liveTransport = 'kafka'; this.cdr.detectChanges(); });
+          this.analyzeAsync();
+        } else {
+          this.zone.run(() => { this.liveTransport = 'sse'; this.cdr.detectChanges(); });
+          this.analyzeStreamViaSse();
+        }
+      })
+      .catch(() => {
+        clearTimeout(timeoutId);
+        this.zone.run(() => { this.liveTransport = 'sse'; this.cdr.detectChanges(); });
+        this.analyzeStreamViaSse();
+      });
+  }
+
+  private analyzeStreamViaSse(): void {
+    this.sseAbortController = new AbortController();
+
     const fd = new FormData();
     fd.append('logFile', this.logFile!);
 
     const token = this.auth.getToken();
     const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-    fetch(`${API_BASE_URL}/api/analyze-stream`, { method: 'POST', body: fd, headers })
+    fetch(`${API_BASE_URL}/api/analyze-stream`, {
+      method: 'POST', body: fd, headers,
+      signal: this.sseAbortController.signal,
+    })
       .then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         if (!response.body) throw new Error('No response body');
@@ -494,6 +592,118 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
 
     this.stompClient.activate();
+  }
+
+  // ─── ASYNC MODE (Kafka) ───────────────────────────────────────────────────
+  // Generate sessionId on the client so we can subscribe BEFORE posting the
+  // file — eliminates the race condition where `done` could fire before the
+  // STOMP subscription is established.
+
+  private analyzeAsync(): void {
+    const token = this.auth.getToken();
+    const authHeaders: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const sessionId = crypto.randomUUID();
+
+    this.stompClient?.deactivate();
+    if (this.asyncTimeoutHandle) { clearTimeout(this.asyncTimeoutHandle); this.asyncTimeoutHandle = undefined; }
+
+    this.stompClient = new Client({
+      webSocketFactory: () => new SockJS(`${API_BASE_URL}/ws`),
+      reconnectDelay: 0,
+
+      onConnect: () => {
+        // Subscribe first — no frames can arrive before we are ready
+        this.stompClient!.subscribe(`/topic/async-frames/${sessionId}`, message => {
+          this.zone.run(() => {
+            try {
+              const frame = JSON.parse(message.body);
+              this.onFrameReceived(frame);
+              this.asyncProgress = this.allFrames.length;
+            } catch { /* ignore malformed */ }
+          });
+        });
+
+        this.stompClient!.subscribe(`/topic/async-progress/${sessionId}`, message => {
+          this.zone.run(() => {
+            try {
+              const evt = JSON.parse(message.body);
+              if (evt.event === 'done') {
+                if (this.asyncTimeoutHandle) { clearTimeout(this.asyncTimeoutHandle); this.asyncTimeoutHandle = undefined; }
+                this.errorReport   = evt.errorReport ?? null;
+                this.analyzing     = false;
+                this.streamingDone = true;
+                this.buildMessageGroups();
+                this.stompClient?.deactivate();
+                this.cdr.detectChanges();
+              } else if (evt.event === 'error') {
+                if (this.asyncTimeoutHandle) { clearTimeout(this.asyncTimeoutHandle); this.asyncTimeoutHandle = undefined; }
+                this.analyzeError = evt.message ?? 'Async analysis failed.';
+                this.analyzing    = false;
+                this.stompClient?.deactivate();
+                this.cdr.detectChanges();
+              } else if (evt.event === 'progress') {
+                this.asyncProgress = evt.processed ?? this.asyncProgress;
+                this.cdr.detectChanges();
+              }
+            } catch { /* ignore */ }
+          });
+        });
+
+        // POST after subscriptions are set up — pass our sessionId so the server
+        // publishes to the topic we are already subscribed to.
+        const fd = new FormData();
+        fd.append('logFile', this.logFile!);
+        fd.append('sessionId', sessionId);
+
+        fetch(`${API_BASE_URL}/api/analyze/async`, { method: 'POST', body: fd, headers: authHeaders })
+          .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+          })
+          .then((data: any) => {
+            this.zone.run(() => {
+              this.asyncSessionId = sessionId;
+              this.xmlFilesUsed   = data.xmlFilesUsed ?? [];
+              this.showResults    = true;
+              this.activeView     = 'table';
+              this.cdr.detectChanges();
+            });
+          })
+          .catch(err => {
+            if (this.asyncTimeoutHandle) { clearTimeout(this.asyncTimeoutHandle); this.asyncTimeoutHandle = undefined; }
+            this.zone.run(() => {
+              this.recordFrontendError('analyzeAsync.fetch', err);
+              this.analyzeError = err?.message ?? 'Async analysis failed.';
+              this.analyzing    = false;
+              this.stompClient?.deactivate();
+              this.cdr.detectChanges();
+            });
+          });
+      },
+
+      onStompError: frame => {
+        if (this.asyncTimeoutHandle) { clearTimeout(this.asyncTimeoutHandle); this.asyncTimeoutHandle = undefined; }
+        this.zone.run(() => {
+          this.analyzeError = `WebSocket error: ${frame.headers['message'] ?? 'unknown'}`;
+          this.analyzing    = false;
+          this.cdr.detectChanges();
+        });
+      }
+    });
+
+    this.stompClient.activate();
+
+    // 30-second timeout — if `done` never arrives, stop the spinner
+    this.asyncTimeoutHandle = setTimeout(() => {
+      this.zone.run(() => {
+        if (this.analyzing) {
+          this.analyzeError = 'Analysis timed out — no response from server after 30 seconds.';
+          this.analyzing    = false;
+          this.stompClient?.deactivate();
+          this.cdr.detectChanges();
+        }
+      });
+    }, 30000);
   }
 
   // ─── Frame received (streaming) ───────────────────────────────────────────
@@ -1107,6 +1317,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   clearAnalysis(): void {
+    // Stop any in-flight analysis immediately
+    this.analyzing = false;
+
+    // Cancel 30-second timeout
+    if (this.asyncTimeoutHandle) { clearTimeout(this.asyncTimeoutHandle); this.asyncTimeoutHandle = undefined; }
+
+    // Abort SSE stream
+    this.sseAbortController?.abort();
+    this.sseAbortController = undefined;
+
+    // Disconnect STOMP (batch / Kafka)
+    this.stompClient?.deactivate();
+    this.stompClient = undefined;
+
+    // Clear all result state
     this.dashState$.clear();
     this.destroyAllCharts();
     this.allFrames           = [];
@@ -1124,6 +1349,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.errorReport         = null;
     this.frontendErrors      = [];
     this.xmlFilesUsed        = [];
+    this.asyncProgress       = 0;
+    this.asyncSessionId      = '';
+    this.liveTransport       = null;
+    this.cdr.detectChanges();
   }
 
   // ─── Auto-scroll ──────────────────────────────────────────────────────────

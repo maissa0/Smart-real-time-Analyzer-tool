@@ -2,6 +2,11 @@ package com.molka.smart_analyzer_backend.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.molka.smart_analyzer_backend.dto.UploadResponse;
+import com.molka.smart_analyzer_backend.entity.UploadRecord;
+import com.molka.smart_analyzer_backend.repository.UploadRepository;
+import com.molka.smart_analyzer_backend.storage.StorageService;
+import org.springframework.kafka.core.KafkaTemplate;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -24,8 +29,11 @@ import java.util.stream.Collectors;
 public class AnalysisService {
 
 	private static final Logger log = LoggerFactory.getLogger(AnalysisService.class);
-	private final ObjectMapper          objectMapper;
-	private final SimpMessagingTemplate messaging;
+	private final ObjectMapper                  objectMapper;
+	private final SimpMessagingTemplate         messaging;
+	private final StorageService                storageService;
+	private final UploadRepository              uploadRepository;
+	private final KafkaTemplate<String, Object> kafkaTemplate;
 
 	// ── Warm worker state ──────────────────────────────────────────────────────
 	// One Python process kept alive for the lifetime of the Spring Boot app.
@@ -41,9 +49,22 @@ public class AnalysisService {
 	private String              pythonCmd;
 	private List<String>        workerXmlNames = new ArrayList<>();
 
-	public AnalysisService(ObjectMapper objectMapper, SimpMessagingTemplate messaging) {
-		this.objectMapper = objectMapper;
-		this.messaging    = messaging;
+	// ── Kafka worker state ────────────────────────────────────────────────────
+	// A separate long-running Python process (parser.py --kafka-worker) that
+	// consumes jobs from 'file-processing-jobs', decodes each CAN log file, and
+	// publishes frames to 'can-frames-decoded' and events to 'log-file-events'.
+	// AsyncAnalysisConsumer then forwards those to Angular via WebSocket.
+
+	private Process kafkaWorkerProcess;
+
+	public AnalysisService(ObjectMapper objectMapper, SimpMessagingTemplate messaging,
+			StorageService storageService, UploadRepository uploadRepository,
+			KafkaTemplate<String, Object> kafkaTemplate) {
+		this.objectMapper     = objectMapper;
+		this.messaging        = messaging;
+		this.storageService   = storageService;
+		this.uploadRepository = uploadRepository;
+		this.kafkaTemplate    = kafkaTemplate;
 	}
 
 	// ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -58,7 +79,12 @@ public class AnalysisService {
 		try {
 			launchWorkerProcess();
 		} catch (Exception e) {
-			log.warn("Python worker failed to start ({}); will cold-start per request.", e.getMessage());
+			log.warn("Python warm worker failed to start ({}); will cold-start per request.", e.getMessage());
+		}
+		try {
+			launchKafkaWorkerProcess();
+		} catch (Exception e) {
+			log.warn("Python Kafka worker failed to start ({}); async/Kafka mode will not work.", e.getMessage());
 		}
 	}
 
@@ -66,7 +92,11 @@ public class AnalysisService {
 	public void stopWorker() {
 		if (workerProcess != null && workerProcess.isAlive()) {
 			workerProcess.destroyForcibly();
-			log.info("Python worker stopped.");
+			log.info("Python warm worker stopped.");
+		}
+		if (kafkaWorkerProcess != null && kafkaWorkerProcess.isAlive()) {
+			kafkaWorkerProcess.destroyForcibly();
+			log.info("Python Kafka worker stopped.");
 		}
 	}
 
@@ -134,13 +164,60 @@ public class AnalysisService {
 	/** Called under workerLock — restarts the process if it has died. */
 	private void ensureWorkerAlive() {
 		if (workerProcess != null && workerProcess.isAlive()) return;
-		log.warn("Python worker is not running — attempting restart…");
+		log.warn("Python warm worker is not running — attempting restart…");
 		workerReady = false;
 		try {
 			launchWorkerProcess();
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to restart Python worker: " + e.getMessage(), e);
+			throw new RuntimeException("Failed to restart Python warm worker: " + e.getMessage(), e);
 		}
+	}
+
+	/**
+	 * Launches the long-running Python Kafka worker (parser.py --kafka-worker).
+	 * It auto-discovers XML files from the python_parser/ directory, then loops
+	 * forever consuming from 'file-processing-jobs' and publishing results back
+	 * to 'can-frames-decoded' and 'log-file-events'.
+	 */
+	private void launchKafkaWorkerProcess() throws IOException {
+		Path scriptPath = resolveScriptPath();
+		List<String> cmd = new ArrayList<>();
+		cmd.add(pythonCmd);
+		cmd.add(scriptPath.toString());
+		cmd.add("--kafka-worker");
+		// No XML paths supplied — parser.py auto-discovers from its own directory
+
+		ProcessBuilder pb = new ProcessBuilder(cmd);
+		pb.redirectErrorStream(false);
+		pb.environment().put("PYTHONUNBUFFERED", "1");
+		// Run from python_parser/ so auto-discovery finds the XML files
+		pb.directory(resolvePythonParserDir().toFile());
+
+		kafkaWorkerProcess = pb.start();
+
+		// Drain stdout — log INFO so progress messages are visible
+		Thread stdoutDrain = new Thread(() -> {
+			try (BufferedReader r = new BufferedReader(
+					new InputStreamReader(kafkaWorkerProcess.getInputStream(), StandardCharsets.UTF_8))) {
+				String line;
+				while ((line = r.readLine()) != null) log.info("[kafka-worker] {}", line);
+			} catch (IOException ignored) {}
+		}, "kafka-worker-stdout");
+		stdoutDrain.setDaemon(true);
+		stdoutDrain.start();
+
+		// Drain stderr — log WARN
+		Thread stderrDrain = new Thread(() -> {
+			try (BufferedReader r = new BufferedReader(
+					new InputStreamReader(kafkaWorkerProcess.getErrorStream(), StandardCharsets.UTF_8))) {
+				String line;
+				while ((line = r.readLine()) != null) log.warn("[kafka-worker] {}", line);
+			} catch (IOException ignored) {}
+		}, "kafka-worker-stderr");
+		stderrDrain.setDaemon(true);
+		stderrDrain.start();
+
+		log.info("Python Kafka worker launched (pid={})", kafkaWorkerProcess.pid());
 	}
 
 	// ── BATCH MODE ────────────────────────────────────────────────────────────
@@ -148,7 +225,7 @@ public class AnalysisService {
 	// When sessionId is provided, frames are pushed via WebSocket at 60Hz and
 	// the HTTP response contains only metadata (no frames array).
 
-	public Map<String, Object> analyzeFiles(MultipartFile logFile, String sessionId) {
+	public Map<String, Object> analyzeFiles(MultipartFile logFile, String sessionId, String username) {
 		Path sessionDir = null;
 		try {
 			sessionDir = Files.createTempDirectory("can_batch_");
@@ -157,6 +234,12 @@ public class AnalysisService {
 			Map<String, Object> result = workerReady
 					? analyzeFilesViaWorker(savedLog)
 					: analyzeFilesColdStart(savedLog);
+
+			// Persist the log file to storage and record the upload
+			if (username != null && !username.isBlank()) {
+				persistUpload(savedLog, logFile.getOriginalFilename(), username,
+						(Integer) result.getOrDefault("totalFrames", 0));
+			}
 
 			if (sessionId != null && !sessionId.isBlank()) {
 				// Push frames via WebSocket at 60Hz; strip them from HTTP response
@@ -179,6 +262,121 @@ public class AnalysisService {
 		}
 	}
 
+	// ── Upload persistence ────────────────────────────────────────────────────
+
+	private void persistUpload(Path logPath, String originalFilename,
+			String username, int frameCount) {
+		try {
+			String fn  = (originalFilename != null && !originalFilename.isBlank())
+					? Paths.get(originalFilename).getFileName().toString()
+					: logPath.getFileName().toString();
+			String key = "logs/" + username + "/" + System.currentTimeMillis() + "_" + fn;
+
+			String address;
+			try (InputStream in = Files.newInputStream(logPath)) {
+				address = storageService.store(in, Files.size(logPath), key, "application/octet-stream");
+			}
+
+			UploadRecord record = new UploadRecord();
+			record.setUsername(username);
+			record.setOriginalFilename(fn);
+			record.setStorageAddress(address);
+			record.setFrameCount(frameCount);
+			uploadRepository.save(record);
+			log.info("Saved upload record for '{}': key={}", username, address);
+
+		} catch (Exception e) {
+			// Do not fail the analysis if storage is unavailable
+			log.warn("Failed to persist upload for user '{}': {}", username, e.getMessage());
+		}
+	}
+
+	// ── Upload list & re-analysis ─────────────────────────────────────────────
+
+	public List<UploadResponse> getUploads(String username) {
+		return uploadRepository.findByUsernameOrderByUploadedAtDesc(username)
+				.stream()
+				.map(r -> new UploadResponse(r.getId(), r.getOriginalFilename(),
+						r.getUploadedAt(), r.getFrameCount()))
+				.collect(Collectors.toList());
+	}
+
+	// ── ASYNC MODE (Kafka) ────────────────────────────────────────────────────
+	// Saves the log file to disk and publishes a job to 'file-processing-jobs'.
+	// The Python kafka worker picks it up, processes the file, and publishes
+	// decoded frames back to 'can-frames-decoded' (keyed by sessionId).
+	// AsyncAnalysisConsumer forwards those frames to WebSocket topic
+	// /topic/async-frames/{sessionId} which the Angular client subscribes to.
+
+	public Map<String, Object> submitAsyncJob(MultipartFile logFile, String sessionId) throws Exception {
+		// Ensure Kafka worker is alive before submitting — restart if it crashed
+		if (pythonCmd != null && (kafkaWorkerProcess == null || !kafkaWorkerProcess.isAlive())) {
+			log.warn("Kafka worker not running — restarting before submitting job {}", sessionId);
+			try {
+				launchKafkaWorkerProcess();
+			} catch (Exception e) {
+				log.error("Failed to restart Kafka worker: {}", e.getMessage());
+			}
+		}
+
+		Path asyncJobsDir = resolveAsyncJobsDir();
+		Path jobDir = asyncJobsDir.resolve(sessionId);
+		Files.createDirectories(jobDir);
+
+		String original = logFile.getOriginalFilename();
+		String filename  = (original == null || original.isBlank())
+				? "upload.bin"
+				: Paths.get(original).getFileName().toString();
+		Path savedFile = jobDir.resolve(filename);
+		try (InputStream in = logFile.getInputStream()) {
+			Files.copy(in, savedFile, StandardCopyOption.REPLACE_EXISTING);
+		}
+
+		List<Path> xmlPaths    = discoverXmlFiles();
+		List<String> xmlNames  = xmlPaths.stream()
+				.map(p -> p.getFileName().toString())
+				.collect(Collectors.toList());
+
+		Map<String, Object> job = new HashMap<>();
+		job.put("sessionId",       sessionId);
+		job.put("filePath",        savedFile.toString());
+		job.put("sourceFilename",  filename);
+
+		kafkaTemplate.send("file-processing-jobs", sessionId, job);
+		log.info("Submitted async job: sessionId={}, file={}", sessionId, savedFile);
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("sessionId",    sessionId);
+		response.put("xmlFilesUsed", xmlNames);
+		return response;
+	}
+
+	private Path resolveAsyncJobsDir() {
+		return resolvePythonParserDir().getParent()
+				.resolve("uploads").resolve("async-jobs").toAbsolutePath().normalize();
+	}
+
+	public Map<String, Object> reanalyze(Long uploadId, String username) throws Exception {
+		UploadRecord record = uploadRepository.findById(uploadId)
+				.orElseThrow(() -> new IllegalArgumentException("Upload not found: " + uploadId));
+		if (!record.getUsername().equals(username)) {
+			throw new IllegalArgumentException("Access denied.");
+		}
+
+		Path sessionDir = Files.createTempDirectory("can_reanalyze_");
+		try {
+			Path tempLog = sessionDir.resolve(record.getOriginalFilename());
+			try (InputStream is = storageService.load(record.getStorageAddress())) {
+				Files.copy(is, tempLog, StandardCopyOption.REPLACE_EXISTING);
+			}
+			return workerReady
+					? analyzeFilesViaWorker(tempLog)
+					: analyzeFilesColdStart(tempLog);
+		} finally {
+			deleteDirectory(sessionDir);
+		}
+	}
+
 	// ── 60Hz WebSocket frame delivery ─────────────────────────────────────────
 	// Pushes decoded frames to /topic/batch-frames/{sessionId} in batches of 50,
 	// one batch every 16ms (~60Hz).  Runs on a daemon background thread so the
@@ -191,6 +389,19 @@ public class AnalysisService {
 			try {
 				final int BATCH_SIZE = 50;
 				int total = frames.size();
+
+				// Always send at least one message so Angular receives done=true
+				// even when the file contains no parseable frames.
+				if (total == 0) {
+					Map<String, Object> msg = new HashMap<>();
+					msg.put("sessionId",   sessionId);
+					msg.put("frames",      List.of());
+					msg.put("done",        true);
+					msg.put("errorReport", errorReport);
+					messaging.convertAndSend("/topic/batch-frames/" + sessionId, msg);
+					log.info("60Hz push complete: 0 frames → session {}", sessionId);
+					return;
+				}
 
 				for (int i = 0; i < total; i += BATCH_SIZE) {
 					int end  = Math.min(i + BATCH_SIZE, total);

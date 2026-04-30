@@ -324,6 +324,375 @@
           </div>
         </div>
 
+        <!-- ── My uploads ── -->
+        <div class="acc-card">
+          <div class="acc-header">
+            <div class="acc-header-left">
+              <span class="acc-icon acc-icon-uploads">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </span>
+              <span class="acc-title">My uploads</span>
+            </div>
+          </div>
+
+          <div class="acc-body acc-body-open">
+            <div class="acc-body-inner">
+
+              <div class="uploads-loading" *ngIf="uploadsLoading">
+                <span class="btn-spin"></span> Loading…
+              </div>
+
+              <div class="uploads-error" *ngIf="uploadsError">{{ uploadsError }}</div>
+
+              <div class="uploads-empty" *ngIf="!uploadsLoading && !uploadsError && uploads.length === 0">
+                No log files uploaded yet. Analyze a file from the Dashboard to record it here.
+              </div>
+
+              <div class="uploads-table-wrap" *ngIf="uploads.length > 0">
+                <table class="uploads-table">
+                  <thead>
+                    <tr>
+                      <th>File</th>
+                      <th>Date</th>
+                      <th>Frames</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let upload of uploads">
+                      <td class="up-filename" [title]="upload.originalFilename">{{ upload.originalFilename }}</td>
+                      <td class="up-date">{{ formatUploadDate(upload.uploadedAt) }}</td>
+                      <td class="up-frames">{{ upload.frameCount !== null ? upload.frameCount : '—' }}</td>
+                      <td class="up-action">
+                        <button class="reanalyze-btn"
+                          [disabled]="reanalyzing[upload.id]"
+                          (click)="reanalyze(upload)"
+                          type="button">
+                          <span *ngIf="!reanalyzing[upload.id]">Re-analyze</span>
+                          <span *ngIf="reanalyzing[upload.id]" class="btn-spin-wrap">
+                            <span class="btn-spin"></span>
+                          </span>
+                        </button>
+                        <span class="reanalysis-err" *ngIf="reanalysisError[upload.id]">
+                          {{ reanalysisError[upload.id] }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Two-factor authentication ── -->
+        <div class="acc-card">
+          <div class="acc-header acc-header-toggle" (click)="toggleMfaSection()">
+            <div class="acc-header-left">
+              <span class="acc-icon acc-icon-mfa">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                  <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                </svg>
+              </span>
+              <span class="acc-title">Two-factor authentication</span>
+            </div>
+            <div class="pw-header-right">
+              <span class="mfa-status-badge" [class.mfa-badge-on]="me?.mfaEnabled" [class.mfa-badge-off]="!me?.mfaEnabled">
+                {{ me?.mfaEnabled ? 'Enabled' : 'Disabled' }}
+              </span>
+              <span class="inline-success" *ngIf="mfaSuccess">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="3"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Updated
+              </span>
+              <svg class="chevron" [class.chevron-open]="mfaSectionOpen"
+                xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <div class="acc-body" [class.acc-body-open]="mfaSectionOpen">
+            <div class="acc-body-inner">
+
+              <!-- IDLE state -->
+              <ng-container *ngIf="mfaStep === 'idle'">
+                <p class="mfa-desc" *ngIf="!me?.mfaEnabled">
+                  Protect your account with an authenticator app (Google Authenticator, Authy, etc.).
+                </p>
+                <p class="mfa-desc" *ngIf="me?.mfaEnabled">
+                  Two-factor authentication is active. Your account is protected.
+                </p>
+                <span class="mfa-error" *ngIf="mfaError">{{ mfaError }}</span>
+                <div class="action-row">
+                  <button class="save-btn" *ngIf="!me?.mfaEnabled" (click)="startMfaEnable()" type="button">
+                    Enable 2FA
+                  </button>
+                  <button class="save-btn mfa-disable-btn" *ngIf="me?.mfaEnabled" (click)="startMfaDisable()" type="button">
+                    Disable 2FA
+                  </button>
+                </div>
+              </ng-container>
+
+              <!-- ENABLING state: show QR + confirm code -->
+              <ng-container *ngIf="mfaStep === 'enabling'">
+                <p class="mfa-desc">
+                  Scan the QR code with your authenticator app, then enter the 6-digit code to confirm.
+                </p>
+                <div class="mfa-qr-wrap" *ngIf="mfaQrDataUrl">
+                  <img [src]="mfaQrDataUrl" alt="QR code" class="mfa-qr-img">
+                </div>
+                <div class="mfa-qr-loading" *ngIf="!mfaQrDataUrl">
+                  <span class="btn-spin"></span> Loading…
+                </div>
+                <div class="mfa-secret-row" *ngIf="mfaSetupSecret">
+                  <span class="field-label">Manual entry key</span>
+                  <code class="mfa-secret">{{ mfaSetupSecret }}</code>
+                </div>
+                <div class="field-group" style="margin-top:1rem">
+                  <label class="field-label">Verification code</label>
+                  <input class="field-input" type="text" inputmode="numeric" maxlength="6"
+                    [(ngModel)]="mfaCode" placeholder="6-digit code">
+                </div>
+                <span class="mfa-error" *ngIf="mfaError">{{ mfaError }}</span>
+                <div class="action-row">
+                  <button class="save-btn" [disabled]="mfaSaving" (click)="confirmMfaEnable()" type="button">
+                    <span *ngIf="!mfaSaving">Confirm &amp; Enable</span>
+                    <span *ngIf="mfaSaving" class="btn-spin-wrap"><span class="btn-spin"></span>Saving…</span>
+                  </button>
+                  <button class="cancel-link" (click)="cancelMfa()" type="button">Cancel</button>
+                </div>
+              </ng-container>
+
+              <!-- DISABLING state: password + code -->
+              <ng-container *ngIf="mfaStep === 'disabling'">
+                <p class="mfa-desc">Enter your current password and authenticator code to disable 2FA.</p>
+                <div class="fields-grid">
+                  <div class="field-group">
+                    <label class="field-label">Current password</label>
+                    <input class="field-input" type="password" [(ngModel)]="mfaDisablePw"
+                      placeholder="Your password" autocomplete="current-password">
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Authenticator code</label>
+                    <input class="field-input" type="text" inputmode="numeric" maxlength="6"
+                      [(ngModel)]="mfaDisableCode" placeholder="6-digit code">
+                  </div>
+                </div>
+                <span class="mfa-error" *ngIf="mfaError">{{ mfaError }}</span>
+                <div class="action-row">
+                  <button class="save-btn mfa-disable-btn" [disabled]="mfaSaving" (click)="confirmMfaDisable()" type="button">
+                    <span *ngIf="!mfaSaving">Disable 2FA</span>
+                    <span *ngIf="mfaSaving" class="btn-spin-wrap"><span class="btn-spin"></span>Saving…</span>
+                  </button>
+                  <button class="cancel-link" (click)="cancelMfa()" type="button">Cancel</button>
+                </div>
+              </ng-container>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Activity log ── -->
+        <div class="acc-card">
+          <div class="acc-header acc-header-toggle" (click)="toggleAuditSection()">
+            <div class="acc-header-left">
+              <span class="acc-icon acc-icon-audit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+              </span>
+              <span class="acc-title">Activity log</span>
+            </div>
+            <div class="pw-header-right">
+              <svg class="chevron" [class.chevron-open]="auditSectionOpen"
+                xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <div class="acc-body" [class.acc-body-open]="auditSectionOpen">
+            <div class="acc-body-inner">
+
+              <!-- Admin tab switcher -->
+              <div class="audit-tabs" *ngIf="isAdmin">
+                <button class="audit-tab-btn" [class.audit-tab-active]="auditTab === 'mine'"
+                  (click)="switchAuditTab('mine')" type="button">My activity</button>
+                <button class="audit-tab-btn" [class.audit-tab-active]="auditTab === 'all'"
+                  (click)="switchAuditTab('all')" type="button">All users</button>
+              </div>
+
+              <div *ngIf="auditLoading" class="sessions-loading">
+                <span class="btn-spin"></span> Loading…
+              </div>
+
+              <p *ngIf="auditError" class="mfa-error">{{ auditError }}</p>
+
+              <ng-container *ngIf="!auditLoading && !auditError">
+                <div class="sessions-empty" *ngIf="auditLogs.length === 0">
+                  No activity recorded yet.
+                </div>
+
+                <div class="audit-table-wrap" *ngIf="auditLogs.length > 0">
+                  <table class="audit-table">
+                    <thead>
+                      <tr>
+                        <th>When</th>
+                        <th>Action</th>
+                        <th *ngIf="auditTab === 'all'">User</th>
+                        <th>Resource</th>
+                        <th>IP</th>
+                        <th>Device</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let e of auditLogs">
+                        <td class="audit-ts" title="{{ e.timestamp }}">{{ formatRelative(e.timestamp) }}</td>
+                        <td>
+                          <span class="audit-action-badge" [ngClass]="auditActionColor(e.action)">
+                            {{ auditActionLabel(e.action) }}
+                          </span>
+                        </td>
+                        <td *ngIf="auditTab === 'all'" class="audit-user">{{ e.username || '—' }}</td>
+                        <td class="audit-resource">
+                          <span *ngIf="e.resourceType">{{ e.resourceType }}</span>
+                          <span *ngIf="e.resourceId" class="audit-resource-id"> #{{ e.resourceId }}</span>
+                          <span *ngIf="!e.resourceType">—</span>
+                        </td>
+                        <td class="session-ip">{{ e.ipAddress || '—' }}</td>
+                        <td class="audit-device">{{ parseDevice(e.userAgent ?? '') }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="audit-pagination" *ngIf="auditTotalPages > 1">
+                  <button class="audit-page-btn" [disabled]="auditPage === 0" (click)="auditPrev()" type="button">
+                    ← Prev
+                  </button>
+                  <span class="audit-page-info">Page {{ auditPage + 1 }} of {{ auditTotalPages }}</span>
+                  <button class="audit-page-btn" [disabled]="auditPage >= auditTotalPages - 1" (click)="auditNext()" type="button">
+                    Next →
+                  </button>
+                </div>
+
+              </ng-container>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Active sessions ── -->
+        <div class="acc-card">
+          <div class="acc-header acc-header-toggle" (click)="toggleSessionsSection()">
+            <div class="acc-header-left">
+              <span class="acc-icon acc-icon-sessions">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+              </span>
+              <span class="acc-title">Active sessions</span>
+            </div>
+            <div class="pw-header-right">
+              <span class="sessions-count-badge" *ngIf="sessions.length > 0">{{ sessions.length }}</span>
+              <svg class="chevron" [class.chevron-open]="sessionsSectionOpen"
+                xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <div class="acc-body" [class.acc-body-open]="sessionsSectionOpen">
+            <div class="acc-body-inner">
+
+              <div *ngIf="sessionsLoading" class="sessions-loading">
+                <span class="btn-spin"></span> Loading sessions…
+              </div>
+
+              <p *ngIf="sessionsError" class="mfa-error">{{ sessionsError }}</p>
+
+              <ng-container *ngIf="!sessionsLoading && !sessionsError">
+                <div class="sessions-toolbar">
+                  <p class="mfa-desc" style="margin:0">
+                    These are all devices currently signed into your account.
+                  </p>
+                  <button class="revoke-all-btn" [disabled]="revokingOthers" (click)="revokeAllOtherSessions()" type="button">
+                    <span *ngIf="!revokingOthers">Revoke all others</span>
+                    <span *ngIf="revokingOthers" class="btn-spin-wrap"><span class="btn-spin"></span>Revoking…</span>
+                  </button>
+                </div>
+
+                <div class="sessions-empty" *ngIf="sessions.length === 0">
+                  No active sessions found.
+                </div>
+
+                <div class="sessions-table-wrap" *ngIf="sessions.length > 0">
+                  <table class="sessions-table">
+                    <thead>
+                      <tr>
+                        <th>Device / Browser</th>
+                        <th>IP Address</th>
+                        <th>Last Active</th>
+                        <th>Signed In</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let s of sessions" [class.session-current]="s.isCurrent">
+                        <td class="session-device">
+                          <span class="session-current-badge" *ngIf="s.isCurrent">Current</span>
+                          {{ parseDevice(s.userAgent) }}
+                        </td>
+                        <td class="session-ip">{{ s.ipAddress || '—' }}</td>
+                        <td class="session-ts">{{ formatRelative(s.lastActiveAt) }}</td>
+                        <td class="session-ts">{{ formatDate(s.createdAt) }}</td>
+                        <td class="session-action">
+                          <button *ngIf="!s.isCurrent"
+                            class="revoke-btn"
+                            [disabled]="revokingSession[s.id]"
+                            (click)="revokeSession(s)"
+                            type="button">
+                            <span *ngIf="!revokingSession[s.id]">Revoke</span>
+                            <span *ngIf="revokingSession[s.id]" class="btn-spin-wrap"><span class="btn-spin"></span></span>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </ng-container>
+
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </main>
