@@ -1,0 +1,463 @@
+<?xml version="1.0"?>
+	<Bus Name="Car_CAN">
+		<massage name="Car_Status" id="0x2FC">
+			<sender>raspberry Master</sender>
+			<reciver>raspberry slave</reciver>
+			<Cyclic>
+				<status>true</status>
+				<cycle>5000</cycle> 
+			</Cyclic> 
+			<Event>
+				<status>true</status>
+				<Repetion>3</Repetion>
+				<Timing>160</Timing>
+			</Event> 
+			<Byte>
+				<Num>0</Num>
+				<Signal Bit="xxxx1111">
+				<signal_name>door_latche_status</signal_name> 
+				<values>
+					<value>1</value>
+					<name>Unlocked</name>
+				</values>
+				<values>
+					<value>2</value>
+					<name>locked</name>
+				</values>
+				<values>
+					<value>3</value>
+					<name>Selective_unlock</name>
+				</values>
+				<values>
+					<value>4</value>
+					<name>Secured</name>
+				</values>
+				<values>
+					<value>6</value>
+					<name>Unsecured</name>
+				</values>
+				</Signal>
+				<Signal Bit="xx11xxxx">
+				<signal_name>selective_unlock_statuss</signal_name> 
+				<values>
+					<value>1</value>
+					<name>on</name>
+				</values>
+				<values>
+					<value>0</value>
+					<name>off</name>
+				</values>
+				
+				</Signal>
+			</Byte>
+			<Byte>
+				<Num>1</Num>
+				<Signal Bit="xxxxxx11">
+				<signal_name>Drd_Status</signal_name> 
+					<values>
+						<value>0</value>
+						<name>Closed</name>
+						</values>
+						<values>
+						<value>1</value>
+						<name>opened</name>
+					</values>
+					</Signal>
+				<Signal Bit="xxxx11xx">
+				<signal_name>PSD_Status</signal_name> 
+				<values>
+					<value>0</value>
+					<name>Closed</name>
+					</values>
+					<values>
+					<value>1</value>
+					<name>opened</name>
+				</values>
+				</Signal>
+				<Signal Bit="xx11xxxx">
+				<signal_name>DRDR_Status</signal_name> 
+				<values>
+					<value>0</value>
+					<name>Closed</name>
+					</values>
+					<values>
+					<value>1</value>
+					<name>opened</name>
+				</values>
+				</Signal>
+				<Signal Bit="11xxxxxx">
+				<signal_name>Psdr_Status</signal_name> 
+				<values>
+					<value>0</value>
+					<name>Closed</name>
+					</values>
+					<values>
+					<value>1</value>
+					<name>opened</name>
+				</values>
+				</Signal>
+			</Byte>
+			<Byte>
+				<Num>2</Num>
+				<Signal Bit="xxxxxx11">
+				<signal_name>Bootlid_Status</signal_name> 
+				<values>
+					<value>0</value>
+					<name>Closed</name>
+					</values>
+					<values>
+					<value>1</value>
+					<name>opened</name>
+				</values>
+				</Signal>
+				<Signal Bit="11xxxxxx">
+				<signal_name>Rocker_switch_Status</signal_name> 
+				<values>
+					<value>0</value>
+					<name>not_pressed</name>
+					</values>
+					<values>
+					<value>1</value>
+					<name>Unlock</name>
+					</values>
+					<values>
+					<value>2</value>
+					<name>Lock</name>
+				</values>
+				</Signal>
+			</Byte>
+		</massage>
+		<massage name="Key_Button_Status" id="0x23A">
+			<sender>raspberry Master</sender>
+			<reciver>raspberry slave</reciver>
+			<Cyclic>
+				<status>true</status>
+				<cycle>5000</cycle> 
+			</Cyclic> 
+			<Event>
+				<status>true</status>
+				<Repetion>3</Repetion> 
+				<Timing>160</Timing>
+			</Event>
+			<Byte>
+				<Num>2</Num>
+				<Signal Bit="xxxxxx11">
+				<signal_name>Unlock_Button_status</signal_name> 
+				<values>
+					<value>1</value>
+					<name>pressed</name>
+					</values>
+					<values>
+					<value>0</value>
+					<name>Not_pressed</name>
+				</values>
+				<values>
+					<value>3</value>
+					<name>Invalid</name>
+					</values>
+					</Signal>
+					<Signal Bit="xxxx11xx">
+					<signal_name>lock_Button_status</signal_name> 
+					<values>
+					<value>1</value>
+					<name>pressed</name>
+				</values>
+				<values>
+					<value>0</value>
+					<name>Not_pressed</name>
+					</values>
+					<values>
+					<value>3</value>
+					<name>Invalid</name>
+				</values>
+				</Signal>
+				<Signal Bit="xx11xxxx">
+				<signal_name>3rd_Button_status</signal_name> 
+				<values>
+					<value>1</value>
+					<name>pressed</name>
+				</values>
+				<values>
+					<value>0</value>
+					<name>Not_pressed</name>
+				</values>
+				<values>
+					<value>3</value>
+					<name>Invalid</name>
+				</values>
+				</Signal>
+			</Byte>
+		</massage>
+		<massage name="Contact_Status" id="0x2CA">
+   <sender> raspberry slave </sender>
+   <reciver> raspberry Master </reciver>
+   <Cyclic>
+		<status> False </status>
+		
+   </Cyclic> 
+   <Event>
+		<status> False </status>
+		
+   </Event> 
+    <Byte>
+    	<Num>0</Num>
+	  
+	  <Signal Bit="xxxxxx11">
+	  		<signal_name>Drd_Status_Cont</signal_name> 
+					<values>
+						<value> 0 </value>
+						<name>Closed</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>opened</name>
+					</values>
+					</Signal> 
+	  <Signal Bit="xxxx11xx">
+	  		<signal_name>PSD_Status_Cont</signal_name>
+					<values>
+						<value> 0 </value>
+						<name>Closed</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>opened</name>
+					</values>
+					</Signal> 
+     <Signal Bit="xx11xxxx">
+     <signal_name>DRDR_Status_Cont</signal_name>
+					<values>
+						<value> 0 </value>
+						<name>Closed</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>opened</name>
+					</values>
+					</Signal> 
+					
+	  <Signal Bit="11xxxxxx">
+	  	<signal_name>Psdr_Status_Cont</signal_name>
+					<values>
+						<value> 0 </value>
+						<name>Closed</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>opened</name>
+					</values>
+					</Signal> 				
+	  </Byte>
+	  <Byte>
+    	<Num>1</Num>
+	  
+	  <Signal Bit="xxxxxx11">
+	  		<signal_name>Bootlid_Status_Cont</signal_name> 
+					<values>
+						<value> 0 </value>
+						<name>Closed</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>opened</name>
+					</values>
+					</Signal>
+		 </Byte>
+	 </massage>
+	 <massage name="Latch_Action" id="0x2AF">
+   <sender> raspberry Master </sender>
+   <reciver> raspberry slave </reciver>
+   <Cyclic>
+		<status> False </status>
+		
+   </Cyclic> 
+   <Event>
+		<status> False </status>
+		
+   </Event> 
+    <Byte>
+    	<Num>0</Num>
+	  
+	  <Signal Bit="xxxxxxx1">
+	  		<signal_name>Drd_Secure_latch_action</signal_name> 
+					<values>
+						<value> 0 </value>
+						<name>Not_Actuated</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>Actuated</name>
+					</values>
+					</Signal> 
+	  <Signal Bit="xxxxxx1x">
+	  		<signal_name>Drdr_Secure_latch_action</signal_name>
+					<values>
+						<value> 0 </value>
+						<name>Not_Actuated</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>Actuated</name>
+					</values>
+					</Signal> 
+     <Signal Bit="xxxxx1xx">
+     <signal_name>Psd_Secure_latch_action</signal_name>
+					<values>
+						<value> 0 </value>
+						<name>Not_Actuated</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>Actuated</name>
+					</values>
+					</Signal> 
+					
+	  <Signal Bit="xxxx1xxx">
+	  	<signal_name>Psdr_Secure_latch_action</signal_name>
+					<values>
+						<value> 0 </value>
+						<name>Not_Actuated</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>Actuated</name>
+					</values>
+					</Signal> 	
+	<Signal Bit="xxx1xxxx">
+	  		<signal_name>Drd_Lock_latch_action</signal_name> 
+					<values>
+						<value> 0 </value>
+						<name>Not_Actuated</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>Actuated</name>
+					</values>
+					</Signal> 
+	  <Signal Bit="xx1xxxxx">
+	  		<signal_name>Drdr_Lock_latch_action</signal_name>
+					<values>
+						<value> 0 </value>
+						<name>Not_Actuated</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>Actuated</name>
+					</values>
+					</Signal> 
+     <Signal Bit="x1xxxxxx">
+     <signal_name>Psd_Lock_latch_action</signal_name>
+					<values>
+						<value> 0 </value>
+						<name>Not_Actuated</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>Actuated</name>
+					</values>
+					</Signal> 
+					
+	  <Signal Bit="1xxxxxxx">
+	  	<signal_name>Psdr_Lock_latch_action</signal_name>
+					<values>
+						<value> 0 </value>
+						<name>Not_Actuated</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>Actuated</name>
+					</values>
+					</Signal> 							
+	  </Byte>
+	  <Byte>
+	  	<Num>1</Num>
+	  	 <Signal Bit="xxxxxxx1">
+	  		<signal_name>Drd_Unlock_latch_action</signal_name> 
+					<values>
+						<value> 0 </value>
+						<name>Not_Actuated</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>Actuated</name>
+					</values>
+					</Signal> 
+	  <Signal Bit="xxxxxx1x">
+	  		<signal_name>Drdr_Unlock_latch_action</signal_name>
+					<values>
+						<value> 0 </value>
+						<name>Not_Actuated</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>Actuated</name>
+					</values>
+					</Signal> 
+     <Signal Bit="xxxxx1xx">
+     <signal_name>Psd_Unlock_latch_action</signal_name>
+					<values>
+						<value> 0 </value>
+						<name>Not_Actuated</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>Actuated</name>
+					</values>
+					</Signal> 
+					
+	  <Signal Bit="xxxx1xxx">
+	  	<signal_name>Psdr_Unlock_latch_action</signal_name>
+					<values>
+						<value> 0 </value>
+						<name>Not_Actuated</name>
+						</values>
+						<values>
+						<value> 1 </value>
+						<name>Actuated</name>
+					</values>
+					</Signal> 				
+	  </Byte>
+	 </massage>
+	 <massage name="Door_selective_unlock" id="0xFFF">
+   <sender> raspberry slave </sender>
+   <reciver> raspberry Master </reciver>
+   <Cyclic>
+		<status> False </status>
+		
+   </Cyclic> 
+   <Event>
+		<status> False </status>
+		
+   </Event> 
+    <Byte>
+    	<Num>0</Num>
+	  
+	  <Signal Bit="xxxxxx11">
+	  		<signal_name>selective_unlock_action</signal_name> 
+					<values>
+						<value> 1 </value>
+						<name>on</name>
+						</values>
+						<values>
+						<value> 0 </value>
+						<name>off</name>
+					</values>
+					</Signal> 
+		<Signal Bit="xx1111xx">
+				<signal_name>Roc_Switch</signal_name> 
+				<values>
+					<value>2</value>
+					<name>Lock button</name>
+					</values>
+					<values>
+					<value>1</value>
+					<name>Unlock button</name>
+					</values>
+					<values>
+					<value>0</value>
+					<name>not_pressed</name>
+				</values>
+				</Signal>
+	</Byte>
+	 </massage>
+	</Bus>

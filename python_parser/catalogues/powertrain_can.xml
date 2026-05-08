@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bus Name="Powertrain_CAN">
+
+    <massage id="0x100" name="Engine_Status">
+        <Byte Num="0">
+            <Signal Bit="11111111">
+                <signal_name>Engine_RPM_High</signal_name>
+                <values>
+                    <value>0</value><name>Idle</name>
+                    <value>1</value><name>Low</name>
+                    <value>2</value><name>Medium</name>
+                    <value>3</value><name>High</name>
+                    <value>4</value><name>Redline</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="00001111">
+                <signal_name>Engine_RPM_Low</signal_name>
+                <values>
+                    <value>0</value><name>Normal</name>
+                    <value>1</value><name>Elevated</name>
+                    <value>2</value><name>Critical</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Engine_Load</signal_name>
+                <values>
+                    <value>0</value><name>No_Load</name>
+                    <value>1</value><name>Light</name>
+                    <value>2</value><name>Moderate</name>
+                    <value>3</value><name>Heavy</name>
+                    <value>4</value><name>Max</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="2">
+            <Signal Bit="00001111">
+                <signal_name>Engine_Temp</signal_name>
+                <values>
+                    <value>0</value><name>Cold</name>
+                    <value>1</value><name>Warming</name>
+                    <value>2</value><name>Normal</name>
+                    <value>3</value><name>Hot</name>
+                    <value>4</value><name>Overheat</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Engine_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Cranking</name>
+                    <value>2</value><name>Running</name>
+                    <value>3</value><name>Stall</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <massage id="0x101" name="Vehicle_Speed">
+        <Byte Num="0">
+            <Signal Bit="11111111">
+                <signal_name>Speed_High</signal_name>
+                <values>
+                    <value>0</value><name>Stationary</name>
+                    <value>1</value><name>Slow</name>
+                    <value>2</value><name>City</name>
+                    <value>3</value><name>Highway</name>
+                    <value>4</value><name>Fast</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="00001111">
+                <signal_name>Speed_Low</signal_name>
+                <values>
+                    <value>0</value><name>Normal</name>
+                    <value>1</value><name>Elevated</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Speed_Validity</signal_name>
+                <values>
+                    <value>0</value><name>Invalid</name>
+                    <value>1</value><name>Valid</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="2">
+            <Signal Bit="00001111">
+                <signal_name>Cruise_Control_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Standby</name>
+                    <value>2</value><name>Active</name>
+                    <value>3</value><name>Override</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Speed_Limiter_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Active</name>
+                    <value>2</value><name>Override</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <massage id="0x102" name="Steering_Status">
+        <Byte Num="0">
+            <Signal Bit="11111111">
+                <signal_name>SteeringAngle_High</signal_name>
+                <values>
+                    <value>0</value><name>Center</name>
+                    <value>1</value><name>Slight_Left</name>
+                    <value>2</value><name>Hard_Left</name>
+                    <value>3</value><name>Slight_Right</name>
+                    <value>4</value><name>Hard_Right</name>
+                    <value>5</value><name>Full_Lock_Left</name>
+                    <value>6</value><name>Full_Lock_Right</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="00001111">
+                <signal_name>SteeringAngle_Low</signal_name>
+                <values>
+                    <value>0</value><name>Normal</name>
+                    <value>1</value><name>Elevated</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Steering_Torque</signal_name>
+                <values>
+                    <value>0</value><name>None</name>
+                    <value>1</value><name>Light</name>
+                    <value>2</value><name>Moderate</name>
+                    <value>3</value><name>Heavy</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="2">
+            <Signal Bit="00001111">
+                <signal_name>EPS_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Standby</name>
+                    <value>2</value><name>Active</name>
+                    <value>3</value><name>Fault</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Steering_Validity</signal_name>
+                <values>
+                    <value>0</value><name>Invalid</name>
+                    <value>1</value><name>Valid</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <massage id="0x103" name="Transmission_Status">
+        <Byte Num="0">
+            <Signal Bit="00001111">
+                <signal_name>Gear_Position</signal_name>
+                <values>
+                    <value>0</value><name>Park</name>
+                    <value>1</value><name>Reverse</name>
+                    <value>2</value><name>Neutral</name>
+                    <value>3</value><name>Drive</name>
+                    <value>4</value><name>Sport</name>
+                    <value>5</value><name>Manual</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Gear_Number</signal_name>
+                <values>
+                    <value>0</value><name>N/A</name>
+                    <value>1</value><name>1st</name>
+                    <value>2</value><name>2nd</name>
+                    <value>3</value><name>3rd</name>
+                    <value>4</value><name>4th</name>
+                    <value>5</value><name>5th</name>
+                    <value>6</value><name>6th</name>
+                    <value>7</value><name>7th</name>
+                    <value>8</value><name>8th</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="00001111">
+                <signal_name>Transmission_Temp</signal_name>
+                <values>
+                    <value>0</value><name>Cold</name>
+                    <value>1</value><name>Normal</name>
+                    <value>2</value><name>Hot</name>
+                    <value>3</value><name>Overheat</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Transmission_Mode</signal_name>
+                <values>
+                    <value>0</value><name>Normal</name>
+                    <value>1</value><name>Sport</name>
+                    <value>2</value><name>Eco</name>
+                    <value>3</value><name>Winter</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <massage id="0x104" name="Brake_Status">
+        <Byte Num="0">
+            <Signal Bit="00001111">
+                <signal_name>Brake_Pressure</signal_name>
+                <values>
+                    <value>0</value><name>None</name>
+                    <value>1</value><name>Light</name>
+                    <value>2</value><name>Moderate</name>
+                    <value>3</value><name>Heavy</name>
+                    <value>4</value><name>Emergency</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>ABS_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Active</name>
+                    <value>2</value><name>Fault</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="00001111">
+                <signal_name>ESP_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Standby</name>
+                    <value>2</value><name>Active</name>
+                    <value>3</value><name>Fault</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Brake_Validity</signal_name>
+                <values>
+                    <value>0</value><name>Invalid</name>
+                    <value>1</value><name>Valid</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <massage id="0x105" name="Fuel_Status">
+        <Byte Num="0">
+            <Signal Bit="00001111">
+                <signal_name>Fuel_Level</signal_name>
+                <values>
+                    <value>0</value><name>Empty</name>
+                    <value>1</value><name>Reserve</name>
+                    <value>2</value><name>Low</name>
+                    <value>3</value><name>Quarter</name>
+                    <value>4</value><name>Half</name>
+                    <value>5</value><name>ThreeQuarter</name>
+                    <value>6</value><name>Full</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Fuel_Consumption_Rate</signal_name>
+                <values>
+                    <value>0</value><name>Idle</name>
+                    <value>1</value><name>Low</name>
+                    <value>2</value><name>Normal</name>
+                    <value>3</value><name>High</name>
+                    <value>4</value><name>Max</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+</Bus>

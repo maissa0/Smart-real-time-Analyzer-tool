@@ -1,0 +1,41 @@
+<div class="rounded-lg border border-able-border bg-white p-6 shadow-able-card">
+  <h2 class="mb-4 text-lg font-semibold text-gray-900">Active Sessions</h2>
+  <p class="mb-6 text-sm text-gray-600">
+    Manage your active sessions. Revoke any session you don't recognize.
+  </p>
+
+  @if (isLoading()) {
+    <div class="space-y-4">
+      @for (i of [1,2,3]; track i) {
+        <div class="h-20 animate-pulse rounded-lg bg-gray-100"></div>
+      }
+    </div>
+  } @else {
+    <div class="space-y-4">
+      @for (session of sessions(); track session.id) {
+        <div class="flex items-center justify-between rounded-lg border border-gray-200 p-4">
+          <div class="flex-1">
+            <p class="font-medium text-gray-900">{{ session.device }}</p>
+            <p class="mt-1 text-sm text-gray-500">
+              IP: {{ session.ipAddress ?? '-' }} · Last active: {{ session.lastActive | date:'medium' }}
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="revokeSession(session)"
+            [disabled]="revokingId() === session.id"
+            class="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+          >
+            @if (revokingId() === session.id) {
+              Revoking...
+            } @else {
+              Revoke
+            }
+          </button>
+        </div>
+      } @empty {
+        <p class="py-8 text-center text-gray-500">No active sessions</p>
+      }
+    </div>
+  }
+</div>

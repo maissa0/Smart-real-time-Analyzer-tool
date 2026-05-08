@@ -1,0 +1,136 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam ActorBackgroundColor #FAEAEA
+skinparam ActorBorderColor #C8141E
+skinparam UsecaseBackgroundColor #F5F5F5
+skinparam UsecaseBorderColor #C8141E
+skinparam UsecaseFontColor #000000
+skinparam ArrowColor #555555
+
+left to right direction
+title KPIT — Cas d'utilisation (réalité du dépôt : Angular + Spring Boot)
+
+actor "Visiteur" as GUEST
+actor "Utilisateur\n(connecté)" as USR
+actor "Administrateur" as ADM
+
+ADM -|> USR
+
+actor "Kafka" as KAFKA <<bus>>
+actor "MySQL" as MYSQL <<base>>
+actor "InfluxDB" as INFLUX <<séries temporelles>>
+actor "SMTP" as SMTP <<email>>
+actor "Pipeline Python CAN\n(simulateur, décodeur, import fichier)" as PY <<processus>>
+
+rectangle "Plateforme KPIT\n(Angular + API)" {
+
+  package "Accès sans session" {
+    usecase "S'inscrire" as UC_REG
+    usecase "Se connecter" as UC_LOGIN
+    usecase "Réinitialiser le mot de passe\n(email OTP)" as UC_RESET
+    usecase "Valider MFA après connexion" as UC_MFA_LOGIN
+  }
+
+  package "Compte et profil" {
+    usecase "Consulter et modifier\nson profil" as UC_PROF
+    usecase "Changer son mot de passe\n(en session)" as UC_PWD_SELF
+    usecase "Configurer MFA TOTP" as UC_MFA_SELF
+    usecase "Gérer son avatar" as UC_AVATAR
+    usecase "Consulter et révoquer\nses sessions JWT" as UC_SESS_JWT
+  }
+
+  package "CAN — temps réel" {
+    usecase "Surveiller la télémesure en direct\n(WebSocket)" as UC_LIVE
+    usecase "Contrôler le simulateur CAN\n(démarrer / arrêter)" as UC_SIM
+  }
+
+  package "CAN — journaux et persistance" {
+    usecase "Importer un fichier journal CAN\n(queue Kafka)" as UC_UP
+    usecase "Lister sessions et consulter trames\n(MySQL)" as UC_SESS_CAN
+    usecase "Supprimer une session CAN\n(MySQL + Influx)" as UC_DEL_CAN
+    usecase "Consulter défauts d'intégrité\net synthèse" as UC_INT
+  }
+
+  package "Replay et analyse temporelle" {
+    usecase "Lancer / arrêter relecture Influx\n(WebSocket)" as UC_PLAY
+    usecase "Consulter chronogrammes de signaux\n(Influx Flux)" as UC_TIMELINE
+  }
+
+  package "Administration RBAC et audit" {
+    usecase "Gérer les utilisateurs\n(liste, statut, mots de passe)" as UC_USERS
+    usecase "Modifier les permissions par rôle" as UC_ROLES_PERM
+    usecase "Consulter journaux d'audit" as UC_AUDIT
+    usecase "Test diagnostic envoi SMTP" as UC_MAIL_TEST
+  }
+}
+
+GUEST -- UC_REG
+GUEST -- UC_LOGIN
+GUEST -- UC_RESET
+
+UC_MFA_LOGIN .> UC_LOGIN : <<extend>>
+
+USR -- UC_PROF
+USR -- UC_PWD_SELF
+USR -- UC_MFA_SELF
+USR -- UC_AVATAR
+USR -- UC_SESS_JWT
+USR -- UC_LIVE
+USR -- UC_SIM
+USR -- UC_UP
+USR -- UC_SESS_CAN
+USR -- UC_DEL_CAN
+USR -- UC_INT
+USR -- UC_PLAY
+USR -- UC_TIMELINE
+
+ADM -- UC_USERS
+ADM -- UC_ROLES_PERM
+ADM -- UC_AUDIT
+ADM -- UC_MAIL_TEST
+
+note right of ADM
+  Spécialisation UML :
+  les cas Utilisateur restent applicables à l'administrateur ;
+  ils ne sont pas redessinés ici pour alléger le schéma.
+end note
+
+UC_REG -- MYSQL
+UC_LOGIN -- MYSQL
+UC_RESET -- MYSQL
+UC_RESET -- SMTP
+
+UC_PROF -- MYSQL
+UC_PWD_SELF -- MYSQL
+UC_MFA_SELF -- MYSQL
+UC_AVATAR -- MYSQL
+UC_SESS_JWT -- MYSQL
+
+UC_MAIL_TEST -- SMTP
+UC_AUDIT -- MYSQL
+UC_USERS -- MYSQL
+UC_ROLES_PERM -- MYSQL
+
+UC_SIM -- PY
+UC_UP -- KAFKA
+PY -- KAFKA
+
+UC_LIVE -- KAFKA : écoute topic\ndecoded-signals\npuis STOMP live-telemetry
+
+UC_SESS_CAN -- MYSQL
+UC_DEL_CAN -- MYSQL
+UC_DEL_CAN -- INFLUX
+UC_INT -- MYSQL
+
+UC_PLAY -- INFLUX
+UC_TIMELINE -- INFLUX
+
+legend bottom
+  Fondement : routes Angular /admin + garde JWT ; API Spring (Auth, Profile V1, simulateur, upload logs, sessions CAN, intégrité, playback, Influx, utilisateurs, rôles, audit, admin health).
+  Droits : ADMIN ou permissions par endpoint (ex. audit:view) ; mapping RBAC et test SMTP typiquement ADMIN.
+  Python hors JVM : can_simulator (sous-processus API) ; decoder et file_worker sur Kafka.
+endlegend
+
+@enduml

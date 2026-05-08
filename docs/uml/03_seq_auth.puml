@@ -1,0 +1,60 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam SequenceParticipantBackgroundColor #F5F5F5
+skinparam SequenceParticipantBorderColor #C8141E
+skinparam ArrowColor #C8141E
+skinparam NoteBackgroundColor #FAEAEA
+skinparam NoteBorderColor #DEDEDE
+
+title Sequence 1 — Authentication & MFA Flow
+
+actor "User (Browser)" as USR
+participant "Angular\nAuthService" as ANG
+participant "RateLimitFilter\n+ SecurityHardeningFilter" as SEC
+participant "AuthController\n/api/auth" as CTRL
+participant "AuthService" as SVC
+participant "JwtService" as JWT
+participant "MfaService" as MFA
+database "MySQL\n(users, refresh_tokens)" as DB
+
+USR -> ANG : submit(email, password)
+ANG -> SEC : POST /api/auth/login
+SEC -> CTRL : pass (rate limit ok)
+CTRL -> SVC : login(request, httpRequest)
+SVC -> DB : findByEmail(email)
+DB --> SVC : User entity
+SVC -> SVC : BCrypt.verify(password)
+
+alt MFA disabled
+  SVC -> JWT : generateAccessToken(user)
+  SVC -> JWT : generateRefreshToken(user)
+  JWT --> SVC : tokens
+  SVC -> DB : save RefreshToken
+  SVC --> CTRL : AuthResponse (200)
+  CTRL --> ANG : 200 OK { accessToken, refreshToken }
+  ANG --> USR : redirect /admin
+else MFA enabled
+  SVC -> JWT : generateMfaAuthToken(user)
+  JWT --> SVC : mfaToken (short-lived)
+  SVC --> CTRL : MfaAuthResponse (202)
+  CTRL --> ANG : 202 Accepted { mfaToken }
+  ANG --> USR : show MFA form
+
+  USR -> ANG : submit(mfaToken, totpCode)
+  ANG -> CTRL : POST /api/auth/mfa/verify
+  CTRL -> SVC : verifyMfa(request)
+  SVC -> JWT : validate mfaToken
+  SVC -> MFA : verifyTotp(user.mfaSecret, code)
+  MFA --> SVC : valid
+  SVC -> JWT : generateAccessToken(user)
+  SVC -> JWT : generateRefreshToken(user)
+  SVC -> DB : save RefreshToken
+  SVC --> CTRL : AuthResponse (200)
+  CTRL --> ANG : 200 OK { accessToken, refreshToken }
+  ANG --> USR : redirect /admin
+end
+
+note over ANG,DB: JwtAuthenticationFilter validates Bearer token\non every subsequent request
+@enduml

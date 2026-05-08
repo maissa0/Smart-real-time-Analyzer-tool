@@ -1,0 +1,389 @@
+<div class="kpit-sniffer-layout">
+
+  <!-- ═══ LEFT PANEL ═══ -->
+  <aside class="kpit-left-panel">
+
+    <!-- Session stats -->
+    @if (selectedSession()) {
+      <div class="kpit-stats-bar">
+        <div class="kpit-stat">
+          <span class="kpit-stat-value">{{ allFrames().length }}</span>
+          <span class="kpit-stat-label">frames decoded</span>
+        </div>
+        <div class="kpit-stat-divider"></div>
+        <div class="kpit-stat-meta">
+          {{ frameStats().addresses }} addresses · {{ frameStats().buses }} buses
+        </div>
+      </div>
+    }
+
+    <!-- Log Sessions -->
+    <div class="kpit-lp-section">
+      <div class="kpit-lp-title">
+        LOG SESSIONS
+        <span class="kpit-lp-count">{{ filteredSessions().length }}</span>
+      </div>
+
+      @if (!hideUpload) {
+        <app-log-upload (uploadComplete)="onUploadComplete($event)"></app-log-upload>
+      }
+      @if (!hideSimulator) {
+        <app-simulator-control
+          (simulatorStarted)="onSimulatorStarted()"
+          (simulatorStopped)="onSimulatorStopped()">
+        </app-simulator-control>
+      }
+
+      @if (loadingSessions()) {
+        <div class="kpit-skeleton-list">
+          @for (_ of [1,2,3]; track $index) {
+            <div class="kpit-skeleton"></div>
+          }
+        </div>
+      }
+
+      @if (!loadingSessions() && filteredSessions().length === 0) {
+        <div class="kpit-empty-sessions">No sessions found</div>
+      }
+
+      <div class="kpit-session-list">
+        @for (session of filteredSessions(); track session.id) {
+          <div class="kpit-session-item"
+            [class.active]="selectedSession()?.sessionId === session.sessionId"
+            (click)="selectSession(session)">
+            <div class="kpit-session-info">
+              <span class="kpit-session-name">{{ session.sourceFilename }}</span>
+              <span class="kpit-session-frames">{{ session.frameCount }} frames</span>
+            </div>
+            <div class="kpit-session-meta">
+              {{ session.createdAt | date:'MM/dd HH:mm' }}
+            </div>
+            <button type="button" class="kpit-session-delete"
+              (click)="deleteSession(session, $event)"
+              [disabled]="deletingSessionId() === session.sessionId"
+              title="Delete">
+              @if (deletingSessionId() === session.sessionId) {
+                <svg class="spin" width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"/>
+                  <path fill="currentColor" d="M4 12a8 8 0 018-8v8z" opacity="0.75"/>
+                </svg>
+              } @else {
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                </svg>
+              }
+            </button>
+          </div>
+        }
+        @if (hasMore()) {
+          <div class="kpit-load-more" (click)="loadMoreSessions()">
+            @if (loadingMore()) {
+              <span class="kpit-pulse">Loading...</span>
+            } @else {
+              Load more
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Filter section — only when session selected -->
+    @if (selectedSession()) {
+
+      <div class="kpit-lp-section">
+        <div class="kpit-lp-title">FILTER</div>
+
+        <!-- Address -->
+        <div class="kpit-filter-group">
+          <label class="kpit-filter-label">Address</label>
+          <select class="kpit-filter-select"
+            [value]="filterAddress()"
+            (change)="onAddressFilterChange($any($event.target).value)">
+            <option value="">All</option>
+            @for (id of uniqueMsgIds(); track id) {
+              <option [value]="id">{{ id }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Bus -->
+        <div class="kpit-filter-group">
+          <label class="kpit-filter-label">Bus</label>
+          <select class="kpit-filter-select"
+            [value]="filterBus()"
+            (change)="onBusFilterChange($any($event.target).value)">
+            <option value="">All</option>
+            @for (bus of uniqueBuses(); track bus) {
+              <option [value]="bus">{{ bus }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Signal names checklist -->
+        @if (uniqueSignalNames().length > 0) {
+          <div class="kpit-filter-group">
+            <label class="kpit-filter-label">Signals</label>
+            <div class="kpit-checklist">
+              @for (sig of uniqueSignalNames(); track sig) {
+                <label class="kpit-check-item">
+                  <input type="checkbox"
+                    [checked]="isSignalNameVisible(sig)"
+                    (change)="toggleSignalName(sig)">
+                  <span>{{ sig }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        }
+
+        <button class="kpit-clear-btn" type="button" (click)="clearAllFilters()">Clear filters</button>
+
+        <div class="kpit-filter-count">
+          {{ filteredVisibleFrames().length }} / {{ allFrames().length }} frames shown
+        </div>
+      </div>
+
+      <!-- Messages checklist -->
+      <div class="kpit-lp-section">
+        <div class="kpit-lp-title">MESSAGES</div>
+        <div class="kpit-msg-list">
+          @for (msg of uniqueMessages(); track msg.msgId) {
+            <label class="kpit-check-item kpit-msg-item">
+              <input type="checkbox"
+                [checked]="isMessageVisible(msg.msgId)"
+                (change)="toggleMessage(msg.msgId)">
+              <div class="kpit-msg-info">
+                <span class="kpit-msg-name">{{ msg.msgName }}</span>
+                <span class="kpit-msg-id">{{ msg.msgId }}</span>
+              </div>
+            </label>
+          }
+        </div>
+      </div>
+
+    }
+  </aside>
+
+  <!-- ═══ RIGHT CONTENT ═══ -->
+  <main class="kpit-right-content">
+
+    @if (!selectedSession()) {
+      <div class="kpit-no-session">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <p>Select a session to view frames</p>
+      </div>
+    }
+
+    @if (selectedSession()) {
+
+      <!-- Session header bar -->
+      <div class="kpit-session-header">
+        <div class="kpit-session-header-left">
+          <span class="kpit-session-filename">{{ selectedSession()!.sourceFilename }}</span>
+          @if (isLiveSession()) {
+            <span class="kpit-live-badge" [class.connected]="liveTelemetry.connected()">
+              <span class="kpit-live-dot"></span>
+              {{ liveTelemetry.connected() ? 'LIVE' : 'connecting...' }}
+            </span>
+          }
+          <span class="kpit-frame-badge">
+            @if (isLiveSession()) {
+              {{ selectedSession()?.frameCount ?? liveTelemetry.frameCount() }} frames (live)
+            } @else {
+              {{ filteredVisibleFrames().length }} / {{ allFrames().length }} frames
+            }
+          </span>
+          <span class="kpit-duration">{{ durationSeconds() }}s duration</span>
+        </div>
+
+        <!-- View tabs -->
+        <div class="kpit-view-tabs">
+          <button type="button" class="kpit-view-tab" [class.active]="activeTab() === 'table'" (click)="setTab('table')">
+            ■ TABLE
+          </button>
+          <button type="button" class="kpit-view-tab" [class.active]="activeTab() === 'charts'" (click)="setTab('charts')">
+            ■ CHARTS
+          </button>
+          <button type="button" class="kpit-view-tab" [class.active]="activeTab() === 'integrity'" (click)="setTab('integrity')">
+            🔍 INTEGRITY
+          </button>
+        </div>
+      </div>
+
+      <!-- Playback controls -->
+      <div class="kpit-playback-bar">
+        @if (!isLiveSession()) {
+          <button type="button" class="kpit-play-btn" (click)="togglePlayback()">
+            {{ telemetry.state() === 'playing' ? '⏸' : '▶' }}
+            {{ telemetry.state() === 'playing' ? 'Pause' : 'Play' }}
+          </button>
+          <button type="button" class="kpit-reset-btn" (click)="telemetry.stop()">■ Reset</button>
+          <span class="kpit-time">{{ telemetry.currentTime().toFixed(3) }}s</span>
+          <input type="range" class="kpit-slider"
+            [min]="0" [max]="sliderMaxIndex()"
+            [value]="telemetry.sliderValue()"
+            (input)="onSliderInput($event)">
+          <span class="kpit-time">{{ durationSeconds() }}s</span>
+          <span class="kpit-progress">{{ sliderPercent() }}%</span>
+          <span class="kpit-speed-label">Speed:</span>
+          @for (s of [0.5, 1, 2, 5, 10]; track s) {
+            <button type="button" class="kpit-speed-btn" [class.active]="telemetry.speed() === s"
+              (click)="telemetry.setSpeed(s)">{{ s }}x</button>
+          }
+        }
+        <!-- InfluxDB Replay -->
+        <div class="kpit-influx-replay">
+          @if (!playbackActive()) {
+            <button type="button" class="kpit-influx-btn" (click)="startInfluxPlayback()" [disabled]="!selectedSession()">
+              ▶ InfluxDB Replay
+            </button>
+            @if (playbackPoints.length > 0 && !playbackComplete()) {
+              <button type="button" class="kpit-show-all-btn" (click)="showAllPlaybackPoints()">⊞ Show All</button>
+            }
+          } @else {
+            <button type="button" class="kpit-stop-replay-btn" (click)="stopInfluxPlayback()">■ Stop Replay</button>
+            @if (playbackLoading()) {
+              <span class="kpit-loading-text">Loading points...</span>
+            } @else {
+              <span class="kpit-replaying-text">▶ Replaying...</span>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- TABLE TAB -->
+      @if (activeTab() === 'table') {
+        <div class="kpit-table-wrap">
+          <table class="kpit-table">
+            <thead>
+              <tr class="kpit-thead-row">
+                <th class="kpit-th kpit-th-num">#</th>
+                <th class="kpit-th kpit-th-ts">timestamp</th>
+                <th class="kpit-th kpit-th-ch">ch</th>
+                <th class="kpit-th kpit-th-id">id</th>
+                <th class="kpit-th kpit-th-msg">message</th>
+                <th class="kpit-th kpit-th-dir">dir</th>
+                <th class="kpit-th kpit-th-raw">raw bytes</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (frame of filteredVisibleFrames(); track frame.id; let i = $index) {
+                <!-- Frame row -->
+                <tr class="kpit-frame-row">
+                  <td class="kpit-td kpit-td-num">{{ i + 1 }}</td>
+                  <td class="kpit-td kpit-td-ts">
+                    <div class="kpit-ts-main">{{ frame.timestamp | number:'1.6-6' }}</div>
+                    <div class="kpit-ts-offset">+{{ (frame.timestamp - (selectedSession()?.startTs ?? 0)).toFixed(3) }}s</div>
+                  </td>
+                  <td class="kpit-td kpit-td-ch">{{ frame.channelName }}</td>
+                  <td class="kpit-td kpit-td-id">
+                    <span class="kpit-addr-badge">{{ frame.msgId }}</span>
+                  </td>
+                  <td class="kpit-td kpit-td-msg">
+                    <span class="kpit-msg-name-cell">{{ frame.msgName }}</span>
+                  </td>
+                  <td class="kpit-td kpit-td-dir">
+                    <span class="kpit-dir-badge" [class.tx]="frame.direction === 'Tx'">
+                      {{ frame.direction }}
+                    </span>
+                  </td>
+                  <td class="kpit-td kpit-td-raw">{{ frame.rawBytes }}</td>
+                </tr>
+                <!-- Signal rows -->
+                @for (sig of getSignals(frame); track sig.signal_name) {
+                  @if (isSignalNameVisible(sig.signal_name)) {
+                    <tr class="kpit-sig-row">
+                      <td class="kpit-sig-td"></td>
+                      <td class="kpit-sig-td kpit-sig-name">{{ sig.signal_name }}</td>
+                      <td class="kpit-sig-td kpit-sig-raw">{{ sig.raw_value }}</td>
+                      <td class="kpit-sig-td kpit-sig-decoded" colspan="4">
+                        <span class="kpit-decoded-val">{{ sig.label }}</span>
+                      </td>
+                    </tr>
+                  }
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- CHARTS TAB -->
+      @if (activeTab() === 'charts') {
+        <div class="kpit-charts-area">
+          <!-- Chart mode toggle -->
+          <div class="kpit-chart-toolbar">
+            <button type="button" class="kpit-cmt-btn" [class.active]="chartMode() === 'stacked'"
+              (click)="chartMode.set('stacked')" title="Stacked">⊟</button>
+            <button type="button" class="kpit-cmt-btn" [class.active]="chartMode() === 'combined'"
+              (click)="chartMode.set('combined')" title="Combined">⊞</button>
+          </div>
+          @if (!chartJsLoaded()) {
+            <div class="kpit-loading">Loading charts...</div>
+          }
+          @if (chartJsLoaded()) {
+            <div class="kpit-charts-grid" [class.kpit-charts-combined]="chartMode() === 'combined'">
+              @if (isLiveSession()) {
+                @for (group of liveSignalGroups(); track group.groupTitle) {
+                  <app-signal-chart
+                    [groupTitle]="group.groupTitle"
+                    [msgName]="group.msgName"
+                    [datasets]="group.datasets"
+                    [chartHeight]="90"
+                    [playheadTime]="playheadRelativeTime()">
+                  </app-signal-chart>
+                }
+              } @else {
+                @for (group of signalTimelines(); track group.groupTitle) {
+                  <app-signal-chart
+                    [groupTitle]="group.groupTitle"
+                    [msgName]="group.msgName"
+                    [datasets]="group.datasets"
+                    [chartHeight]="90"
+                    [playheadTime]="playheadRelativeTime()">
+                  </app-signal-chart>
+                }
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- INTEGRITY TAB -->
+      @if (activeTab() === 'integrity') {
+        <div class="kpit-integrity-area">
+          @if (loadingIntegrity()) {
+            <div class="kpit-loading">Loading integrity data...</div>
+          }
+          @if (!loadingIntegrity() && integritySummary()) {
+            <div class="kpit-integrity-summary">
+              <div class="kpit-integrity-stat">
+                <span class="kpit-integrity-val">{{ allFrames().length }}</span>
+                <span class="kpit-integrity-label">Total Frames</span>
+              </div>
+              <div class="kpit-integrity-stat">
+                <span class="kpit-integrity-val warn">{{ integritySummary()!.totalFaults }}</span>
+                <span class="kpit-integrity-label">Faults</span>
+              </div>
+            </div>
+            @if (integrityFaults().length > 0) {
+              <div class="kpit-faults-list">
+                @for (fault of integrityFaults(); track fault.id) {
+                  <div class="kpit-fault-item">
+                    <span class="kpit-fault-type">{{ fault.faultType }}</span>
+                    <span class="kpit-fault-msg">{{ fault.msgId }}</span>
+                    <span class="kpit-fault-ts">{{ (fault.frameTimestamp - (selectedSession()?.startTs ?? 0)).toFixed(3) }}s</span>
+                    <span class="kpit-fault-desc">{{ fault.description }}</span>
+                  </div>
+                }
+              </div>
+            }
+          }
+        </div>
+      }
+
+    }
+  </main>
+</div>

@@ -1,0 +1,4 @@
+confluent-kafka==2.4.0
+lxml==5.2.2
+dataclasses-json==0.6.7
+pytest==8.2.2

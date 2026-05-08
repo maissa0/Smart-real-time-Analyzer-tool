@@ -1,0 +1,56 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam NodeBackgroundColor #F5F5F5
+skinparam NodeBorderColor #C8141E
+skinparam ArrowColor #C8141E
+skinparam PackageBackgroundColor #FAEAEA
+skinparam PackageBorderColor #DEDEDE
+
+title KPIT — Physical Architecture / Deployment Diagram
+
+node "Developer workstation\n(Windows / C:/tools/Kpit_c/)" as WS {
+  package "Docker Compose" {
+    node "kafka\n(apache/kafka:3.8.0 KRaft)" as KAFKA {
+      artifact "broker + controller\nlocalhost:9092"
+    }
+    node "influxdb\n(influxdb:2.7)" as INFLUX {
+      artifact "bucket: ecu_telemetry\nlocalhost:8086"
+    }
+  }
+
+  node "Spring Boot JVM\n(mvnw spring-boot:run)" as BOOT {
+    artifact "REST API :8080"
+    artifact "WebSocket STOMP\n/ws-ecu-gateway"
+    artifact "Kafka Consumer\nkpit-backend group"
+    database "MySQL 8\nsmart_real_time_analyser\n(external / local)" as MYSQL
+  }
+
+  node "Python 3.12 processes" as PY {
+    artifact "decoder.py\n(group: can-decoder)"
+    artifact "file_worker.py\n(group: file-workers)"
+    artifact "can_simulator.py\n(optional)"
+  }
+
+  node "Angular Dev Server\n(ng serve :4200)" as WEB {
+    artifact "Angular 21 SPA\nZoneless + @ngrx/signals"
+  }
+}
+
+node "Unity (3D Digital Twin)\n(C# CANSignalReceiver)" as UNTY {
+  artifact "WebSocket STOMP\nclient (planned)"
+}
+
+KAFKA <--> BOOT : PLAINTEXT :9092
+KAFKA <--> PY : PLAINTEXT :9092
+INFLUX <--> BOOT : HTTP :8086
+BOOT <--> MYSQL : JDBC :3306
+WEB --> BOOT : HTTPS / REST + STOMP WS
+UNTY --> BOOT : WSS / STOMP relay
+
+note on link
+  CORS: localhost:4200 allowed
+  JWT Bearer on all /api/** calls
+end note
+@enduml

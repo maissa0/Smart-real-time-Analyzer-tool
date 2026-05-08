@@ -1,0 +1,62 @@
+<div class="auth-page-bg px-4">
+  <div class="w-full max-w-md">
+    <div class="auth-card p-8 shadow-able-card">
+      <div class="mb-6 text-center">
+        <h1 class="text-2xl font-bold" style="color: #b0ff44">
+          KPIT <span class="text-sm align-super" style="color: #fff">Analyser</span>
+        </h1>
+      </div>
+      <h2 class="mb-6 text-xl font-semibold text-white">Sign up</h2>
+      <div class="mb-4 flex flex-col gap-2">
+        <button
+          type="button"
+          class="rounded-lg px-4 py-2.5 text-sm font-medium"
+          style="border: 1px solid rgba(176, 255, 68, 0.15); color: #8a9ab0; background: rgba(0, 0, 0, 0.25)"
+        >
+          Sign in with Facebook
+        </button>
+        <button
+          type="button"
+          class="rounded-lg px-4 py-2.5 text-sm font-medium"
+          style="border: 1px solid rgba(176, 255, 68, 0.15); color: #8a9ab0; background: rgba(0, 0, 0, 0.25)"
+        >
+          Sign in with Twitter
+        </button>
+        <button
+          type="button"
+          class="rounded-lg px-4 py-2.5 text-sm font-medium"
+          style="border: 1px solid rgba(176, 255, 68, 0.15); color: #8a9ab0; background: rgba(0, 0, 0, 0.25)"
+        >
+          Sign in with Google
+        </button>
+      </div>
+      <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t" style="border-color: rgba(176, 255, 68, 0.15)"></div>
+        </div>
+        <div class="relative flex justify-center">
+          <span class="px-2 text-sm" style="background: #0d1117; color: #8a9ab0">OR</span>
+        </div>
+      </div>
+      <form [formGroup]="form" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium" style="color: #d0d6e0">Full Name</label>
+          <input formControlName="name" type="text" class="auth-input w-full px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium" style="color: #d0d6e0">Email</label>
+          <input formControlName="email" type="email" class="auth-input w-full px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium" style="color: #d0d6e0">Password</label>
+          <input formControlName="password" type="password" class="auth-input w-full px-3 py-2 text-sm" />
+        </div>
+        <button type="submit" [disabled]="form.invalid" class="auth-btn-primary w-full px-4 py-2.5">Sign up</button>
+      </form>
+      <p class="mt-6 text-center text-sm" style="color: #8a9ab0">
+        Already have an account?
+        <a routerLink="/auth/login" class="auth-link font-medium">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>

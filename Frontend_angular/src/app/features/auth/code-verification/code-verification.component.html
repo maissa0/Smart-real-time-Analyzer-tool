@@ -1,0 +1,42 @@
+<div class="auth-page-bg px-4">
+  <div class="w-full max-w-md">
+    <div class="auth-card p-8 shadow-able-card">
+      <div class="mb-6 text-center">
+        <h1 class="text-2xl font-bold" style="color: #b0ff44">
+          KPIT <span class="text-sm align-super" style="color: #fff">Analyser</span>
+        </h1>
+      </div>
+      <h2 class="mb-2 text-xl font-semibold text-white">Code Verification</h2>
+      <p class="mb-8 text-sm" style="color: #8a9ab0">Enter the 4-digit code sent to your email.</p>
+      <div class="mb-8 flex justify-center gap-2" (paste)="onPaste($event)">
+        @for (d of digits(); track $index) {
+          <input
+            #digitInput
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            [value]="d"
+            (input)="onDigitInput($index, $event)"
+            (keydown)="onDigitKeydown($index, $event)"
+            class="auth-input h-14 w-14 text-center text-xl font-semibold"
+          />
+        }
+      </div>
+      <button
+        type="button"
+        (click)="onSubmit()"
+        [disabled]="getCode().length !== 4 || verifying()"
+        class="auth-btn-primary w-full px-4 py-2.5 font-medium"
+      >
+        @if (verifying()) {
+          Verifying...
+        } @else {
+          Verify
+        }
+      </button>
+      <p class="mt-6 text-center text-sm" style="color: #8a9ab0">
+        Didn't receive the code? <a href="#" class="auth-link font-medium">Resend</a>
+      </p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,46 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam SequenceParticipantBackgroundColor #F5F5F5
+skinparam SequenceParticipantBorderColor #C8141E
+skinparam ArrowColor #C8141E
+skinparam NoteBackgroundColor #FAEAEA
+skinparam NoteBorderColor #DEDEDE
+
+title Sequence 4 — InfluxDB Session Playback
+
+actor "User" as USR
+participant "Angular\nSnifferComponent" as ANG
+participant "PlaybackController\n/api/playback" as CTRL
+participant "PlaybackService" as SVC
+database "InfluxDB\necu_telemetry" as INFL
+participant "WebSocket STOMP\n/topic/playback/{sessionId}" as WS
+participant "LiveTelemetryService\n(Angular)" as LTSVC
+
+USR -> ANG : select session + signals\nclick Play
+ANG -> LTSVC : subscribeToPlayback(sessionId)
+LTSVC -> WS : STOMP subscribe\n/topic/playback/{sessionId}
+
+ANG -> CTRL : POST /api/playback/start\n{sessionId, startTs, endTs, speed, signals}
+CTRL -> SVC : startPlayback(...)
+SVC -> INFL : Flux query\nbucket ecu_telemetry\n|> range(start, stop)\n|> filter(signal_name in signals)
+INFL --> SVC : stream of data points
+
+loop for each point (original timing / speed)
+  SVC -> WS : messagingTemplate.convertAndSend\n/topic/playback/{sessionId} {point}
+  WS --> LTSVC : receive point
+  LTSVC -> LTSVC : emit playbackSubject.next(point)
+  LTSVC --> ANG : playback$ observable
+  ANG -> ANG : Chart.js update at 60fps
+end
+
+USR -> ANG : click Pause or Stop
+ANG -> CTRL : POST /api/playback/stop/{playbackId}
+CTRL -> SVC : stopPlayback(playbackId)
+SVC --> CTRL : stopped: true
+CTRL --> ANG : 200 {status: stopped}
+ANG -> LTSVC : stopPlaybackSubscription()
+
+note over SVC : Speed multiplier 0.5×–10×\nclient setInterval(16ms) syncs\nwith original timestamps
+@enduml

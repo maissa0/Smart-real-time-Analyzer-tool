@@ -1,0 +1,99 @@
+<div class="overflow-x-auto rounded-lg border border-able-border bg-white shadow-able-card">
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <ng-container *ngFor="let col of columns()">
+          <th
+            [class]="col.headerClass ?? ''"
+            class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+          >
+            <ng-container *ngIf="col.sortable; else noSort">
+              <button
+                type="button"
+                (click)="onSort(col)"
+                class="flex items-center gap-1 hover:text-gray-700"
+              >
+                {{ col.header }}
+                <span *ngIf="isSorted(col)" class="text-gray-400">
+                  {{ sortDirection() === 'asc' ? '↑' : '↓' }}
+                </span>
+              </button>
+            </ng-container>
+            <ng-template #noSort>{{ col.header }}</ng-template>
+          </th>
+        </ng-container>
+        <th *ngIf="actionsTemplate()" class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+          Actions
+        </th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-200 bg-white">
+      <tr *ngIf="processedData().length === 0">
+        <td [attr.colspan]="columns().length + (actionsTemplate() ? 1 : 0)" class="px-4 py-8 text-center text-gray-500">
+          No data available
+        </td>
+      </tr>
+      <ng-container *ngFor="let row of processedData(); let i = index">
+        <tr class="hover:bg-gray-50">
+          <ng-container *ngFor="let col of columns()">
+            <td
+              [class]="col.cellClass ?? ''"
+              class="whitespace-nowrap px-4 py-3 text-sm text-gray-900"
+            >
+              <ng-container *ngIf="getCellTemplate(col) as tpl">
+                <ng-container
+                  *ngTemplateOutlet="tpl; context: { $implicit: row, column: col, index: i }"
+                />
+              </ng-container>
+              <ng-container *ngIf="!getCellTemplate(col)">
+                {{ getFieldValue(row, $any(col.field ?? col.key)) }}
+              </ng-container>
+            </td>
+          </ng-container>
+          <td *ngIf="actionsTemplate()" class="whitespace-nowrap px-4 py-3 text-right text-sm">
+            <ng-container
+              *ngTemplateOutlet="actionsTemplate()!; context: { $implicit: row }"
+            />
+          </td>
+        </tr>
+      </ng-container>
+    </tbody>
+  </table>
+
+  <div *ngIf="totalCount() > 0" class="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-2">
+    <div class="flex items-center gap-4">
+      <span class="text-sm text-gray-700">
+        Showing {{ (currentPage() - 1) * pageSize() + 1 }} to
+        {{ Math.min(currentPage() * pageSize(), totalCount()) }} of {{ totalCount() }}
+      </span>
+      <select
+        [value]="pageSize()"
+        (change)="setPageSize(+$any($event.target).value)"
+        class="rounded border border-gray-300 px-2 py-1 text-sm"
+      >
+        <option *ngFor="let opt of pageSizeOptions()" [value]="opt">{{ opt }}</option>
+      </select>
+    </div>
+    <div class="flex gap-1">
+      <button
+        type="button"
+        (click)="goToPage(currentPage() - 1)"
+        [disabled]="currentPage() <= 1"
+        class="rounded px-3 py-1 text-sm disabled:opacity-50"
+      >
+        Prev
+      </button>
+      <span class="flex items-center px-2 text-sm">
+        Page {{ currentPage() }} of {{ totalPages() }}
+      </span>
+      <button
+        type="button"
+        (click)="goToPage(currentPage() + 1)"
+        [disabled]="currentPage() >= totalPages()"
+        class="rounded px-3 py-1 text-sm disabled:opacity-50"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+</div>

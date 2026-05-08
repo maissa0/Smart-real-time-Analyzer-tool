@@ -1,0 +1,60 @@
+package com.example.backend.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
+@Entity
+@Table(name = "roles")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class RoleEntity {
+
+    @Id
+    @Column(name = "id", columnDefinition = "BINARY(16)")
+    private UUID id;
+
+    @Column(name = "name", nullable = false, unique = true, length = 100)
+    private String name;
+
+    @Column(name = "description", length = 500)
+    private String description;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private java.time.Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private java.time.Instant updatedAt;
+
+    @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
+    @Builder.Default
+    private Set<UserEntity> users = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "role_permissions",
+            joinColumns = @JoinColumn(name = "role_id"),
+            inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+    @Builder.Default
+    private Set<PermissionEntity> permissions = new HashSet<>();
+
+    @PrePersist
+    protected void onCreate() {
+        if (id == null) id = UUID.randomUUID();
+        var now = java.time.Instant.now();
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = java.time.Instant.now();
+    }
+}

@@ -1,0 +1,69 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam ActivityBackgroundColor #F5F5F5
+skinparam ActivityBorderColor #C8141E
+skinparam ActivityDiamondBackgroundColor #FAEAEA
+skinparam ActivityDiamondBorderColor #C8141E
+skinparam ArrowColor #C8141E
+
+title CAN Frame Processing — End-to-End Activity
+
+|Source|
+start
+:Select source\n(Simulator · Hardware CAN · Uploaded file);
+
+if (Source type?) then (Simulator)
+  :can_simulator.py random or replay mode;
+  :Publish raw frame → **raw-can-frames**\n+ session-meta → **session-meta**;
+elseif (Hardware) then
+  :live_can.py reads adapter\n(Vector / PEAK / Kvaser / SocketCAN);
+  :Publish raw frames → **raw-can-frames**;
+else (File upload)
+  :User uploads via Angular UploadPage;
+  :LogUploadService saves to MySQL\n+ dispatches job → **file-processing-jobs**;
+  :file_worker.py consumes job;
+  :Parse .blf / .asc / .txt\nvia log_parser / static_parser;
+  :Publish session-meta + raw frames → **raw-can-frames**;
+endif
+
+|decoder.py|
+:Consume batch from **raw-can-frames**;
+:Extract msg_id from frame header;
+
+if (msg_id found in XML catalog?) then (yes)
+  :xml_decoder → decode signals\n(bit masks · byte shifts · value_maps);
+  :Build decoded JSON payload\n{signals_dict, signals_flat, channel_name};
+  :Publish → **decoded-signals**;
+else (no)
+  :Log UNKNOWN frame (warning);
+  :Skip signal expansion;
+  stop
+endif
+
+|Spring — CanKafkaConsumer|
+:@KafkaListener consumes **decoded-signals**;
+:Accumulate micro-batch\n(Reactor Sinks 60Hz);
+
+fork
+  :Write relational rows to **MySQL**\n(can_sessions · can_frames\nsignals JSON column);
+fork again
+  :Write time-series points to **InfluxDB**\n(ecu_measurements\ntags: session_id · signal_name);
+end fork
+
+:IntegrityAnalyzerService checks\ntiming gaps + counter errors;
+:Broadcast via **WebSocket STOMP**\n/topic/live-telemetry;
+
+fork
+  |Angular Client|
+  :LiveTelemetryService receives frames;
+  :Update signalStateMap;
+  :RAF-batched Chart.js refresh @ 60fps;
+fork again
+  |Unity 3D Twin|
+  :CANSignalReceiver.cs (planned)\nmaps signals → animation targets\n(wheels · doors · RPM gauge);
+end fork
+
+stop
+@enduml

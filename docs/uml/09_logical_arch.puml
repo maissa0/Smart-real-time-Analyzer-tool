@@ -1,0 +1,50 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam PackageBackgroundColor #FAEAEA
+skinparam PackageBorderColor #C8141E
+skinparam ComponentBackgroundColor #F5F5F5
+skinparam ComponentBorderColor #DEDEDE
+skinparam ArrowColor #C8141E
+
+title KPIT — Logical Architecture
+
+package "Presentation Layer" {
+  component [Angular 21 SPA\nZoneless · @ngrx/signals\nChart.js · STOMP] as PRES
+}
+
+package "API Gateway / Security Layer" {
+  component [Spring Security Filter Chain\nJwtAuthFilter → RateLimitFilter\n→ SecurityHardeningFilter\n→ SessionHeartbeatFilter] as GATE
+}
+
+package "Application Layer (Spring Boot)" {
+  component [REST Controllers\nAuthController · CanController\nPlaybackController · UserControllerV1] as REST
+  component [Service Layer\nAuthService · CanSessionService\nPlaybackService · IntegrityAnalyzerService\nLogUploadService · UserServiceV1] as SVC
+  component [WebSocket Gateway\nSTOMP broker\n/ws-ecu-gateway] as WSG
+}
+
+package "Event Streaming Layer" {
+  component [Kafka 3.8 KRaft\nraw-can-frames · decoded-signals\nsession-meta · file-processing-jobs\nlog-file-events] as EVT
+  component [CanKafkaConsumer\nReactor Sinks 60Hz\n@KafkaListener] as CON
+  component [Python Pipeline\ncan_simulator · decoder\nfile_worker · xml_decoder] as PY
+}
+
+package "Data Layer" {
+  database [MySQL 8\nUsers · Roles · Sessions\nFrames · Faults · Logs\nAuditLogs · RefreshTokens] as MSQL
+  database [InfluxDB 2.7\necu_telemetry bucket\ntime-series signal data] as INFL
+}
+
+PRES --> GATE : HTTPS REST + STOMP WS
+GATE --> REST : authenticated requests
+GATE --> WSG : WebSocket upgrade
+REST --> SVC
+SVC --> MSQL
+SVC --> INFL
+SVC --> EVT : produce (jobs, meta)
+CON --> EVT : consume decoded-signals
+CON --> SVC
+CON --> WSG : Reactor Sinks → broadcast
+PY --> EVT : produce raw-can-frames\n+ decoded-signals
+EVT --> CON
+@enduml

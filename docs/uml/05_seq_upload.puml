@@ -1,0 +1,45 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam SequenceParticipantBackgroundColor #F5F5F5
+skinparam SequenceParticipantBorderColor #C8141E
+skinparam ArrowColor #C8141E
+skinparam NoteBackgroundColor #FAEAEA
+skinparam NoteBorderColor #DEDEDE
+
+title Sequence 3 — Log File Upload & Async Processing
+
+actor "User" as USR
+participant "Angular\nUploadPageComponent" as ANG
+participant "LogUploadService\n(Spring)" as LUP
+database "MySQL\n(log_files)" as DB
+participant "Kafka\nfile-processing-jobs" as KFJ
+participant "file_worker.py" as FW
+participant "log_parser / static_parser" as PAR
+participant "xml_decoder" as CAT
+participant "Kafka\nraw-can-frames" as KR
+participant "Kafka\nlog-file-events" as KLE
+participant "Kafka\nsession-meta" as KSM
+
+USR -> ANG : select file (.blf / .asc / .txt)
+ANG -> LUP : POST /api/logs/upload (multipart)
+LUP -> DB : save LogFile {status=PENDING}
+LUP -> KFJ : produce job {session_id, file_path, source_filename}
+LUP --> ANG : 200 OK {sessionId, logFileId}
+
+note over FW : Consumes file-processing-jobs
+
+KFJ -> FW : consume job
+FW -> PAR : detect format → parse_log / parse_blf
+PAR --> FW : Session {frames[]}
+FW -> KSM : publish session-meta {session_id, frame_count=0}
+FW -> KLE : publish {event=metadata, frame_count_estimate}
+
+loop for each frame
+  FW -> KR : publish raw frame {msg_id, raw_bytes, frame_seq}
+end
+
+FW -> KLE : publish {event=complete, frame_count}
+note over FW,KSM: Spring Boot CanKafkaConsumer\nthen picks up raw-can-frames\n→ decodes → writes InfluxDB + MySQL
+@enduml

@@ -1,0 +1,91 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam ComponentBackgroundColor #F5F5F5
+skinparam ComponentBorderColor #C8141E
+skinparam PackageBackgroundColor #FAEAEA
+skinparam PackageBorderColor #DEDEDE
+skinparam ArrowColor #C8141E
+
+title KPIT — Component Diagram
+
+package "Angular 21 App (Zoneless)" {
+  [AuthModule\n(login · register · MFA · OTP · reset)] as AU
+  [AdminModule\n(Dashboard · Sniffer · Monitor\nSimulator · Upload · Users · Profile)] as AD
+  [CoreModule\nLiveTelemetryService\nAuthService · AuthStore\nSidebarStateService\nSimulatorStateService] as CO
+  [SharedModule\nsignal-chart · log-upload\nsimulator-control\nHasPermissionDirective] as SH
+  AU ..> CO
+  AD ..> CO
+  AD ..> SH
+}
+
+package "Spring Boot 3.4.1" {
+  component [Spring Security\nJwtAuthFilter · RateLimitFilter\nSecurityHardeningFilter\nSessionHeartbeatFilter] as SEC
+  [AuthController\n/api/auth/**] as ACtrl
+  [CanController\n/api/can/**] as CCan
+  [PlaybackController\n/api/playback/**] as CPlay
+  [UserControllerV1\n/api/v1/users/**] as UCtr
+  component [CanKafkaConsumer\n@KafkaListener decoded-signals\nReactor Sinks 60Hz] as KC
+  component [InfluxWriteService\nbatchWrite 500pts/100ms] as INFWS
+  component [PlaybackService\nFlux query + WS stream] as PSVC
+  component [IntegrityAnalyzerService\ntiming gaps · counter errors] as IG
+  component [LogUploadService\nmultipart → Kafka job] as LUP
+  component [AuthService\nJWT · MFA · TOTP] as ASVC
+  database [JPA Repositories\nUserRepo · SessionRepo\nFrameRepo · LogFileRepo\nIntegrityFaultRepo · AuditLogRepo] as REPO
+  SEC --- ACtrl
+  SEC --- CCan
+  SEC --- CPlay
+  SEC --- UCtr
+  ACtrl --> ASVC
+  KC --> INFWS
+  KC --> REPO
+  KC ..> IG
+  LUP --> REPO
+  CPlay --> PSVC
+  PSVC ..> INFWS
+  IG ..> REPO
+  CCan --> REPO
+  UCtr --> REPO
+}
+
+package "Python Pipeline" {
+  artifact "can_simulator.py\n(random + replay modes\nfault injection)" as PPRO
+  artifact "decoder.py\nKafka consumer → xml_decoder\n→ decoded-signals" as PDEC
+  artifact "file_worker.py\nasync Kafka consumer\n.blf · .asc · .txt" as PFILE
+  artifact "Utilities\nxml_decoder · log_parser\nstatic_parser · kafka_producer" as PUT
+  PFILE ..> PUT
+  PDEC ..> PUT
+  PPRO ..> PUT
+}
+
+package "Kafka 3.8 KRaft" {
+  rectangle "Topics" {
+    artifact "raw-can-frames" as T1
+    artifact "decoded-signals" as T2
+    artifact "session-meta" as T3
+    artifact "file-processing-jobs" as T4
+    artifact "log-file-events" as T5
+  }
+}
+
+database "MySQL 8\n(users · roles · permissions\nsessions · frames · faults\nlogs · audit · refresh_tokens)" as MSQL
+database "InfluxDB 2.7\nbucket: ecu_telemetry\nmeasurement: ecu_measurements\ntags: session_id · signal_name" as INFL
+
+AD --> CCan : REST + WebSocket/STOMP
+AD --> CPlay : REST + WebSocket/STOMP
+AD --> ACtrl : REST
+AD --> UCtr : REST
+
+PPRO --> T1
+PPRO --> T3
+PFILE --> T4
+PDEC --> T1
+PDEC --> T2
+KC --> T2
+LUP --> T4
+
+REPO --> MSQL
+INFWS --> INFL
+PSVC --> INFL
+@enduml

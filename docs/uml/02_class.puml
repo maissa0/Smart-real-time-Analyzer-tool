@@ -1,0 +1,407 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam ClassBorderColor #C8141E
+skinparam ClassBackgroundColor #FFFDF0
+skinparam ArrowColor #555555
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #888780
+
+title KPIT — Diagramme de classes (Backend JPA — entités, services et sécurité)
+
+' ─────────────────────────────────────────────
+' PACKAGE 1 — Plateforme utilisateur
+' ─────────────────────────────────────────────
+package "Plateforme utilisateur\n(com.example.backend.entity)" as pkg_user {
+
+  abstract class AbstractAuditingEntity <<MappedSuperclass>> {
+    # createdAt : Instant
+    # updatedAt : Instant
+  }
+
+  class UserEntity <<entity>> {
+    - id : UUID
+    - email : String
+    - username : String
+    - passwordHash : String
+    - fullName : String
+    - jobTitle : String
+    - department : String
+    - timezone : String
+    - phone : String
+    - bio : String
+    - avatarUrl : String
+    - isActive : Boolean
+    - mfaEnabled : Boolean
+    - mfaSecret : String
+    - verified : Boolean
+    - deletedAt : Instant
+    --
+    - roles : Set<RoleEntity>
+  }
+
+  note right of UserEntity
+    Soft delete via filtre Hibernate
+    sur deleted_at IS NULL.
+  end note
+
+  class RoleEntity <<entity>> {
+    - id : UUID
+    - name : String
+    - description : String
+    --
+    - users : Set<UserEntity>
+    - permissions : Set<PermissionEntity>
+  }
+
+  class PermissionEntity <<entity>> {
+    - id : UUID
+    - slug : String
+    - description : String
+    --
+    - roles : Set<RoleEntity>
+  }
+
+  ' Inheritance
+  AbstractAuditingEntity <|-- UserEntity
+  AbstractAuditingEntity <|-- RoleEntity
+  AbstractAuditingEntity <|-- PermissionEntity
+
+  ' Many-to-many via join tables
+  UserEntity "*" -- "*" RoleEntity : user_roles
+  RoleEntity "*" -- "*" PermissionEntity : role_permissions
+}
+
+' ─────────────────────────────────────────────
+' PACKAGE 2 — Sessions / Audit / OTP
+' ─────────────────────────────────────────────
+package "Sessions / Audit / OTP\n(com.example.backend.entity)" as pkg_sess {
+
+  class RefreshTokenEntity <<entity>> {
+    - id : UUID
+    - userId : UUID
+    - sessionId : UUID
+    - tokenHash : String
+    - device : String
+    - ipAddress : String
+    - userAgent : String
+    - expiresAt : Instant
+    - revokedAt : Instant
+    - createdAt : Instant
+    --
+    + isRevoked() : boolean
+    + isExpired() : boolean
+  }
+
+  class SessionEntity <<entity>> {
+    - id : UUID
+    - userId : UUID
+    - device : String
+    - ipAddress : String
+    - userAgent : String
+    - lastActive : Instant
+    - createdAt : Instant
+  }
+
+  note bottom of SessionEntity
+    Table MySQL : sessions
+    (suivi appareil / JWT actif)
+    sessionId lie SessionEntity
+    et RefreshTokenEntity.
+  end note
+
+  class AuditLogEntity <<entity>> {
+    - id : UUID
+    - userId : UUID
+    - action : String
+    - resource : String
+    - resourceId : String
+    - metadata : Map<String,Object>
+    - ipAddress : String
+    - userAgent : String
+    - source : AuditSource
+    - createdAt : Instant
+  }
+
+  enum AuditSource {
+    AUDIT
+    SECURITY
+  }
+
+  class OtpCodeEntity <<entity>> {
+    - id : UUID
+    - email : String
+    - code : String
+    - expiresAt : Instant
+    - usedAt : Instant
+    - createdAt : Instant
+  }
+
+  class MfaRecoveryCodeEntity <<entity>> {
+    - id : UUID
+    - userId : UUID
+    - codeHash : String
+    - usedAt : Instant
+    - createdAt : Instant
+  }
+
+  AuditLogEntity --> AuditSource : source
+
+  ' Logical link between session and refresh token
+  SessionEntity "1" ..o "0..*" RefreshTokenEntity : sessionId (logique)
+}
+
+' Logical FK to UserEntity
+RefreshTokenEntity    ..> UserEntity           : userId (FK logique)
+SessionEntity         ..> UserEntity           : userId (FK logique)
+MfaRecoveryCodeEntity ..> UserEntity           : userId (FK logique)
+AuditLogEntity        ..> UserEntity           : userId optionnel
+OtpCodeEntity         ..> UserEntity           : corrélation email
+
+
+' ─────────────────────────────────────────────
+' PACKAGE 3 — Domaine CAN
+' ─────────────────────────────────────────────
+package "Domaine CAN\n(com.example.backend.can.entity)" as pkg_can {
+
+  class CanSessionEntity <<entity>> {
+    - id : Long
+    - sessionId : String
+    - sourceFilename : String
+    - startTs : Double
+    - endTs : Double
+    - frameCount : Integer
+    - createdAt : LocalDateTime
+  }
+
+  note right of CanSessionEntity
+    Clé métier : sessionId (String UUID)
+    Clé technique : id (Long auto-incrémenté)
+    Les entités CAN référencent sessionId,
+    pas id, pour découpler le schéma.
+  end note
+
+  class CanFrameEntity <<entity>> {
+    - id : Long
+    - sessionId : String
+    - timestamp : Double
+    - channel : Integer
+    - channelName : String
+    - msgId : String
+    - msgName : String
+    - direction : String
+    - rawBytes : String
+    - signals : String
+  }
+
+  class IntegrityFaultEntity <<entity>> {
+    - id : Long
+    - sessionId : String
+    - frameTimestamp : Double
+    - msgId : String
+    - msgName : String
+    - faultType : String
+    - description : String
+    - createdAt : LocalDateTime
+  }
+
+  note right of IntegrityFaultEntity
+    frameId supprimé : frameTimestamp
+    identifie le contexte temporel
+    sans FK vers CanFrameEntity.
+  end note
+
+  class LogFileEntity <<entity>> {
+    - id : Long
+    - sessionId : String
+    - filename : String
+    - fileSize : Long
+    - format : String
+    - channelCount : Integer
+    - frameCount : Integer
+    - startTs : Double
+    - endTs : Double
+    - durationSeconds : Double
+    - status : String
+    - errorMessage : String
+    - createdAt : LocalDateTime
+    - completedAt : LocalDateTime
+  }
+
+  note as N_CAN
+    Aucun @ManyToOne JPA vers CanSessionEntity.
+    sessionId (String) est la clé métier partagée.
+    Cohérence garantie par les services applicatifs.
+  end note
+
+  N_CAN .. CanFrameEntity
+
+  CanFrameEntity       }o--|| CanSessionEntity : ref. par sessionId
+  IntegrityFaultEntity }o--|| CanSessionEntity : ref. par sessionId
+  LogFileEntity        }o--o| CanSessionEntity : ref. par sessionId
+}
+
+
+' ─────────────────────────────────────────────
+' PACKAGE 4 — Couche messagerie Kafka
+' ─────────────────────────────────────────────
+package "Messagerie Kafka\n(com.example.backend.can.consumer)" as pkg_kafka {
+
+  class CanKafkaConsumer <<Component>> {
+    - frameSink : Sinks.Many<CanFrameResponse>
+    --
+    + consumeSessionMeta(String json) : void
+    + consumeLogFileEvent(String json) : void
+    + consumeDecodedFrame(ConsumerRecord) : void
+  }
+
+  note bottom of CanKafkaConsumer
+    Diffusion temps réel via Reactor Sinks (60 Hz).
+    Publie vers WebSocket STOMP (/topic/live-telemetry)
+    en plus d'écrire MySQL et InfluxDB.
+  end note
+}
+
+
+' ─────────────────────────────────────────────
+' PACKAGE 5 — Services métier
+' ─────────────────────────────────────────────
+package "Services métier\n(com.example.backend)" as pkg_svc {
+
+  class AuthService <<Service>> {
+    + login() : Object
+    + verifyMfa() : AuthResponse
+    + register() : AuthResponse
+    + refresh() : AuthResponse
+    + forgotPassword() : void
+    + verifyOtp() : VerifyOtpResponse
+    + resetPassword() : void
+  }
+
+  class UserServiceV1 <<Service>> {
+    + findAll() : PageResponse<UserResponse>
+    + findById(UUID) : UserDetailResponse
+    + updateProfile() : UserDetailResponse
+    + toggleStatus() : void
+    + changePassword() : void
+  }
+
+  class CanSessionService <<Service>> {
+    + saveSession(String json) : CanSessionEntity
+    + saveFrame(String json) : CanFrameEntity
+    + getAllSessions() : List<CanSessionEntity>
+    + getFramesBySession(sessionId) : List<CanFrameEntity>
+    + deleteSession(sessionId) : Map<String,Object>
+  }
+
+  class InfluxWriteService <<Service>> {
+    + writeFrame(CanFrameEntity) : void
+    + deleteSession(String sessionId) : void
+  }
+
+  class IntegrityAnalyzerService <<Service>> {
+    + analyze(CanFrameEntity) : void
+  }
+
+  class LogUploadService <<Service>> {
+    + processUpload(MultipartFile) : String
+  }
+
+  class PlaybackService <<Service>> {
+    + startPlayback() : String
+    + stopPlayback(playbackId) : boolean
+    + isActive(playbackId) : boolean
+  }
+
+  class LogFileService <<Service>> {
+    + saveLogFileEvent(String json) : void
+  }
+}
+
+' Service → Entity dependencies
+AuthService        ..> UserEntity
+AuthService        ..> RefreshTokenEntity
+AuthService        ..> SessionEntity
+AuthService        ..> OtpCodeEntity
+AuthService        ..> MfaRecoveryCodeEntity
+UserServiceV1      ..> UserEntity
+CanSessionService  ..> CanSessionEntity
+CanSessionService  ..> CanFrameEntity
+InfluxWriteService ..> CanFrameEntity
+IntegrityAnalyzerService ..> IntegrityFaultEntity
+IntegrityAnalyzerService ..> CanFrameEntity
+LogFileService     ..> LogFileEntity
+
+' Consumer → Services
+CanKafkaConsumer ..> CanSessionService
+CanKafkaConsumer ..> InfluxWriteService
+CanKafkaConsumer ..> IntegrityAnalyzerService
+CanKafkaConsumer ..> LogFileService
+
+
+' ─────────────────────────────────────────────
+' PACKAGE 6 — Infrastructure externe
+' ─────────────────────────────────────────────
+package "Infrastructure externe\n(Spring / Influx / WebSocket)" as pkg_tech {
+  class KafkaTemplate <<Spring>>
+  class InfluxDBClient <<InfluxDB>>
+  class SimpMessagingTemplate <<Spring WebSocket>>
+}
+
+LogUploadService   ..> KafkaTemplate
+PlaybackService    ..> InfluxDBClient
+PlaybackService    ..> SimpMessagingTemplate
+CanKafkaConsumer   ..> SimpMessagingTemplate
+
+
+' ─────────────────────────────────────────────
+' PACKAGE 7 — Sécurité JWT
+' ─────────────────────────────────────────────
+package "Sécurité JWT\n(com.example.backend.security)" as pkg_sec {
+
+  class JwtAuthenticationFilter <<OncePerRequestFilter>> {
+    + doFilterInternal(req, res, chain) : void
+    - extractJwt(HttpServletRequest) : String
+  }
+
+  class JwtService <<Service>> {
+    + generateAccessToken(email, userId) : String
+    + generateMfaAuthToken(email, userId) : String
+    + generateRefreshToken() : String
+    + getEmailFromToken(String) : String
+    + getUserIdFromToken(String) : UUID
+    + isTokenValid(String) : boolean
+    + isMfaAuthToken(String) : boolean
+  }
+
+  class RateLimitFilter        <<OncePerRequestFilter>>
+  class SecurityHardeningFilter <<OncePerRequestFilter>>
+  class SessionHeartbeatFilter  <<OncePerRequestFilter>> {
+    + doFilterInternal(req, res, chain) : void
+  }
+
+  note right of SessionHeartbeatFilter
+    Met à jour SessionEntity.lastActive
+    à chaque requête authentifiée.
+  end note
+}
+
+JwtAuthenticationFilter   ..> JwtService
+SessionHeartbeatFilter    ..> SessionEntity
+SessionHeartbeatFilter    ..> AuthService
+
+
+legend bottom
+  Conventions :
+  ──  association JPA (@ManyToMany / @OneToMany)
+  ···>  dépendance logique ou usage (pas de FK JPA)
+  }o──||  référence par sessionId (clé métier String, pas FK JPA)
+  Non modélisé : DTOs (Request / Response), repositories Spring Data JPA,
+  configuration Kafka / InfluxDB, composants Angular frontend,
+  pipeline Python (decoder · file_worker · can_simulator).
+  InfluxDB : données time-series hors JPA — accès via InfluxDBClient.
+endlegend
+
+@enduml

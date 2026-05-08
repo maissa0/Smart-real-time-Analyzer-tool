@@ -1,0 +1,54 @@
+@startuml
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+
+actor "Actor" as User
+actor "Actor" as Driver
+
+rectangle RidehailingSystem {
+  ' --- Top/Left Vertical Stack ---
+  usecase "Request ride" as UC1
+  usecase "Cancel" as UC2
+  usecase "View ride details" as UC3
+  usecase "Rate driver" as UC4
+  usecase "Update profile" as UC5
+
+  ' Vertical alignment for the left column
+  UC1 -[hidden]down- UC2
+  UC2 -[hidden]down- UC3
+  UC3 -[hidden]down- UC4
+  UC4 -[hidden]down- UC5
+
+  ' --- Bottom/Right Horizontal Flow ---
+  usecase "View driver rating" as UC6
+  usecase "Accept ride request" as UC7
+  usecase "Start ride" as UC8
+  usecase "End ride" as UC9
+
+  ' Use -[hidden]- to push these to the bottom area
+  UC5 -[hidden]down- UC7
+  
+  ' Horizontal alignment for the bottom row
+  UC6 -[hidden]right- UC7
+  UC7 -[hidden]right- UC8
+  UC8 -[hidden]right- UC9
+
+  ' Includes with specific directions to match the image's diagonal/horizontal flow
+  UC1 ..> UC7 : <<Include>>
+  UC7 .right.> UC8 : <<Include>>
+  UC8 .right.> UC9 : <<Include>>
+}
+
+' Actor connections
+User -- UC1
+User -- UC2
+User -- UC3
+User -- UC4
+User -- UC5
+
+Driver -- UC6
+Driver -- UC7
+Driver -- UC8
+Driver -- UC9
+@enduml

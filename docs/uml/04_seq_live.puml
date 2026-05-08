@@ -1,0 +1,47 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam SequenceParticipantBackgroundColor #F5F5F5
+skinparam SequenceParticipantBorderColor #C8141E
+skinparam ArrowColor #C8141E
+skinparam NoteBackgroundColor #FAEAEA
+skinparam NoteBorderColor #DEDEDE
+
+title Sequence 2 — Live CAN Capture (Simulator)
+
+participant "can_simulator.py\n(random mode)" as SIM
+participant "Kafka\nraw-can-frames" as KR
+participant "decoder.py" as DEC
+participant "xml_decoder\n(catalog)" as CAT
+participant "Kafka\ndecoded-signals" as KD
+participant "CanKafkaConsumer\n(Spring)" as CON
+participant "InfluxWriteService" as INF
+participant "CanSessionService\n(MySQL)" as CSS
+participant "WebSocket STOMP\n/topic/live-telemetry" as WS
+participant "Angular\nLiveTelemetryService" as ANG
+
+SIM -> KR : produce(raw frame JSON)\n{session_id, msg_id, raw_bytes, frame_seq}
+note over SIM : Also produces session-meta\nto session-meta topic
+
+KR -> DEC : consume batch
+DEC -> CAT : decode_frame(msg_id, raw_bytes)
+CAT --> DEC : List<DecodedSignal>
+DEC -> KD : produce(decoded JSON)\n{signals_dict, signals_flat, channel_name}
+
+KD -> CON : @KafkaListener\n("decoded-signals")
+CON -> CSS : upsert session + increment frameCount
+CSS --> CON : saved
+
+CON -> INF : writeBatch(points → ecu_telemetry)
+INF --> CON : ok
+
+CON -> WS : sink.tryEmitNext(frame)\n→ Reactor Sinks 60Hz batch
+
+ANG -> WS : subscribe /topic/live-telemetry\n(STOMP over SockJS)
+WS --> ANG : stream CanFrameResponse[]
+ANG -> ANG : update signalStateMap\nupdateFrameCount signal
+ANG --> ANG : RAF-batched Chart.js refresh
+
+note over DEC : --throttle 0.01 = max 100 msg/s\nto prevent Kafka backlog
+@enduml

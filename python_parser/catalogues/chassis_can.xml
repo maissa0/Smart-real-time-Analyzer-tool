@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bus Name="Chassis_CAN">
+
+    <massage id="0x200" name="Wheel_Speed">
+        <Byte Num="0">
+            <Signal Bit="11111111">
+                <signal_name>Wheel_Speed_FL</signal_name>
+                <values>
+                    <value>0</value><name>Stationary</name>
+                    <value>1</value><name>Slow</name>
+                    <value>2</value><name>Normal</name>
+                    <value>3</value><name>Fast</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="11111111">
+                <signal_name>Wheel_Speed_FR</signal_name>
+                <values>
+                    <value>0</value><name>Stationary</name>
+                    <value>1</value><name>Slow</name>
+                    <value>2</value><name>Normal</name>
+                    <value>3</value><name>Fast</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="2">
+            <Signal Bit="11111111">
+                <signal_name>Wheel_Speed_RL</signal_name>
+                <values>
+                    <value>0</value><name>Stationary</name>
+                    <value>1</value><name>Slow</name>
+                    <value>2</value><name>Normal</name>
+                    <value>3</value><name>Fast</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="3">
+            <Signal Bit="11111111">
+                <signal_name>Wheel_Speed_RR</signal_name>
+                <values>
+                    <value>0</value><name>Stationary</name>
+                    <value>1</value><name>Slow</name>
+                    <value>2</value><name>Normal</name>
+                    <value>3</value><name>Fast</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <massage id="0x201" name="Suspension_Status">
+        <Byte Num="0">
+            <Signal Bit="00001111">
+                <signal_name>Suspension_FL</signal_name>
+                <values>
+                    <value>0</value><name>Normal</name>
+                    <value>1</value><name>Compressed</name>
+                    <value>2</value><name>Extended</name>
+                    <value>3</value><name>Fault</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Suspension_FR</signal_name>
+                <values>
+                    <value>0</value><name>Normal</name>
+                    <value>1</value><name>Compressed</name>
+                    <value>2</value><name>Extended</name>
+                    <value>3</value><name>Fault</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="00001111">
+                <signal_name>Suspension_RL</signal_name>
+                <values>
+                    <value>0</value><name>Normal</name>
+                    <value>1</value><name>Compressed</name>
+                    <value>2</value><name>Extended</name>
+                    <value>3</value><name>Fault</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Suspension_RR</signal_name>
+                <values>
+                    <value>0</value><name>Normal</name>
+                    <value>1</value><name>Compressed</name>
+                    <value>2</value><name>Extended</name>
+                    <value>3</value><name>Fault</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <massage id="0x202" name="Tyre_Pressure">
+        <Byte Num="0">
+            <Signal Bit="00001111">
+                <signal_name>Tyre_Pressure_FL</signal_name>
+                <values>
+                    <value>0</value><name>Flat</name>
+                    <value>1</value><name>Low</name>
+                    <value>2</value><name>Normal</name>
+                    <value>3</value><name>High</name>
+                    <value>4</value><name>Over</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Tyre_Pressure_FR</signal_name>
+                <values>
+                    <value>0</value><name>Flat</name>
+                    <value>1</value><name>Low</name>
+                    <value>2</value><name>Normal</name>
+                    <value>3</value><name>High</name>
+                    <value>4</value><name>Over</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="00001111">
+                <signal_name>Tyre_Pressure_RL</signal_name>
+                <values>
+                    <value>0</value><name>Flat</name>
+                    <value>1</value><name>Low</name>
+                    <value>2</value><name>Normal</name>
+                    <value>3</value><name>High</name>
+                    <value>4</value><name>Over</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Tyre_Pressure_RR</signal_name>
+                <values>
+                    <value>0</value><name>Flat</name>
+                    <value>1</value><name>Low</name>
+                    <value>2</value><name>Normal</name>
+                    <value>3</value><name>High</name>
+                    <value>4</value><name>Over</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <massage id="0x203" name="Body_Control">
+        <Byte Num="0">
+            <Signal Bit="00000011">
+                <signal_name>Headlight_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>DRL</name>
+                    <value>2</value><name>Low_Beam</name>
+                    <value>3</value><name>High_Beam</name>
+                </values>
+            </Signal>
+            <Signal Bit="00001100">
+                <signal_name>Wiper_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Intermittent</name>
+                    <value>2</value><name>Low</name>
+                    <value>3</value><name>High</name>
+                </values>
+            </Signal>
+            <Signal Bit="00110000">
+                <signal_name>Turn_Signal</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Left</name>
+                    <value>2</value><name>Right</name>
+                    <value>3</value><name>Hazard</name>
+                </values>
+            </Signal>
+            <Signal Bit="11000000">
+                <signal_name>Horn_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>On</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+</Bus>

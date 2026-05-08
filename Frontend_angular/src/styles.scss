@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --kpit-bg: #07090b;
+  --kpit-sidebar: #0d1117;
+  --kpit-card: #0d1117;
+  --kpit-accent: #b0ff44;
+  --kpit-accent-05: rgba(176, 255, 68, 0.05);
+  --kpit-accent-08: rgba(176, 255, 68, 0.08);
+  --kpit-accent-10: rgba(176, 255, 68, 0.1);
+  --kpit-accent-12: rgba(176, 255, 68, 0.12);
+  --kpit-accent-20: rgba(176, 255, 68, 0.2);
+  --kpit-accent-30: rgba(176, 255, 68, 0.3);
+  --kpit-text: #ffffff;
+  --kpit-muted: #8a9ab0;
+  --kpit-border: rgba(176, 255, 68, 0.12);
+  --kpit-navbar-h: 52px;
+
+  /* Keep existing able vars for backward compat */
+  --able-primary: #b0ff44;
+  --able-border: rgba(176, 255, 68, 0.15);
+  --able-bg: #07090b;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--kpit-bg);
+  color: var(--kpit-text);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(176, 255, 68, 0.25);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(176, 255, 68, 0.45);
+}
+
+/* Auth page global overrides */
+.auth-page-bg {
+  min-height: 100vh;
+  background: #07090b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-card {
+  background: #0d1117;
+  border: 1px solid rgba(176, 255, 68, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 0 40px rgba(176, 255, 68, 0.06);
+}
+.auth-input {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(176, 255, 68, 0.15) !important;
+  color: #fff !important;
+  border-radius: 8px;
+}
+.auth-input:focus {
+  border-color: #b0ff44 !important;
+  box-shadow: 0 0 0 2px rgba(176, 255, 68, 0.15) !important;
+  outline: none !important;
+}
+.auth-input::placeholder {
+  color: #5a6a7a !important;
+}
+.auth-btn-primary {
+  background: #b0ff44 !important;
+  color: #07090b !important;
+  font-weight: 700 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  transition: all 0.2s !important;
+}
+.auth-btn-primary:hover {
+  background: #c8ff6e !important;
+  box-shadow: 0 0 20px rgba(176, 255, 68, 0.3) !important;
+}
+.auth-btn-primary:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+.auth-link {
+  color: #b0ff44 !important;
+}
+.auth-link:hover {
+  text-decoration: underline !important;
+}
+
+/* Profile page overrides */
+.profile-page {
+  background: #07090b;
+  min-height: calc(100vh - 52px);
+}
+.profile-page .bg-white,
+.profile-page [class*='bg-white'] {
+  background: #0d1117 !important;
+  border-color: rgba(176, 255, 68, 0.12) !important;
+}
+.profile-page .text-gray-900 {
+  color: #fff !important;
+}
+.profile-page .text-gray-700 {
+  color: #d0d6e0 !important;
+}
+.profile-page .text-gray-500 {
+  color: #8a9ab0 !important;
+}
+.profile-page [class*='border-able-primary'] {
+  border-color: #b0ff44 !important;
+}
+.profile-page [class*='text-able-primary'] {
+  color: #b0ff44 !important;
+}
+.profile-page input,
+.profile-page select,
+.profile-page textarea {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-color: rgba(176, 255, 68, 0.15) !important;
+  color: #fff !important;
+}
+.profile-page input:focus,
+.profile-page select:focus,
+.profile-page textarea:focus {
+  border-color: #b0ff44 !important;
+  box-shadow: 0 0 0 2px rgba(176, 255, 68, 0.15) !important;
+}
+.profile-page [class*='bg-able-primary'] {
+  background: #b0ff44 !important;
+  color: #07090b !important;
+}
+.profile-page [class*='border-able-border'],
+.profile-page [class*='border-gray-200'] {
+  border-color: rgba(176, 255, 68, 0.12) !important;
+}

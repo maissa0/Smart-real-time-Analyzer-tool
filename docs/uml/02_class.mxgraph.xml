@@ -1,0 +1,345 @@
+<mxGraphModel dx="1927" dy="1046" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2485" pageHeight="3200" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <mxCell id="title" parent="1" vertex="1" style="text;html=1;align=center;fontStyle=1;fontSize=14;strokeColor=none;fillColor=none;fontColor=#C8141E;" value="KPIT — Diagramme de classes (Backend JPA — entités, services et sécurité)">
+      <mxGeometry x="120" y="20" width="2000" height="32" as="geometry" />
+    </mxCell>
+
+    <!-- Package 1 Plateforme utilisateur -->
+    <mxCell id="z_user" parent="1" vertex="1" style="swimlane;startSize=28;fillColor=#F5F5F5;strokeColor=#C8141E;fontStyle=1;fontColor=#C8141E;html=1;rounded=1;" value="Plateforme utilisateur&#xa;(com.example.backend.entity)">
+      <mxGeometry x="40" y="60" width="580" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="c_AbstractAuditingEntity" parent="z_user" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;spacingTop=4;fontSize=11;" value="&amp;lt;b&amp;gt;AbstractAuditingEntity&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;span style=&amp;quot;font-size:10px&amp;quot;&amp;gt;&amp;lt;&amp;lt;MappedSuperclass&amp;gt;&amp;gt;&amp;lt;/span&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:10px&amp;quot;&amp;gt;# createdAt : Instant&amp;lt;br&amp;gt;# updatedAt : Instant&amp;lt;/div&amp;gt;">
+      <mxGeometry x="188" y="44" width="220" height="88" as="geometry" />
+    </mxCell>
+    <mxCell id="c_UserEntity" parent="z_user" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;spacingTop=4;fontSize=10;" value="&amp;lt;b&amp;gt;UserEntity&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- id : UUID&amp;lt;br&amp;gt;- email, username, passwordHash&amp;lt;br&amp;gt;- fullName, jobTitle, department, timezone&amp;lt;br&amp;gt;- phone, bio, avatarUrl&amp;lt;br&amp;gt;- isActive, mfaEnabled, mfaSecret&amp;lt;br&amp;gt;- verified, deletedAt&amp;lt;br&amp;gt;—&amp;lt;br&amp;gt;- roles : Set&amp;lt;RoleEntity&amp;gt;&amp;lt;/div&amp;gt;">
+      <mxGeometry x="36" y="152" width="248" height="214" as="geometry" />
+    </mxCell>
+    <mxCell id="n_UserNote" parent="z_user" vertex="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=12;fillColor=#FFF8E1;strokeColor=#888780;fontSize=10;align=left;spacingLeft=6;" value="Soft delete via filtre Hibernate&amp;lt;br&amp;gt;sur deleted_at IS NULL.">
+      <mxGeometry x="300" y="152" width="160" height="56" as="geometry" />
+    </mxCell>
+    <mxCell id="c_RoleEntity" parent="z_user" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;fontSize=11;" value="&amp;lt;b&amp;gt;RoleEntity&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- id : UUID&amp;lt;br&amp;gt;- name, description&amp;lt;br&amp;gt;—&amp;lt;br&amp;gt;- users : Set&amp;lt;UserEntity&amp;gt;&amp;lt;br&amp;gt;- permissions : Set&amp;lt;PermissionEntity&amp;gt;&amp;lt;/div&amp;gt;">
+      <mxGeometry x="296" y="292" width="232" height="132" as="geometry" />
+    </mxCell>
+    <mxCell id="c_PermissionEntity" parent="z_user" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;fontSize=11;" value="&amp;lt;b&amp;gt;PermissionEntity&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- id : UUID&amp;lt;br&amp;gt;- slug, description&amp;lt;br&amp;gt;—&amp;lt;br&amp;gt;- roles : Set&amp;lt;RoleEntity&amp;gt;&amp;lt;/div&amp;gt;">
+      <mxGeometry x="36" y="394" width="248" height="122" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e_gen_user" parent="z_user" edge="1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=0;endSize=12;strokeColor=#555555;" source="c_AbstractAuditingEntity" target="c_UserEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e_gen_role" parent="z_user" edge="1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=0;strokeColor=#555555;" source="c_AbstractAuditingEntity" target="c_RoleEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e_gen_perm" parent="z_user" edge="1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=0;strokeColor=#555555;" source="c_AbstractAuditingEntity" target="c_PermissionEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e_mn_roles" parent="z_user" edge="1" style="endArrow=none;html=1;strokeColor=#555555;fontSize=10;" value="user_roles" source="c_UserEntity" target="c_RoleEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e_mn_perm" parent="z_user" edge="1" style="endArrow=none;html=1;strokeColor=#555555;fontSize=10;" value="role_permissions" source="c_RoleEntity" target="c_PermissionEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Package 2 Sessions / Audit / OTP -->
+    <mxCell id="z_sess" parent="1" vertex="1" style="swimlane;startSize=28;fillColor=#F5F5F5;strokeColor=#C8141E;fontStyle=1;html=1;rounded=1;fontColor=#C8141E;" value="Sessions / Audit / OTP&#xa;(com.example.backend.entity)">
+      <mxGeometry x="650" y="60" width="640" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="c_RefreshTokenEntity" parent="z_sess" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;fontSize=10;" value="&amp;lt;b&amp;gt;RefreshTokenEntity&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- id, userId, sessionId&amp;lt;br&amp;gt;- tokenHash, device&amp;lt;br&amp;gt;- ipAddress, userAgent&amp;lt;br&amp;gt;- expiresAt, revokedAt, createdAt&amp;lt;br&amp;gt;—&amp;lt;br&amp;gt;+ isRevoked() / isExpired()&amp;lt;/div&amp;gt;">
+      <mxGeometry x="28" y="44" width="268" height="168" as="geometry" />
+    </mxCell>
+    <mxCell id="c_SessionEntity" parent="z_sess" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;fontSize=10;" value="&amp;lt;b&amp;gt;SessionEntity&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- id, userId&amp;lt;br&amp;gt;- device, ipAddress, userAgent&amp;lt;br&amp;gt;- lastActive, createdAt&amp;lt;/div&amp;gt;">
+      <mxGeometry x="28" y="236" width="268" height="112" as="geometry" />
+    </mxCell>
+    <mxCell id="n_SessionNote" parent="z_sess" vertex="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#FFF8E1;strokeColor=#888780;fontSize=10;align=left;" value="Table MySQL : sessions&amp;lt;br&amp;gt;(suivi appareil / JWT)&amp;lt;br&amp;gt;sessionId lie Session&amp;lt;br&amp;gt;et RefreshToken.">
+      <mxGeometry x="324" y="236" width="168" height="88" as="geometry" />
+    </mxCell>
+    <mxCell id="c_AuditLogEntity" parent="z_sess" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;fontSize=10;" value="&amp;lt;b&amp;gt;AuditLogEntity&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- userId, action, resource&amp;lt;br&amp;gt;- resourceId, metadata Map&amp;lt;String,Object&amp;gt;&amp;lt;br&amp;gt;- ipAddress, userAgent&amp;lt;br&amp;gt;- source : AuditSource&amp;lt;br&amp;gt;- createdAt&amp;lt;/div&amp;gt;">
+      <mxGeometry x="28" y="374" width="280" height="136" as="geometry" />
+    </mxCell>
+    <mxCell id="c_AuditSource" parent="z_sess" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE7F6;strokeColor=#5E35B1;align=center;fontSize=11;" value="&amp;lt;&amp;lt;enumeration&amp;gt;&amp;gt;&amp;lt;br&amp;gt;AuditSource&amp;lt;br&amp;gt;AUDIT&amp;lt;br&amp;gt;SECURITY">
+      <mxGeometry x="340" y="374" width="140" height="92" as="geometry" />
+    </mxCell>
+    <mxCell id="c_OtpCodeEntity" parent="z_sess" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;fontSize=10;" value="&amp;lt;b&amp;gt;OtpCodeEntity&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- email, code&amp;lt;br&amp;gt;- expiresAt, usedAt, createdAt&amp;lt;/div&amp;gt;">
+      <mxGeometry x="458" y="44" width="168" height="100" as="geometry" />
+    </mxCell>
+    <mxCell id="c_MfaRecoveryCodeEntity" parent="z_sess" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;fontSize=10;" value="&amp;lt;b&amp;gt;MfaRecoveryCodeEntity&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- userId, codeHash&amp;lt;br&amp;gt;- usedAt, createdAt&amp;lt;/div&amp;gt;">
+      <mxGeometry x="458" y="164" width="168" height="96" as="geometry" />
+    </mxCell>
+    <mxCell id="e_audit_source" parent="z_sess" edge="1" style="html=1;dashed=0;strokeColor=#555555;endArrow=open;" source="c_AuditLogEntity" target="c_AuditSource" value="source">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e_sess_refresh" parent="z_sess" edge="1" style="html=1;dashed=1;endArrow=oval;startArrow=diamondThin;startFill=0;strokeColor=#555555;fontSize=9;" value="sessionId (logique)&amp;lt;br&amp;gt;1 → 0..*" source="c_SessionEntity" target="c_RefreshTokenEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Package 3 Domaine CAN -->
+    <mxCell id="z_can" parent="1" vertex="1" style="swimlane;startSize=28;fillColor=#F5F5F5;strokeColor=#C8141E;fontStyle=1;html=1;rounded=1;fontColor=#C8141E;" value="Domaine CAN&#xa;(com.example.backend.can.entity)">
+      <mxGeometry x="1320" y="60" width="640" height="820" as="geometry" />
+    </mxCell>
+    <mxCell id="c_CanSessionEntity" parent="z_can" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;fontSize=10;" value="&amp;lt;b&amp;gt;CanSessionEntity&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- id : Long&amp;lt;br&amp;gt;- sessionId : String&amp;lt;br&amp;gt;- sourceFilename, startTs, endTs&amp;lt;br&amp;gt;- frameCount, createdAt&amp;lt;/div&amp;gt;">
+      <mxGeometry x="28" y="44" width="268" height="124" as="geometry" />
+    </mxCell>
+    <mxCell id="n_CanSessionNote" parent="z_can" vertex="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#FFF8E1;strokeColor=#888780;fontSize=10;align=left;" value="Clé métier : sessionId (String)&amp;lt;br&amp;gt;Clé technique : id (Long)&amp;lt;br&amp;gt;Références par sessionId,&amp;lt;br&amp;gt;pas par id.">
+      <mxGeometry x="320" y="44" width="168" height="88" as="geometry" />
+    </mxCell>
+    <mxCell id="c_CanFrameEntity" parent="z_can" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;fontSize=10;" value="&amp;lt;b&amp;gt;CanFrameEntity&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- sessionId, timestamp&amp;lt;br&amp;gt;- channel, channelName&amp;lt;br&amp;gt;- msgId, msgName, direction&amp;lt;br&amp;gt;- rawBytes, signals&amp;lt;/div&amp;gt;">
+      <mxGeometry x="28" y="184" width="268" height="132" as="geometry" />
+    </mxCell>
+    <mxCell id="c_IntegrityFaultEntity" parent="z_can" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;fontSize=10;" value="&amp;lt;b&amp;gt;IntegrityFaultEntity&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- sessionId, frameTimestamp&amp;lt;br&amp;gt;- msgId, msgName&amp;lt;br&amp;gt;- faultType, description&amp;lt;br&amp;gt;- createdAt&amp;lt;/div&amp;gt;">
+      <mxGeometry x="28" y="336" width="268" height="120" as="geometry" />
+    </mxCell>
+    <mxCell id="n_IntNote" parent="z_can" vertex="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#FFF8E1;strokeColor=#888780;fontSize=10;align=left;" value="frameId supprimé :&amp;lt;br&amp;gt;frameTimestamp pour contexte&amp;lt;br&amp;gt;sans FK CanFrame.">
+      <mxGeometry x="320" y="336" width="168" height="72" as="geometry" />
+    </mxCell>
+    <mxCell id="c_LogFileEntity" parent="z_can" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF0;strokeColor=#C8141E;align=center;verticalAlign=top;fontSize=10;" value="&amp;lt;b&amp;gt;LogFileEntity&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;entity&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- sessionId, filename, format&amp;lt;br&amp;gt;- fileSize, channelCount, frameCount&amp;lt;br&amp;gt;- startTs, endTs, durationSeconds&amp;lt;br&amp;gt;- status, errorMessage&amp;lt;br&amp;gt;- createdAt, completedAt&amp;lt;/div&amp;gt;">
+      <mxGeometry x="28" y="480" width="288" height="152" as="geometry" />
+    </mxCell>
+    <mxCell id="n_N_CAN" parent="z_can" vertex="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#FFF8E1;strokeColor=#888780;fontSize=10;align=left;" value="Pas de ManyToOne JPA vers&amp;lt;br&amp;gt;CanSessionEntity.&amp;lt;br&amp;gt;sessionId String partagée.&amp;lt;br&amp;gt;Cohérence : services.">
+      <mxGeometry x="360" y="196" width="180" height="88" as="geometry" />
+    </mxCell>
+    <mxCell id="e_n_can_frame" parent="z_can" edge="1" style="html=1;dashed=1;endArrow=none;strokeColor=#AAAAAA;" source="n_N_CAN" target="c_CanFrameEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e_cf_cs" parent="z_can" edge="1" style="html=1;strokeColor=#555555;endArrow=classic;dashed=0;startArrow=oval;startFill=0;endArrow=diamondThin;endFill=1;" value="ref. sessionId" source="c_CanFrameEntity" target="c_CanSessionEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e_if_cs" parent="z_can" edge="1" style="html=1;strokeColor=#555555;endArrow=classic;startArrow=oval;startFill=0;endArrow=diamondThin;endFill=1;" value="ref. sessionId" source="c_IntegrityFaultEntity" target="c_CanSessionEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e_lf_cs" parent="z_can" edge="1" style="html=1;strokeColor=#555555;endArrow=classic;startArrow=oval;startFill=0;dashed=1;" value="ref. sessionId" source="c_LogFileEntity" target="c_CanSessionEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Package Kafka -->
+    <mxCell id="z_kafka" parent="1" vertex="1" style="swimlane;startSize=28;fillColor=#F5F5F5;strokeColor=#2E7D32;fontStyle=1;html=1;rounded=1;fontColor=#2E7D32;" value="Messagerie Kafka&#xa;(com.example.backend.can.consumer)">
+      <mxGeometry x="40" y="680" width="420" height="260" as="geometry" />
+    </mxCell>
+    <mxCell id="c_CanKafkaConsumer" parent="z_kafka" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;align=center;verticalAlign=top;fontSize=10;" value="&amp;lt;b&amp;gt;CanKafkaConsumer&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;Component&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;&amp;lt;div style=&amp;quot;text-align:left;font-size:9px&amp;quot;&amp;gt;- frameSink : Sinks.Many&amp;lt;CanFrameResponse&amp;gt;&amp;lt;br&amp;gt;+ consumeSessionMeta(String json)&amp;lt;br&amp;gt;+ consumeLogFileEvent(String json)&amp;lt;br&amp;gt;+ consumeDecodedFrame(ConsumerRecord)&amp;lt;/div&amp;gt;">
+      <mxGeometry x="28" y="44" width="360" height="128" as="geometry" />
+    </mxCell>
+    <mxCell id="n_KafkaNote" parent="z_kafka" vertex="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#FFF8E1;fontSize=10;align=left;" value="Reactor Sinks 60 Hz.&amp;lt;br&amp;gt;STOMP /topic/live-telemetry&amp;lt;br&amp;gt;+ MySQL + InfluxDB.">
+      <mxGeometry x="28" y="184" width="200" height="64" as="geometry" />
+    </mxCell>
+
+    <!-- Package Services -->
+    <mxCell id="z_svc" parent="1" vertex="1" style="swimlane;startSize=28;fillColor=#F5F5F5;strokeColor=#1565C0;fontStyle=1;html=1;rounded=1;fontColor=#1565C0;" value="Services métier&#xa;(com.example.backend)">
+      <mxGeometry x="490" y="680" width="1120" height="280" as="geometry" />
+    </mxCell>
+    <mxCell id="c_AuthService" parent="z_svc" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=9;align=left;verticalAlign=top;spacingLeft=4;spacingTop=4;" value="&amp;lt;b&amp;gt;AuthService&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;Service&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;+ login(): Object&amp;lt;br&amp;gt;+ verifyMfa(): AuthResponse&amp;lt;br&amp;gt;+ register(): AuthResponse&amp;lt;br&amp;gt;+ refresh(): AuthResponse&amp;lt;br&amp;gt;+ forgotPassword(): void&amp;lt;br&amp;gt;+ verifyOtp(): VerifyOtpResponse&amp;lt;br&amp;gt;+ resetPassword(): void">
+      <mxGeometry x="20" y="44" width="200" height="140" as="geometry" />
+    </mxCell>
+    <mxCell id="c_UserServiceV1" parent="z_svc" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=9;align=left;verticalAlign=top;spacingLeft=4;spacingTop=4;" value="&amp;lt;b&amp;gt;UserServiceV1&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;Service&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;+ findAll(): Page&amp;lt;UserResponse&amp;gt;&amp;lt;br&amp;gt;+ findById(UUID)&amp;lt;br&amp;gt;+ updateProfile()&amp;lt;br&amp;gt;+ toggleStatus(): void&amp;lt;br&amp;gt;+ changePassword(): void">
+      <mxGeometry x="236" y="44" width="208" height="120" as="geometry" />
+    </mxCell>
+    <mxCell id="c_CanSessionService" parent="z_svc" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=9;align=left;verticalAlign=top;spacingLeft=4;spacingTop=4;" value="&amp;lt;b&amp;gt;CanSessionService&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;Service&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;+ saveSession(json)&amp;lt;br&amp;gt;+ saveFrame(json)&amp;lt;br&amp;gt;+ getAllSessions()&amp;lt;br&amp;gt;+ getFramesBySession(id)&amp;lt;br&amp;gt;+ deleteSession(id): Map">
+      <mxGeometry x="460" y="44" width="236" height="130" as="geometry" />
+    </mxCell>
+    <mxCell id="c_InfluxWriteService" parent="z_svc" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=9;align=left;verticalAlign=top;spacingLeft=4;spacingTop=4;" value="&amp;lt;b&amp;gt;InfluxWriteService&amp;lt;/b&amp;gt;&amp;lt;hr&amp;gt;+ writeFrame(CanFrameEntity)&amp;lt;br&amp;gt;+ deleteSession(sessionId)">
+      <mxGeometry x="716" y="44" width="172" height="72" as="geometry" />
+    </mxCell>
+    <mxCell id="c_IntegrityAnalyzerService" parent="z_svc" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=9;align=left;" value="&amp;lt;b&amp;gt;IntegrityAnalyzerService&amp;lt;/b&amp;gt;&amp;lt;hr&amp;gt;+ analyze(CanFrameEntity): void">
+      <mxGeometry x="908" y="44" width="196" height="64" as="geometry" />
+    </mxCell>
+    <mxCell id="c_LogUploadService" parent="z_svc" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=9;align=left;" value="&amp;lt;b&amp;gt;LogUploadService&amp;lt;/b&amp;gt;&amp;lt;hr&amp;gt;+ processUpload(MultipartFile): String">
+      <mxGeometry x="716" y="132" width="196" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="c_PlaybackService" parent="z_svc" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=9;align=left;" value="&amp;lt;b&amp;gt;PlaybackService&amp;lt;/b&amp;gt;&amp;lt;hr&amp;gt;+ startPlayback(): String&amp;lt;br&amp;gt;+ stopPlayback(playbackId)&amp;lt;br&amp;gt;+ isActive(playbackId)">
+      <mxGeometry x="924" y="124" width="180" height="76" as="geometry" />
+    </mxCell>
+    <mxCell id="c_LogFileService" parent="z_svc" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=9;align=left;" value="&amp;lt;b&amp;gt;LogFileService&amp;lt;/b&amp;gt;&amp;lt;hr&amp;gt;+ saveLogFileEvent(String json): void">
+      <mxGeometry x="1120" y="44" width="180" height="64" as="geometry" />
+    </mxCell>
+
+    <!-- Infrastructure -->
+    <mxCell id="z_tech" parent="1" vertex="1" style="swimlane;startSize=28;fillColor=#EEEEEE;strokeColor=#757575;html=1;rounded=1;" value="Infrastructure externe&#xa;(Spring / Influx / WebSocket)">
+      <mxGeometry x="1640" y="680" width="360" height="200" as="geometry" />
+    </mxCell>
+    <mxCell id="c_KafkaTemplate" parent="z_tech" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=11;" value="KafkaTemplate&amp;lt;br&amp;gt;&amp;lt;&amp;lt;Spring&amp;gt;&amp;gt;">
+      <mxGeometry x="28" y="44" width="300" height="48" as="geometry" />
+    </mxCell>
+    <mxCell id="c_InfluxDBClient" parent="z_tech" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=11;" value="InfluxDBClient&amp;lt;br&amp;gt;&amp;lt;&amp;lt;InfluxDB&amp;gt;&amp;gt;">
+      <mxGeometry x="28" y="100" width="300" height="48" as="geometry" />
+    </mxCell>
+    <mxCell id="c_SimpMessagingTemplate" parent="z_tech" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=11;" value="SimpMessagingTemplate&amp;lt;br&amp;gt;&amp;lt;&amp;lt;Spring WebSocket&amp;gt;&amp;gt;">
+      <mxGeometry x="28" y="154" width="300" height="44" as="geometry" />
+    </mxCell>
+
+    <!-- Sécurité JWT -->
+    <mxCell id="z_sec" parent="1" vertex="1" style="swimlane;startSize=28;fillColor=#FCE4EC;strokeColor=#880E4F;fontStyle=1;html=1;rounded=1;fontColor=#880E4F;" value="Sécurité JWT&#xa;(com.example.backend.security)">
+      <mxGeometry x="40" y="980" width="860" height="240" as="geometry" />
+    </mxCell>
+    <mxCell id="c_JwtAuthenticationFilter" parent="z_sec" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#880E4F;fontSize=9;align=left;verticalAlign=top;spacingLeft=4;spacingTop=4;" value="&amp;lt;b&amp;gt;JwtAuthenticationFilter&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;&amp;lt;OncePerRequestFilter&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;+ doFilterInternal(req,res,chain): void&amp;lt;br&amp;gt;- extractJwt(HttpServletRequest): String">
+      <mxGeometry x="24" y="44" width="260" height="88" as="geometry" />
+    </mxCell>
+    <mxCell id="c_JwtService" parent="z_sec" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#880E4F;fontSize=9;align=left;verticalAlign=top;spacingLeft=4;spacingTop=4;" value="&amp;lt;b&amp;gt;JwtService&amp;lt;/b&amp;gt; &amp;lt;&amp;lt;Service&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;+ generateAccessToken(email,userId)&amp;lt;br&amp;gt;+ generateMfaAuthToken(email,userId)&amp;lt;br&amp;gt;+ generateRefreshToken()&amp;lt;br&amp;gt;+ getEmailFromToken(String)&amp;lt;br&amp;gt;+ getUserIdFromToken(String): UUID&amp;lt;br&amp;gt;+ isTokenValid(String)&amp;lt;br&amp;gt;+ isMfaAuthToken(String)">
+      <mxGeometry x="302" y="44" width="280" height="140" as="geometry" />
+    </mxCell>
+    <mxCell id="c_RateLimitFilter" parent="z_sec" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#880E4F;fontSize=10;" value="RateLimitFilter&amp;lt;br&amp;gt;&amp;lt;&amp;lt;OncePerRequestFilter&amp;gt;&amp;gt;">
+      <mxGeometry x="598" y="44" width="160" height="52" as="geometry" />
+    </mxCell>
+    <mxCell id="c_SecurityHardeningFilter" parent="z_sec" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#880E4F;fontSize=10;" value="SecurityHardeningFilter&amp;lt;br&amp;gt;&amp;lt;&amp;lt;OncePerRequestFilter&amp;gt;&amp;gt;">
+      <mxGeometry x="598" y="108" width="160" height="52" as="geometry" />
+    </mxCell>
+    <mxCell id="c_SessionHeartbeatFilter" parent="z_sec" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#880E4F;fontSize=9;align=left;" value="&amp;lt;b&amp;gt;SessionHeartbeatFilter&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;&amp;lt;OncePerRequestFilter&amp;gt;&amp;gt;&amp;lt;hr&amp;gt;+ doFilterInternal(req,res,chain): void">
+      <mxGeometry x="772" y="44" width="200" height="72" as="geometry" />
+    </mxCell>
+    <mxCell id="n_HeartbeatNote" parent="z_sec" vertex="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#FFF8E1;fontSize=10;align=left;" value="Met à jour&amp;lt;br&amp;gt;SessionEntity.lastActive&amp;lt;br&amp;gt;(requêtes authentifiées)">
+      <mxGeometry x="688" y="172" width="160" height="64" as="geometry" />
+    </mxCell>
+
+    <!-- Legend -->
+    <mxCell id="legend" parent="1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;fontSize=10;strokeColor=#CCCCCC;fillColor=#FAFAFA;spacingLeft=8;spacingTop=8;" value="Conventions : association JPA (ManyToMany / OneToMany) trait plein ; dépendance logique sans FK : pointillés ; référence par sessionId (String) agrégation / association faible.&#xa;Non modélisé : DTOs, repositories Spring Data, config Kafka / Influx, Angular, pipeline Python.&#xa;InfluxDB : time-series hors JPA via InfluxDBClient.">
+      <mxGeometry x="940" y="980" width="1060" height="100" as="geometry" />
+    </mxCell>
+
+    <!-- FK logiques vers UserEntity (parent 1 pour traverse swimlanes) -->
+    <mxCell id="d_rt_u" parent="1" edge="1" style="html=1;dashed=1;strokeColor=#888888;endArrow=open;fontSize=9;" source="c_RefreshTokenEntity" target="c_UserEntity" value="userId (FK logique)">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="620" y="240" />
+          <mxPoint x="620" y="320" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="d_se_u" parent="1" edge="1" style="html=1;dashed=1;strokeColor=#888888;endArrow=open;fontSize=9;" source="c_SessionEntity" target="c_UserEntity" value="userId (FK logique)">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="600" y="480" />
+          <mxPoint x="600" y="380" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="d_mfa_u" parent="1" edge="1" style="html=1;dashed=1;strokeColor=#888888;endArrow=open;fontSize=9;" source="c_MfaRecoveryCodeEntity" target="c_UserEntity" value="userId (FK logique)">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="1230" y="280" />
+          <mxPoint x="440" y="280" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="d_au_u" parent="1" edge="1" style="html=1;dashed=1;strokeColor=#888888;endArrow=open;fontSize=9;" source="c_AuditLogEntity" target="c_UserEntity" value="userId optionnel">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="580" y="520" />
+          <mxPoint x="540" y="520" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="d_otp_u" parent="1" edge="1" style="html=1;dashed=1;strokeColor=#888888;endArrow=open;fontSize=9;" source="c_OtpCodeEntity" target="c_UserEntity" value="corrélation email">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="1240" y="200" />
+          <mxPoint x="580" y="200" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Service dependencies -->
+    <mxCell id="ds_auth_u" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#1565C0;" source="c_AuthService" target="c_UserEntity">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="520" y="820" />
+          <mxPoint x="320" y="820" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="ds_auth_rt" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#1565C0;" source="c_AuthService" target="c_RefreshTokenEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="ds_auth_sess" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#1565C0;" source="c_AuthService" target="c_SessionEntity">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="740" y="760" />
+          <mxPoint x="740" y="420" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="ds_auth_otp" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#1565C0;" source="c_AuthService" target="c_OtpCodeEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="ds_auth_mfa" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#1565C0;" source="c_AuthService" target="c_MfaRecoveryCodeEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="ds_us_u" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#1565C0;" source="c_UserServiceV1" target="c_UserEntity">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="700" y="820" />
+          <mxPoint x="360" y="820" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="ds_css_sess" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#1565C0;" source="c_CanSessionService" target="c_CanSessionEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="ds_css_frame" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#1565C0;" source="c_CanSessionService" target="c_CanFrameEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="ds_influx_f" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#1565C0;" source="c_InfluxWriteService" target="c_CanFrameEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="ds_ia_if" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#1565C0;" source="c_IntegrityAnalyzerService" target="c_IntegrityFaultEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="ds_ia_cf" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#1565C0;" source="c_IntegrityAnalyzerService" target="c_CanFrameEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="ds_lf_lfe" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#1565C0;" source="c_LogFileService" target="c_LogFileEntity">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="dk_css" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#2E7D32;" source="c_CanKafkaConsumer" target="c_CanSessionService">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="dk_influx" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#2E7D32;" source="c_CanKafkaConsumer" target="c_InfluxWriteService">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="dk_ia" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#2E7D32;" source="c_CanKafkaConsumer" target="c_IntegrityAnalyzerService">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="dk_lfs" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#2E7D32;" source="c_CanKafkaConsumer" target="c_LogFileService">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="dk_simp" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#E65100;" source="c_CanKafkaConsumer" target="c_SimpMessagingTemplate">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="400" y="640" />
+          <mxPoint x="1780" y="640" />
+          <mxPoint x="1780" y="900" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="dt_kt" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#E65100;" source="c_LogUploadService" target="c_KafkaTemplate">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="dt_ifc" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#E65100;" source="c_PlaybackService" target="c_InfluxDBClient">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="dt_simp_pb" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#E65100;" source="c_PlaybackService" target="c_SimpMessagingTemplate">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="dj_jwt" parent="z_sec" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#880E4F;" source="c_JwtAuthenticationFilter" target="c_JwtService">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="dh_sess" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#880E4F;" source="c_SessionHeartbeatFilter" target="c_SessionEntity">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="900" y="1100" />
+          <mxPoint x="900" y="460" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="dh_auth" parent="1" edge="1" style="html=1;dashed=1;endArrow=open;strokeColor=#880E4F;" source="c_SessionHeartbeatFilter" target="c_AuthService">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="520" y="1080" />
+          <mxPoint x="520" y="900" />
+        </Array>
+      </mxGeometry>
+    </mxCell>
+  </root>
+</mxGraphModel>
