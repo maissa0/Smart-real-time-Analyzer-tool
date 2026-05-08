@@ -27,9 +27,30 @@ public class InfluxQueryService {
     @Value("${influxdb.org}")
     private String influxOrg;
 
+    /**
+     * Validate that a string value is safe to interpolate into a Flux query.
+     * Accepts only alphanumeric characters, hyphens, underscores, and dots.
+     * Rejects any character that could escape a Flux string literal.
+     *
+     * @param value  the value to validate
+     * @param field  name of the field (for error messages and logging)
+     * @throws IllegalArgumentException if value contains invalid characters
+     */
+    private void validateFluxParam(String value, String field) {
+        if (value == null || !value.matches("[a-zA-Z0-9_.\\-]{1,128}")) {
+            log.warn("Invalid Flux parameter rejected: field='{}' value='{}'", field, value);
+            throw new IllegalArgumentException(
+                    "Invalid " + field + " format — only alphanumeric, dot, hyphen and underscore allowed"
+            );
+        }
+    }
+
     /** Queries time-ordered samples for one signal within a session and Unix second range. */
     public List<Map<String, Object>> querySignalTimeline(
             String sessionId, String signalName, double startTs, double endTs) {
+        // Validate both parameters before interpolating into the Flux query
+        validateFluxParam(sessionId, "sessionId");
+        validateFluxParam(signalName, "signalName");
         try {
             QueryApi queryApi = influxDBClient.getQueryApi();
 
@@ -49,7 +70,6 @@ public class InfluxQueryService {
 
             List<FluxTable> tables = queryApi.query(flux, influxOrg);
             List<Map<String, Object>> result = new ArrayList<>();
-
             for (FluxTable table : tables) {
                 for (FluxRecord record : table.getRecords()) {
                     Map<String, Object> row = new LinkedHashMap<>();
@@ -62,7 +82,8 @@ public class InfluxQueryService {
                 }
             }
             return result;
-
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
             log.error("InfluxDB query failed for signal={} session={}", signalName, sessionId, e);
             return List.of();
@@ -71,8 +92,11 @@ public class InfluxQueryService {
 
     /** Returns distinct signal names present in Influx for the given session (last 30 days). */
     public List<String> queryAvailableSignals(String sessionId) {
+        // Validate before interpolating into the Flux query
+        validateFluxParam(sessionId, "sessionId");
         try {
             QueryApi queryApi = influxDBClient.getQueryApi();
+
             String flux = String.format("""
                 from(bucket: "%s")
                   |> range(start: -30d)
@@ -91,6 +115,8 @@ public class InfluxQueryService {
                 }
             }
             return signals;
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Failed to query available signals for session={}", sessionId, e);
             return List.of();

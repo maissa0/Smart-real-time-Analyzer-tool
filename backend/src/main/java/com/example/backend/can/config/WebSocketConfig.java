@@ -36,6 +36,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-ecu-gateway")
+                // TODO PRODUCTION: replace "*" with explicit allowed origins
+                // e.g. "https://kpit-analyser.example.com"
+                // Wildcard is acceptable in local dev because JWT is validated
+                // at STOMP CONNECT level (see configureClientInboundChannel).
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
     }

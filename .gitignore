@@ -61,6 +61,7 @@ secrets.yml
 
 # ─── Uploads & Data ───────────────────────────────────────
 uploads/
+db/migrations/backup_*.sql
 
 # ─── Docker ───────────────────────────────────────────────
 docker-compose.override.yml

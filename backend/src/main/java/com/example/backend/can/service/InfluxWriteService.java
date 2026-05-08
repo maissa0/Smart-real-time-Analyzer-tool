@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import jakarta.annotation.PreDestroy;
-
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +26,7 @@ public class InfluxWriteService {
 
     private final WriteApi writeApi;
     private final ObjectMapper objectMapper;
+    private final RestTemplate restTemplate;
 
     @Value("${influxdb.url}")
     private String influxUrl;
@@ -40,6 +40,23 @@ public class InfluxWriteService {
     @Value("${influxdb.org}")
     private String influxOrg;
 
+    /**
+     * Validate sessionId format before using it in any InfluxDB query or predicate.
+     * Accepts only alphanumeric characters, hyphens, and underscores (UUID format).
+     * Rejects anything that could be used to inject into a Flux predicate string.
+     *
+     * @param sessionId the session identifier from user input
+     * @throws IllegalArgumentException if sessionId contains invalid characters
+     */
+    private void validateSessionId(String sessionId) {
+        if (sessionId == null || !sessionId.matches("[a-zA-Z0-9_-]{1,64}")) {
+            log.warn("Invalid sessionId rejected: '{}'", sessionId);
+            throw new IllegalArgumentException(
+                    "Invalid sessionId format — only alphanumeric, hyphen and underscore allowed"
+            );
+        }
+    }
+
     /** Writes each decoded signal from the frame as a point in the configured InfluxDB bucket. */
     public void writeFrame(CanFrameEntity frame) {
         try {
@@ -47,7 +64,6 @@ public class InfluxWriteService {
                 frame.getSignals(),
                 new TypeReference<>() {}
             );
-
             for (Map<String, Object> signal : signals) {
                 String signalName = (String) signal.get("signal_name");
                 Object rawValue = signal.get("raw_value");
@@ -85,11 +101,11 @@ public class InfluxWriteService {
     }
 
     public void deleteSession(String sessionId) {
+        // Validate before interpolating into the predicate string
+        validateSessionId(sessionId);
         try {
             // Use direct HTTP call to InfluxDB /api/v2/delete
             // The Java client DeleteApi does not reliably support tag predicates in InfluxDB 2.7
-            RestTemplate restTemplate = new RestTemplate();
-
             String url = influxUrl + "/api/v2/delete?org=" + influxOrg + "&bucket=" + bucket;
 
             HttpHeaders headers = new HttpHeaders();
@@ -110,7 +126,8 @@ public class InfluxWriteService {
             HttpEntity<String> request = new HttpEntity<>(body, headers);
             restTemplate.postForEntity(url, request, String.class);
             log.info("Deleted InfluxDB data for session: {}", sessionId);
-
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Failed to delete InfluxDB data for session: {}", sessionId, e);
             throw new RuntimeException("InfluxDB delete failed for session: " + sessionId, e);

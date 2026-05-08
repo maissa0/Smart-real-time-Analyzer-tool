@@ -46,7 +46,14 @@ public class SecurityConfig {
     private final SecurityHardeningFilter securityHardeningFilter;
     private final UserDetailsService userDetailsService;
 
-    /** Public paths: auth endpoints and API docs. All other /api/** requires authentication. */
+    /**
+     * Public paths — accessible without authentication.
+     * Auth endpoints: login, register, password reset, MFA verification.
+     * WebSocket endpoint: /ws-ecu-gateway (JWT is validated at STOMP CONNECT level
+     *   by WebSocketConfig.configureClientInboundChannel — not at HTTP level).
+     * API docs: Swagger UI (development only — restrict in production).
+     * All other paths require a valid JWT — see anyRequest().authenticated() below.
+     */
     private static final String[] PUBLIC_PATHS = {
             "/api/auth/login",
             "/api/auth/register",
@@ -58,11 +65,6 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/api/can/**",
-            "/api/can/influx/**",
-            "/api/logs/upload",
-            "/api/playback/**",
-            "/api/simulator/**",
             "/ws-ecu-gateway/**",
             "/ws-ecu-gateway"
     };
@@ -74,8 +76,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
-                        .requestMatchers("/api/auth/**", "/api/v1/**").authenticated()
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
