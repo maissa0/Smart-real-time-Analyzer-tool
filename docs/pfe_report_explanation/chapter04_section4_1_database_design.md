@@ -184,6 +184,49 @@ l'évolution du schéma tout au long du projet.
 
 ## 4.2 Implémentation de l'entité Véhicule (Sprint 5)
 
+### 4.2.0 Modèle de données centré sur le véhicule
+
+> **Vehicle-Centric Data Model**
+>
+> CAN sessions without vehicle context have limited diagnostic value.
+> The Car entity creates an ownership chain
+> **(User → Vehicle → Session → Frames)**
+> that enables per-vehicle analysis, anomaly baseline computation,
+> and session comparison across captures from the same vehicle.
+
+Cette décision architecturale transforme le système d'un simple
+enregistreur de trames en un véritable outil d'analyse diagnostique.
+Sans l'entité Véhicule, deux captures issues du même véhicule à des
+dates différentes seraient traitées comme des données indépendantes —
+impossible de détecter une dégradation progressive, d'établir une
+baseline d'anomalies, ou de comparer le comportement avant et après
+une intervention mécanique.
+
+**La chaîne de propriété `User → Vehicle → Session → Frames` permet :**
+
+- **Analyse par véhicule** : `GET /api/cars/{carUid}/sessions` retourne
+  toutes les captures d'un même véhicule, ordonnées chronologiquement.
+- **Baseline d'anomalies** : `CarService.getCarFaultRate()` calcule le
+  taux de défauts sur l'ensemble des sessions d'un véhicule —
+  formule : `(total_faults / total_frames) × 1000` (faults per 1000 frames).
+  Une augmentation de ce taux entre deux captures signale une dégradation.
+- **Comparaison temporelle** : `lastSessionAt` et `sessionCount` dans
+  `CarDto` permettent à l'interface de montrer l'évolution du véhicule
+  dans le temps sans requête supplémentaire.
+- **Contrôle d'accès granulaire** : `CarController.checkOwnershipOrAdmin()`
+  garantit qu'un utilisateur ne peut accéder qu'aux véhicules dont il est
+  propriétaire — le champ `owner_user_id BINARY(16)` lie directement
+  chaque véhicule à son utilisateur.
+
+**Décision de conception — pourquoi ne pas utiliser `@OneToMany` JPA :**
+
+Une relation `@OneToMany` de `CarEntity` vers `CanSessionEntity` aurait
+provoqué des `LazyInitializationException` lors de la sérialisation JSON
+des réponses REST. La navigation inverse (Session → Car via `car_id`) est
+préférée : les sessions d'un véhicule sont récupérées via
+`CanSessionRepository.findByCarIdOrderByCreatedAtDesc()`, évitant le
+problème N+1 et les exceptions de chargement tardif.
+
 ### 4.2.1 Architecture en couches
 
 L'entité Véhicule suit l'architecture en couches standard du projet :
