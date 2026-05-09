@@ -104,6 +104,23 @@ public class IntegrityAnalyzerService {
         }
     }
 
+    /**
+     * Remove all per-session state entries for the given session.
+     * Called by CanSessionService.deleteSession() to prevent unbounded
+     * memory growth in lastTimestamp and lastRawBytes maps.
+     *
+     * Keys are stored as "sessionId|msgName" — all entries whose key
+     * starts with sessionId + "|" are removed.
+     *
+     * @param sessionId the session being deleted
+     */
+    public void clearSession(String sessionId) {
+        String prefix = sessionId + "|";
+        lastTimestamp.keySet().removeIf(key -> key.startsWith(prefix));
+        lastRawBytes.keySet().removeIf(key -> key.startsWith(prefix));
+        log.info("Cleared integrity analyzer state for session: {}", sessionId);
+    }
+
     private IntegrityFaultEntity buildFault(CanFrameEntity frame, String type, String desc) {
         return IntegrityFaultEntity.builder()
                 .sessionId(frame.getSessionId())

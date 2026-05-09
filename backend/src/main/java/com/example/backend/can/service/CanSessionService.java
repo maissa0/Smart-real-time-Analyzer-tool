@@ -36,6 +36,7 @@ public class CanSessionService {
     private final IntegrityFaultRepository integrityFaultRepository;
     private final LogFileRepository logFileRepository;
     private final ObjectMapper objectMapper;
+    private final IntegrityAnalyzerService integrityAnalyzerService;
 
     @Value("${pipeline.uploads.dir}")
     private String uploadsDir;
@@ -124,6 +125,10 @@ public class CanSessionService {
         integrityFaultRepository.deleteBySessionId(sessionId);
         canFrameRepository.deleteBySessionId(sessionId);
         canSessionRepository.deleteBySessionId(sessionId);
+
+        // Clear per-session state from IntegrityAnalyzerService maps
+        // Prevents unbounded memory growth in lastTimestamp and lastRawBytes
+        integrityAnalyzerService.clearSession(sessionId);
 
         // Delete log_files record if exists
         logFileRepository.findBySessionId(sessionId).ifPresent(lf -> {
