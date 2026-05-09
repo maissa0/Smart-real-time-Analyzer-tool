@@ -36,3 +36,5 @@ build/
 uploads/
 application-secrets.properties
 src/main/resources/application-secrets.properties
+
+startup_capture.log
