@@ -155,6 +155,20 @@ public class CanSessionService {
         );
     }
 
+    /**
+     * Get all sessions for a specific car, ordered by creation date descending.
+     * Used by CarController GET /api/cars/{carUid}/sessions.
+     *
+     * @param carId internal DB id of the car
+     * @return list of CanSessionResponse ordered by createdAt DESC
+     */
+    public List<CanSessionResponse> getSessionsByCarId(Long carId) {
+        return canSessionRepository.findByCarIdOrderByCreatedAtDesc(carId)
+                .stream()
+                .map(this::toSessionResponse)
+                .toList();
+    }
+
     private CanSessionResponse toSessionResponse(CanSessionEntity e) {
         return new CanSessionResponse(
                 e.getId(),
