@@ -44,9 +44,9 @@ public class CanFrameEntity {
     @Column(name = "direction")
     private String direction;
 
-    @Column(name = "raw_bytes", columnDefinition = "TEXT")
+    @Column(name = "raw_bytes", length = 30)
     private String rawBytes;
 
-    @Column(name = "signals", columnDefinition = "TEXT")
+    @Column(name = "signals", columnDefinition = "json")
     private String signals;
 }
