@@ -179,3 +179,71 @@ mysql -u root smart_real_time_analyser < V2__create_new_tables.sql
 Les scripts de migration sont versionnés dans le dépôt Git sous
 `db/migrations/` et constituent la documentation de référence de
 l'évolution du schéma tout au long du projet.
+
+---
+
+## 4.2 Implémentation de l'entité Véhicule (Sprint 5)
+
+### 4.2.1 Architecture en couches
+
+L'entité Véhicule suit l'architecture en couches standard du projet :
+CarEntity (JPA) → CarRepository (Spring Data) → CarService → CarController (REST)
+↓                                              ↑
+cars table (MySQL)                          CarDto / CarCreateRequest / CarUpdateRequest
+
+### 4.2.2 Entité JPA — CarEntity
+
+`CarEntity` mappe la table `cars` avec 14 champs couvrant l'identité du
+véhicule, ses métadonnées, et son cycle de vie (soft delete via `deletedAt`).
+
+Choix techniques notables :
+
+- **`carUid` auto-généré** via `@PrePersist` — garantit que chaque véhicule
+  possède un identifiant UUID public même si le appelant ne le fournit pas.
+  L'`id` (BIGINT auto-increment) reste l'identifiant interne ; `carUid` est
+  l'identifiant exposé dans les URLs REST (`/api/cars/{carUid}`).
+
+- **`ownerUserId` en `byte[]`** avec `columnDefinition = "BINARY(16)"` —
+  correspond exactement au type de la colonne `users.id` en base.
+
+- **`@OneToMany` intentionnellement omis** — une relation JPA vers
+  `CanSessionEntity` provoquerait des `LazyInitializationException` lors de
+  la sérialisation JSON. Les sessions d'un véhicule sont récupérées via
+  `CanSessionRepository.findByCarId()`.
+
+- **Soft delete** — `deletedAt` null signifie véhicule actif ; toutes les
+  requêtes filtrent `WHERE deleted_at IS NULL`.
+
+### 4.2.3 Repository — CarRepository
+
+`CarRepository` étend `JpaRepository<CarEntity, Long>` et expose 5 méthodes :
+
+| Méthode | Usage |
+|---|---|
+| `findByCarUid(String)` | Lookup API par UUID public |
+| `findByOwnerUserIdAndIsActiveTrueAndDeletedAtIsNull(byte[])` | Sessions d'un utilisateur |
+| `findByIsActiveTrueAndDeletedAtIsNull()` | Liste globale pour admin |
+| `findAllActive()` | Liste triée par date de création (JPQL) |
+| `countByIsActiveTrueAndDeletedAtIsNull()` | Statistiques dashboard |
+
+Spring Data JPA génère automatiquement le SQL à partir des noms de méthodes —
+aucune requête SQL manuelle n'est nécessaire pour les cas standards.
+
+### 4.2.4 DTOs — Séparation entité / API
+
+Trois DTOs séparent l'entité JPA de l'API REST :
+
+| DTO | Rôle | Champs clés |
+|---|---|---|
+| `CarDto` | Réponse API | Champs calculés : `sessionCount`, `totalFrames`, `faultRate` |
+| `CarCreateRequest` | Création | `@NotBlank` make/model, `@Min`/`@Max` year, `@Pattern` VIN |
+| `CarUpdateRequest` | Mise à jour (PATCH) | Tous les champs optionnels |
+
+**Validation VIN** : le pattern `^[A-HJ-NPR-Z0-9]{17}$` applique la norme
+ISO 3779 — exactement 17 caractères alphanumériques en excluant I, O et Q
+(confondables avec 1, 0 et 0 visuellement).
+
+**`@JsonInclude(NON_NULL)` sur `CarDto`** : les champs calculés (`faultRate`,
+`totalFrames`) sont `null` dans les réponses légères (liste de véhicules) et
+remplis uniquement dans les réponses détaillées. `NON_NULL` évite que
+`"faultRate": null` n'apparaisse dans le JSON.
