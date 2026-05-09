@@ -44,4 +44,7 @@ public class CanSessionEntity {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "car_id")
+    private Long carId;
 }
