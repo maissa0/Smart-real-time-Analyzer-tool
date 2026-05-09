@@ -110,12 +110,19 @@ public class CarService {
      * @param carId internal DB id of the car
      */
     public void populateStats(CarDto dto, Long carId) {
-        // Aggregate session stats in one query
-        Object[] stats = canSessionRepository.getCarSessionStats(carId);
-        if (stats != null && stats[0] != null) {
-            long sessionCount = ((Number) stats[0]).longValue();
-            long totalFrames  = ((Number) stats[1]).longValue();
-            LocalDateTime lastSessionAt = (LocalDateTime) stats[2];
+        // JPQL aggregate queries return List<Object[]>
+        // Each Object[] contains: [COUNT (Long), SUM (Long), MAX (LocalDateTime)]
+        List<Object[]> results = canSessionRepository.getCarSessionStats(carId);
+
+        if (results == null || results.isEmpty()) return;
+
+        Object[] row = results.get(0);
+        if (row == null || row.length < 3 || row[0] == null) return;
+
+        try {
+            long sessionCount = ((Number) row[0]).longValue();
+            long totalFrames  = row[1] != null ? ((Number) row[1]).longValue() : 0L;
+            LocalDateTime lastSessionAt = row[2] instanceof LocalDateTime ldt ? ldt : null;
 
             dto.setSessionCount((int) sessionCount);
             dto.setTotalFrames(totalFrames);
@@ -126,6 +133,8 @@ public class CarService {
                 long totalFaults = integrityFaultRepository.countFaultsByCarId(carId);
                 dto.setFaultRate((double) totalFaults / totalFrames * 1000.0);
             }
+        } catch (Exception e) {
+            log.warn("Could not populate stats for carId={}: {}", carId, e.getMessage());
         }
     }
 

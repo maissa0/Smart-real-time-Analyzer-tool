@@ -35,9 +35,9 @@ public interface CanSessionRepository extends JpaRepository<CanSessionEntity, Lo
 
     /**
      * Aggregate session stats for a car: session count, total frames, last session date.
-     * Returns Object[] { sessionCount (Long), totalFrames (Long), lastSessionAt (LocalDateTime) }
+     * Returns List with a single row Object[] { COUNT, SUM, MAX } (JPQL aggregate shape).
      */
     @Query("SELECT COUNT(s), COALESCE(SUM(s.frameCount), 0), MAX(s.createdAt) " +
            "FROM CanSessionEntity s WHERE s.carId = :carId")
-    Object[] getCarSessionStats(@Param("carId") Long carId);
+    List<Object[]> getCarSessionStats(@Param("carId") Long carId);
 }
