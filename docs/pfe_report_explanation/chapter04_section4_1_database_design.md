@@ -38,45 +38,45 @@ a révélé **12 problèmes** identifiés lors de la revue de conception :
 12. Aucune stratégie de migration versionnée — les modifications de schéma
     étaient appliquées manuellement sans traçabilité.
 
-### 4.1.2 Stratégie de migration
+### 4.1.2 Stratégie de migration — zéro perte de données
 
-La migration a été réalisée en **deux phases distinctes**, suivant le
-principe de migrations versionnées Flyway (`Vx__description.sql`).
+La migration a été réalisée en **4 phases distinctes** selon une stratégie
+de migration à zéro perte de données (*zero-data-loss migration strategy*).
+Chaque phase a été testée sur la base `smart_analyser_test` (copie exacte
+de la production) avant application sur `smart_real_time_analyser`.
+
+> "The migration was executed in 4 phases to minimize risk: fixing existing
+> column types (V1), creating domain tables (V2), assigning foreign keys
+> after null-check (V3), and enabling constraints (V4)."
 
 **Sauvegarde préalable**
 
-Avant toute intervention sur le schéma, une sauvegarde complète de la base
-de production a été réalisée avec `mysqldump --single-transaction`, garantissant
-la cohérence des données sans verrouillage des tables pendant l'opération.
-La sauvegarde (173 Mo) a été restaurée dans une base de test dédiée
-`smart_analyser_test` pour valider chaque migration avant application
-en production.
+Avant toute intervention, une sauvegarde complète de 173 Mo a été réalisée
+avec `mysqldump --single-transaction` — cohérence garantie sans verrouillage
+des tables. La sauvegarde a été restaurée dans `smart_analyser_test` et
+les comptages vérifiés avant de commencer.
 
-```sql
-mysqldump -u root --single-transaction smart_real_time_analyser \
-  > backup_pre_migration_20260508.sql
-```
+---
 
-**Phase 1 — V1__fix_existing_tables.sql**
+**Phase 1 — V1 : Correction des tables existantes**
 
-La première migration corrige les problèmes identifiés sur les tables
-existantes :
+*Objectif : corriger les 12 défauts de schéma sans créer de nouvelles tables.*
 
-- Suppression des 18 238 trames orphelines (décision délibérée — données
-  inaccessibles via les requêtes normales session → trames)
-- Conversion `signals` : `TEXT` → `JSON`
-- Conversion `raw_bytes` : `TEXT` → `VARCHAR(30)`
-- Conversion `direction` : `VARCHAR(255)` → `ENUM('Rx','Tx','Unknown')`
-  (casse réelle vérifiée sur les données de production)
-- Resserrement de `msg_id` → `VARCHAR(20)`, `msg_name` → `VARCHAR(100)`,
-  `channel_name` → `VARCHAR(64)`
-- Ajout des colonnes `user_id`, `status`, `updated_at` à `can_sessions`
+- Suppression des 18 238 trames orphelines (4,7 % des données)
+- `signals` : `TEXT` → `JSON` (validation native MySQL activée)
+- `raw_bytes` : `TEXT` → `VARCHAR(30)` (longueur max réelle = 24 chars)
+- `direction` : `VARCHAR(255)` → `ENUM('Rx','Tx','Unknown')` (casse réelle vérifiée)
+- `msg_id` → `VARCHAR(20)`, `msg_name` → `VARCHAR(100)`, `channel_name` → `VARCHAR(64)`
+- Ajout des colonnes `user_id`, `status`, `updated_at` sur `can_sessions`
 - Ajout des index manquants sur `integrity_faults` et `log_files`
 
-**Phase 2 — V2__create_new_tables.sql**
+*Durée sur production : 165 secondes. Zéro erreur.*
 
-La seconde migration crée les 7 nouvelles tables requises par les
-fonctionnalités des sprints 5 et 6 :
+---
+
+**Phase 2 — V2 : Création des tables métier**
+
+*Objectif : ajouter les 7 nouvelles tables sans toucher aux données existantes.*
 
 | Table | Rôle |
 |---|---|
@@ -88,9 +88,57 @@ fonctionnalités des sprints 5 et 6 :
 | `export_jobs` | Suivi des exports PDF/CSV/XLSX asynchrones |
 | `user_preferences` | Préférences applicatives par utilisateur |
 
-L'ordre de création respecte les dépendances de clés étrangères :
-`ecu_catalogs` → `cars` → `signal_thresholds`, `anomaly_results`,
-`user_preferences`.
+*Durée sur production : quelques secondes. Zéro donnée existante modifiée.*
+
+---
+
+**Phase 3 — V3 : Assignation des clés étrangères après vérification null**
+
+*Objectif : ajouter car_id aux tables CAN, insérer les données de référence,
+puis assigner toutes les sessions avant d'activer les contraintes FK.*
+
+Cette phase illustre le principe fondamental : **une FK ne peut être ajoutée
+que si toutes les lignes existantes ont une valeur valide**.
+
+- Ajout de la colonne `car_id BIGINT DEFAULT NULL` sur `can_sessions` et `log_files`
+- Insertion de 2 véhicules de référence :
+  - *Legacy* (virtuel) — propriétaire de toutes les sessions pré-migration
+  - *KPIT CAN Simulator* (virtuel) — pour les sessions futures du simulateur
+- `UPDATE can_sessions SET car_id = @legacy_id WHERE car_id IS NULL`
+  → 88 sessions assignées, `null_car_id = 0` vérifié avant l'étape suivante
+- Ajout des contraintes FK `can_sessions→cars` et `log_files→cars`
+
+*Vérification critique : `SELECT COUNT(*) FROM can_sessions WHERE car_id IS NULL`
+doit retourner 0 avant l'ajout de la FK.*
+
+---
+
+**Phase 4 — V4 : Activation des contraintes d'intégrité référentielle**
+
+*Objectif : rendre structurellement impossible la réapparition de trames orphelines.*
+
+- `can_frames.session_id → can_sessions.session_id ON DELETE CASCADE`
+- `integrity_faults.session_id → can_sessions.session_id ON DELETE CASCADE`
+
+La règle `ON DELETE CASCADE` signifie que supprimer une session supprime
+automatiquement toutes ses trames et toutes ses anomalies — ce qui rend
+impossible la réapparition des 18 238 trames orphelines nettoyées en V1.
+
+*Pré-condition vérifiée : 0 trame orpheline, 0 anomalie orpheline avant ajout des FK.*
+
+---
+
+**Résultats finaux après les 4 phases**
+
+| Indicateur | Avant V1 | Après V4 |
+|---|---|---|
+| Nombre de tables | 14 | 21 |
+| Contraintes FK | 0 (CAN) | 20 total |
+| Trames `can_frames` | 390 092 | 371 854 |
+| Trames orphelines | 18 238 | 0 (structurellement impossible) |
+| Sessions `can_sessions` | 88 | 88 |
+| Véhicules `cars` | 0 | 2 |
+| Sessions sans `car_id` | N/A | 0 |
 
 ### 4.1.3 Résultats de la migration
 

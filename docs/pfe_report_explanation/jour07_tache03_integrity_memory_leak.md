@@ -84,3 +84,8 @@ Vérification textuelle (outil de recherche / `grep` équivalent sous Windows de
 ## Mots clés pour la soutenance
 
 Fuites mémoire, **`ConcurrentHashMap`**, état **par session**, **`IntegrityAnalyzerService`**, **`clearSession`**, **`deleteSession`**, **`removeIf`**, préfixe de clé, singleton Spring, surcharge mémoire longue durée.
+
+What you can tell the jury:
+
+"J'ai identifié une fuite mémoire dans IntegrityAnalyzerService — deux ConcurrentHashMap stockent l'état par session avec des clés de type sessionId|msgName, mais aucun mécanisme ne supprimait ces entrées quand une session était supprimée. Sur 88 sessions avec plusieurs types de messages chacune, ces maps pouvaient accumuler des centaines d'entrées stales indéfiniment.
+La correction ajoute une méthode clearSession() qui utilise removeIf() avec un préfixe pour supprimer toutes les entrées d'une session en une seule opération O(n). Cette méthode est appelée dans CanSessionService.deleteSession() immédiatement après la suppression des données en base, garantissant que la mémoire est libérée à chaque suppression de session."
