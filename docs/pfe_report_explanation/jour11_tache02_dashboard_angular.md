@@ -38,16 +38,16 @@ npx ng build --configuration development 2>&1 | Select-Object -Last 10
 **Sortie observée (dernières lignes)**
 
 ```
-chunk-CRXYPOBG.js   | simulator-page-component    |   9.61 kB | 
-chunk-DHCVPJSF.js   | code-verification-component |   9.43 kB | 
-chunk-J3PMEW6B.js   | forgot-password-component   |   9.10 kB | 
-chunk-EO5AQGCV.js   | sign-up-component           |   8.61 kB | 
-...and 16 more lazy chunks files. Use "--verbose" to show all files.
-
-Application bundle generation complete. [20.048 seconds] - 2026-05-09T20:38:49.119Z
-
-Output location: C:\tools\Kpit_c\Frontend_angular\dist\user-management-platform
-
+chunk-CRXYPOBG.js   | simulator-page-component    |   9.61 kB | 
+chunk-DHCVPJSF.js   | code-verification-component |   9.43 kB | 
+chunk-J3PMEW6B.js   | forgot-password-component   |   9.10 kB | 
+chunk-EO5AQGCV.js   | sign-up-component           |   8.61 kB | 
+...and 16 more lazy chunks files. Use "--verbose" to show all files.
+
+Application bundle generation complete. [6.348 seconds] - 2026-05-09T20:39:37.871Z
+
+Output location: C:\tools\Kpit_c\Frontend_angular\dist\user-management-platform
+
 
 ```
 
