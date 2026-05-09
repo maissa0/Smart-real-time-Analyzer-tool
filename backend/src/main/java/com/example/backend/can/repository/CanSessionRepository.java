@@ -40,4 +40,19 @@ public interface CanSessionRepository extends JpaRepository<CanSessionEntity, Lo
     @Query("SELECT COUNT(s), COALESCE(SUM(s.frameCount), 0), MAX(s.createdAt) " +
            "FROM CanSessionEntity s WHERE s.carId = :carId")
     List<Object[]> getCarSessionStats(@Param("carId") Long carId);
+
+    /**
+     * Dashboard aggregate: total session count, total frames, active session count.
+     * Returns Object[] { totalSessions(Long), totalFrames(Long), activeSessions(Long) }
+     */
+    @Query("SELECT COUNT(s), COALESCE(SUM(s.frameCount), 0), " +
+           "SUM(CASE WHEN s.status = 'live' THEN 1 ELSE 0 END) " +
+           "FROM CanSessionEntity s")
+    List<Object[]> getDashboardSessionStats();
+
+    /**
+     * Recent sessions for dashboard — last N sessions ordered by createdAt DESC.
+     */
+    @Query("SELECT s FROM CanSessionEntity s ORDER BY s.createdAt DESC")
+    List<CanSessionEntity> findRecentSessions(Pageable pageable);
 }

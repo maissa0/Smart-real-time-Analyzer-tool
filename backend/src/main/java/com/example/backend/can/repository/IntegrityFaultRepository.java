@@ -31,4 +31,11 @@ public interface IntegrityFaultRepository extends JpaRepository<IntegrityFaultEn
     List<String> findDistinctMsgIdsBySessionId(String sessionId);
 
     void deleteBySessionId(String sessionId);
+
+    /**
+     * Count faults grouped by fault type — for dashboard fault breakdown widget.
+     * Returns List<Object[]> { faultType(String), count(Long) }
+     */
+    @Query("SELECT f.faultType, COUNT(f) FROM IntegrityFaultEntity f GROUP BY f.faultType")
+    List<Object[]> countByFaultType();
 }

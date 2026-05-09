@@ -38,6 +38,12 @@ public class CanSessionEntity {
     @Column(name = "end_ts")
     private Double endTs;
 
+    /**
+     * Session lifecycle status (e.g. live, completed, failed).
+     */
+    @Column(name = "status")
+    private String status;
+
     @Column(name = "frame_count")
     private Integer frameCount;
 
