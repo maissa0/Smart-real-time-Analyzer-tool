@@ -27,7 +27,7 @@ from pathlib import Path
 
 from confluent_kafka import Consumer, Producer, KafkaError
 
-from log_parser import get_ascii_metadata, parse_log
+from log_parser import get_ascii_metadata, parse_log, parse_log_stream
 from static_parser import parse_blf, get_blf_metadata
 from xml_decoder import load_catalog
 
@@ -181,26 +181,26 @@ class FileProcessingWorker:
         })
 
         try:
-            log.info("Parsing ASCII log: %s", file_path.name)
-            session = parse_log(file_path, self.catalog, session_id)
-
-            # Publish session meta to session-meta topic
+            log.info("Streaming ASCII log: %s (line-by-line, memory-flat)", file_path.name)
+            # Use metadata timestamps for session meta — extracted cheaply above
+            start_ts = metadata.get("start_ts", 0.0)
+            end_ts   = metadata.get("end_ts", 0.0)
+            # Publish session meta before streaming frames
             publish_session_meta(
                 self.producer,
                 session_id,
                 source_filename,
-                session.start_ts,
-                session.end_ts,
-                0,  # start at 0 — Spring Boot increments on each frame
+                start_ts,
+                end_ts,
+                0,  # Spring Boot increments on each frame received
             )
-
-            # Publish each frame as raw bytes
+            # Stream frames line-by-line — no full file load into RAM
             frame_seq: dict[str, int] = {}
-            for frame in session.frames:
+            frame_count = 0
+            for frame in parse_log_stream(file_path, self.catalog, session_id):
                 msg_id = frame.msg_id
                 seq = frame_seq.get(msg_id, -1) + 1
                 frame_seq[msg_id] = seq
-
                 raw_frame = {
                     "session_id": session_id,
                     "timestamp": frame.timestamp,
@@ -213,21 +213,18 @@ class FileProcessingWorker:
                     "frame_seq": seq,
                 }
                 publish_raw_frame(self.producer, raw_frame, session_id)
-
-                if seq > 0 and seq % 1000 == 0:
+                frame_count += 1
+                if frame_count % 1000 == 0:
                     self.producer.poll(0)
-                    log.info("Published %d frames for session %s", seq, session_id)
-
+                    log.info("Streamed %d frames for session %s", frame_count, session_id)
             self.producer.flush()
-
             # Publish completion event
             publish_log_file_event(self.producer, {
                 "event": "complete",
                 "session_id": session_id,
-                "frame_count": session.frame_count,
+                "frame_count": frame_count,
             })
-
-            return session.frame_count
+            return frame_count
 
         except Exception as e:
             # Publish error event

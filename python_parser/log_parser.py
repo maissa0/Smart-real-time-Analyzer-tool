@@ -116,6 +116,79 @@ def get_ascii_metadata(log_path: Path) -> dict:
         }
 
 
+def parse_log_stream(
+    log_path: Path,
+    catalog: dict[str, MessageDefinition],
+    session_id: str,
+):
+    """Stream a CAN log file line-by-line, yielding DecodedFrame objects.
+
+    Memory-efficient alternative to parse_log() for large files.
+    Instead of loading the entire file into RAM with read_text(),
+    reads one line at a time — memory stays flat regardless of file size.
+
+    Yields:
+        DecodedFrame objects as they are parsed.
+
+    Usage in file_worker.py:
+        frame_seq = {}
+        for frame in parse_log_stream(path, catalog, session_id):
+            seq = frame_seq.get(frame.msg_id, -1) + 1
+            frame_seq[frame.msg_id] = seq
+            publish_raw_frame(producer, asdict(frame), session_id)
+    """
+    channel_map: dict[int, str] = {}
+
+    with open(log_path, 'r', encoding='utf-8', errors='replace') as f:
+        for raw_line in f:
+            line = raw_line.strip()
+
+            # Parse channel header lines: "CAN 1: Powertrain_CAN"
+            m_h = _HEADER_RE.match(line)
+            if m_h:
+                channel_map[int(m_h.group(1))] = m_h.group(2).strip()
+                continue
+
+            # Parse frame lines
+            m = _LINE_RE.match(line)
+            if not m:
+                continue
+
+            timestamp   = float(m.group(1))
+            channel     = int(m.group(2))
+            msg_id_raw  = m.group(3).strip()
+            msg_id      = _msg_id_key(msg_id_raw.upper())
+            direction   = m.group(4)
+            dlc         = int(m.group(5))
+            bytes_str   = m.group(6)
+
+            parts      = [p.strip() for p in bytes_str.split(",")]
+            data_bytes = [int(x) for x in parts if x]
+
+            channel_name = channel_map.get(channel, "")
+            msg_def      = catalog.get(msg_id)
+
+            if msg_def is not None:
+                msg_name = msg_def.msg_name
+                signals  = list(decode_frame(msg_id_raw, data_bytes, catalog))
+            else:
+                msg_name = "UNKNOWN"
+                signals  = []
+
+            payload = data_bytes[:dlc] if dlc <= len(data_bytes) else data_bytes
+
+            yield DecodedFrame(
+                timestamp=timestamp,
+                channel=channel,
+                channel_name=channel_name,
+                msg_id=msg_id,
+                msg_name=msg_name,
+                raw_bytes=payload,
+                signals=signals,
+                direction=direction,
+            )
+
+
 def parse_log(
     log_path: Path,
     catalog: dict[str, MessageDefinition],
