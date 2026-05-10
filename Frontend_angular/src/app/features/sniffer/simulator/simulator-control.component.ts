@@ -24,8 +24,19 @@ interface Car {
 }
 
 interface SimStatus {
-  simulators: Record<string, string>;
+  simulators: Array<{
+    simId: string;
+    running: boolean;
+    pid: number | null;
+    startedAt: string | null;
+    mode: string | null;
+  }>;
   count: number;
+  running: boolean;
+  pid: number | null;
+  startedAt: string | null;
+  mode: string | null;
+  simId: string | null;
 }
 
 @Component({
@@ -236,8 +247,18 @@ interface SimStatus {
         <span class="sc-status-val">{{ simId() ? 'Running' : 'Idle' }}</span>
         @if (simId()) {
           <span class="sc-status-text">·</span>
-          <span class="sc-status-text">Simulators active:</span>
+          <span class="sc-status-text">Active:</span>
           <span class="sc-status-val">{{ activeCount() }}</span>
+          @if (pid()) {
+            <span class="sc-status-text">· PID:</span>
+            <span class="sc-status-val">{{ pid() }}</span>
+          }
+          @if (startedAt()) {
+            <span class="sc-status-text">· Started:</span>
+            <span class="sc-status-val">
+              {{ startedAt()! | slice:11:19 }}
+            </span>
+          }
           <span class="sc-status-text">·</span>
           <span class="sc-status-id">{{ simId()!.substring(0, 8) }}…</span>
         }
@@ -274,7 +295,9 @@ export class SimulatorControlComponent implements OnInit {
   faultRate         = 0.05;
 
   // ── Status polling ────────────────────────────────────────────────────────
-  readonly activeCount = signal(0);
+  readonly activeCount  = signal(0);
+  readonly pid          = signal<number | null>(null);
+  readonly startedAt    = signal<string | null>(null);
 
   ngOnInit(): void {
     this.loadCars();
@@ -345,7 +368,11 @@ export class SimulatorControlComponent implements OnInit {
       .get<SimStatus>(`${this.base}/status`, { headers: this.authHeaders() })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (s) => this.activeCount.set(s.count),
+        next: (s) => {
+          this.activeCount.set(s.count);
+          this.pid.set(s.pid ?? null);
+          this.startedAt.set(s.startedAt ?? null);
+        },
         error: () => {},
       });
   }

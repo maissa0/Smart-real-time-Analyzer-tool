@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/simulator")
@@ -45,7 +46,14 @@ public class SimulatorController {
     @Value("${simulator.logs.dir:${pipeline.uploads.dir}}")
     private String allowedLogsDir;
 
-    private static final Map<String, Process> runningSimulators = new ConcurrentHashMap<>();
+    /** Holds runtime metadata for a running simulator process. */
+    private record SimulatorEntry(
+            Process process,
+            LocalDateTime startedAt,
+            String mode
+    ) {}
+
+    private static final Map<String, SimulatorEntry> runningSimulators = new ConcurrentHashMap<>();
 
     /**
      * Remove entries from runningSimulators where the process has already exited.
@@ -53,7 +61,7 @@ public class SimulatorController {
      * unbounded memory growth from accumulated dead process references.
      */
     private void cleanupDeadProcesses() {
-        runningSimulators.entrySet().removeIf(entry -> !entry.getValue().isAlive());
+        runningSimulators.entrySet().removeIf(entry -> !entry.getValue().process().isAlive());
     }
 
     /**
@@ -122,7 +130,8 @@ public class SimulatorController {
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.redirectErrorStream(true);
             Process process = pb.start();
-            runningSimulators.put(simId, process);
+            String modeStr = String.valueOf(config.getOrDefault("mode", "random"));
+            runningSimulators.put(simId, new SimulatorEntry(process, LocalDateTime.now(), modeStr));
 
             String shortId = simId.substring(0, Math.min(8, simId.length()));
             Thread logThread = new Thread(() -> {
@@ -154,11 +163,11 @@ public class SimulatorController {
 
     @PostMapping("/stop/{simId}")
     public ResponseEntity<Map<String, String>> stop(@PathVariable String simId) {
-        Process process = runningSimulators.remove(simId);
-        if (process == null) {
+        SimulatorEntry entry = runningSimulators.remove(simId);
+        if (entry == null) {
             return ResponseEntity.notFound().build();
         }
-        process.destroyForcibly();
+        entry.process().destroyForcibly();
         log.info("Simulator stopped: id={}", simId);
         return ResponseEntity.ok(Map.of("simId", simId, "status", "stopped"));
     }
@@ -166,18 +175,49 @@ public class SimulatorController {
     @PostMapping("/stop-all")
     public ResponseEntity<Map<String, Object>> stopAll() {
         int count = runningSimulators.size();
-        runningSimulators.forEach((id, p) -> p.destroyForcibly());
+        runningSimulators.forEach((id, entry) -> entry.process().destroyForcibly());
         runningSimulators.clear();
         return ResponseEntity.ok(Map.of("stopped", count));
     }
 
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> status() {
-        // Also clean up dead processes on status check
         cleanupDeadProcesses();
-        Map<String, String> statuses = new HashMap<>();
-        runningSimulators.forEach((id, p) ->
-                statuses.put(id, p.isAlive() ? "running" : "finished"));
-        return ResponseEntity.ok(Map.of("simulators", statuses, "count", statuses.size()));
+
+        List<Map<String, Object>> simulatorList = new ArrayList<>();
+        runningSimulators.forEach((simId, entry) -> {
+            Map<String, Object> info = new HashMap<>();
+            info.put("simId", simId);
+            info.put("running", entry.process().isAlive());
+            // pid() available on Java 9+ — returns OptionalLong
+            info.put("pid", entry.process().pid());
+            info.put("startedAt", entry.startedAt().toString());
+            info.put("mode", entry.mode());
+            // framesProduced not available via Java IPC — tracked by Python stdout
+            info.put("framesProduced", null);
+            simulatorList.add(info);
+        });
+
+        // Also return first running simulator as flat fields for frontend convenience
+        Map<String, Object> response = new HashMap<>();
+        response.put("simulators", simulatorList);
+        response.put("count", simulatorList.size());
+
+        if (!simulatorList.isEmpty()) {
+            Map<String, Object> first = simulatorList.get(0);
+            response.put("running", first.get("running"));
+            response.put("pid", first.get("pid"));
+            response.put("startedAt", first.get("startedAt"));
+            response.put("mode", first.get("mode"));
+            response.put("simId", first.get("simId"));
+        } else {
+            response.put("running", false);
+            response.put("pid", null);
+            response.put("startedAt", null);
+            response.put("mode", null);
+            response.put("simId", null);
+        }
+
+        return ResponseEntity.ok(response);
     }
 }
