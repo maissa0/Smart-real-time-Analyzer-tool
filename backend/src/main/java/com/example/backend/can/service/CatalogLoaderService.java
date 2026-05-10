@@ -49,8 +49,9 @@ public class CatalogLoaderService {
 
         for (File xmlFile : xmlFiles) {
             try {
-                parseXml(xmlFile);
-                log.info("Loaded catalog: {}", xmlFile.getName());
+                if (parseXml(xmlFile)) {
+                    log.info("Loaded catalog: {}", xmlFile.getName());
+                }
             } catch (Exception e) {
                 log.error("Failed to parse catalog {}: {}", xmlFile.getName(), e.getMessage());
             }
@@ -59,10 +60,24 @@ public class CatalogLoaderService {
                 signalValidValues.size(), messageCycleTimes.size());
     }
 
-    private void parseXml(File xmlFile) throws Exception {
-        var doc = DocumentBuilderFactory.newInstance()
-                .newDocumentBuilder()
-                .parse(xmlFile);
+    /** @return {@code false} when the file is malformed or unreadable (already logged). */
+    private boolean parseXml(File xmlFile) {
+        org.w3c.dom.Document doc;
+        try {
+            doc = DocumentBuilderFactory.newInstance()
+                    .newDocumentBuilder()
+                    .parse(xmlFile);
+        } catch (org.xml.sax.SAXException e) {
+            log.error("XML parse error in {}: {} — skipping file", xmlFile.getAbsolutePath(), e.getMessage());
+            return false;
+        } catch (java.io.IOException e) {
+            log.error("Cannot read XML file {}: {} — skipping file", xmlFile.getAbsolutePath(), e.getMessage());
+            return false;
+        } catch (javax.xml.parsers.ParserConfigurationException e) {
+            log.error("Cannot configure XML parser for {}: {} — skipping file", xmlFile.getAbsolutePath(), e.getMessage());
+            return false;
+        }
+
         doc.getDocumentElement().normalize();
 
         // Note: XML uses "massage" (typo for "message")
@@ -123,6 +138,7 @@ public class CatalogLoaderService {
                 }
             }
         }
+        return true;
     }
 
     private String getTextContent(Element parent, String tagName) {

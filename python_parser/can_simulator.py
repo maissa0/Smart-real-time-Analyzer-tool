@@ -29,7 +29,13 @@ from confluent_kafka import Producer
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from kafka_producer import _delivery_report
+
+def _delivery_report(err, msg) -> None:
+    """Kafka delivery callback — logs errors, used by Producer.produce()."""
+    if err is not None:
+        logging.error("Kafka delivery failed: %s", err)
+
+
 from log_parser import parse_log
 from models import DecodedFrame, DecodedSignal
 from xml_decoder import encode_frame, load_catalog

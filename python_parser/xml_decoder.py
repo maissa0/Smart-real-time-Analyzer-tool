@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -34,7 +35,14 @@ def load_catalog(catalogue_dir: Path) -> dict[str, MessageDefinition]:
     """Load all XML files from catalogue_dir and merge into one message catalog."""
     catalog: dict[str, MessageDefinition] = {}
     for path in sorted(Path(catalogue_dir).glob("*.xml")):
-        tree = ET.parse(path)
+        try:
+            tree = ET.parse(path)
+        except ET.ParseError as e:
+            logging.error("XML parse error in %s: %s — skipping file", path, e)
+            continue
+        except OSError as e:
+            logging.error("Cannot read XML file %s: %s — skipping file", path, e)
+            continue
         root = tree.getroot()
         if root.tag == "Bus":
             buses = [root]
