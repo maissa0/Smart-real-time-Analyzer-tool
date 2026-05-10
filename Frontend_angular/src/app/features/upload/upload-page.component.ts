@@ -14,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule, HttpEventType, HttpHeaders, HttpRequest } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { interval } from 'rxjs';
+import { switchMap, takeWhile, tap } from 'rxjs/operators';
 import { API_BASE_URL } from '../../core/config/api.config';
 
 interface Car {
@@ -384,8 +385,6 @@ export class UploadPageComponent implements OnInit {
   // ── History ───────────────────────────────────────────────────────────────
   readonly history = signal<LogHistory[]>([]);
 
-  private pollSub: { unsubscribe(): void } | null = null;
-
   ngOnInit(): void {
     this.loadCars();
     this.loadHistory();
@@ -529,47 +528,33 @@ export class UploadPageComponent implements OnInit {
   }
 
   private pollProcessingStatus(): void {
-    this.pollSub?.unsubscribe();
-    let attempts = 0;
-    const poll = interval(2_000).pipe(takeUntilDestroyed(this.destroyRef));
-
-    this.pollSub = poll.subscribe(() => {
-      attempts++;
-      this.http
-        .get<{ status: string; frameCount: number }>(
-          `${API_BASE_URL}/api/logs/status/${this.currentSessionId}`,
-          { headers: this.authHeaders() }
-        )
-        .subscribe({
-          next: (res) => {
-            if (res.status === 'complete') {
-              this.frameCount.set(res.frameCount ?? 0);
-              this.step.set('complete');
-              this.loadHistory();
-              this.pollSub?.unsubscribe();
-              this.pollSub = null;
-            } else if (res.status === 'error') {
-              this.step.set('error');
-              this.errorMsg.set('Processing failed on server');
-              this.pollSub?.unsubscribe();
-              this.pollSub = null;
-            } else if (attempts > 60) {
-              this.step.set('error');
-              this.errorMsg.set('Timeout — processing took too long');
-              this.pollSub?.unsubscribe();
-              this.pollSub = null;
-            }
-          },
-          error: () => {
-            if (attempts > 60) {
-              this.step.set('error');
-              this.errorMsg.set('Timeout — processing took too long');
-              this.pollSub?.unsubscribe();
-              this.pollSub = null;
-            }
-          },
-        });
-    });
+    interval(2_000)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        switchMap(() =>
+          this.http.get<{ status: string; frameCount: number }>(
+            `${API_BASE_URL}/api/logs/status/${this.currentSessionId}`,
+            { headers: this.authHeaders() }
+          )
+        ),
+        tap(res => {
+          if (res.status === 'COMPLETED') {
+            this.frameCount.set(res.frameCount ?? 0);
+            this.step.set('complete');
+            this.loadHistory();
+          } else if (res.status === 'FAILED') {
+            this.step.set('error');
+            this.errorMsg.set('Processing failed on server');
+          }
+        }),
+        takeWhile(
+          res => res.status !== 'COMPLETED' && res.status !== 'FAILED',
+          true   // inclusive — emit the terminal value before unsubscribing
+        ),
+      )
+      .subscribe({
+        error: () => {},
+      });
   }
 
   private loadCars(): void {
