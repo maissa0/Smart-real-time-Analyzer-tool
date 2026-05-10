@@ -29,12 +29,13 @@ import {
 import { LogUploadComponent } from './upload/log-upload.component';
 import { SimulatorControlComponent } from './simulator/simulator-control.component';
 import { SessionListComponent } from './session-list/session-list.component';
+import { FrameTableComponent } from './frame-table/frame-table.component';
 
 @Component({
   selector: 'app-sniffer',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, SignalChartComponent, LogUploadComponent, SimulatorControlComponent, SessionListComponent],
+  imports: [CommonModule, FormsModule, SignalChartComponent, LogUploadComponent, SimulatorControlComponent, SessionListComponent, FrameTableComponent],
   templateUrl: './sniffer.component.html',
   styleUrl: './sniffer.component.scss',
 })

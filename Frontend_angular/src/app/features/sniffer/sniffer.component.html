@@ -203,57 +203,11 @@
       <!-- TABLE TAB -->
       @if (activeTab() === 'table') {
         <div class="kpit-table-wrap">
-          <table class="kpit-table">
-            <thead>
-              <tr class="kpit-thead-row">
-                <th class="kpit-th kpit-th-num">#</th>
-                <th class="kpit-th kpit-th-ts">timestamp</th>
-                <th class="kpit-th kpit-th-ch">ch</th>
-                <th class="kpit-th kpit-th-id">id</th>
-                <th class="kpit-th kpit-th-msg">message</th>
-                <th class="kpit-th kpit-th-dir">dir</th>
-                <th class="kpit-th kpit-th-raw">raw bytes</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (frame of filteredVisibleFrames(); track frame.id; let i = $index) {
-                <!-- Frame row -->
-                <tr class="kpit-frame-row">
-                  <td class="kpit-td kpit-td-num">{{ i + 1 }}</td>
-                  <td class="kpit-td kpit-td-ts">
-                    <div class="kpit-ts-main">{{ frame.timestamp | number:'1.6-6' }}</div>
-                    <div class="kpit-ts-offset">+{{ (frame.timestamp - (selectedSession()?.startTs ?? 0)).toFixed(3) }}s</div>
-                  </td>
-                  <td class="kpit-td kpit-td-ch">{{ frame.channelName }}</td>
-                  <td class="kpit-td kpit-td-id">
-                    <span class="kpit-addr-badge">{{ frame.msgId }}</span>
-                  </td>
-                  <td class="kpit-td kpit-td-msg">
-                    <span class="kpit-msg-name-cell">{{ frame.msgName }}</span>
-                  </td>
-                  <td class="kpit-td kpit-td-dir">
-                    <span class="kpit-dir-badge" [class.tx]="frame.direction === 'Tx'">
-                      {{ frame.direction }}
-                    </span>
-                  </td>
-                  <td class="kpit-td kpit-td-raw">{{ frame.rawBytes }}</td>
-                </tr>
-                <!-- Signal rows -->
-                @for (sig of getSignals(frame); track sig.signal_name) {
-                  @if (isSignalNameVisible(sig.signal_name)) {
-                    <tr class="kpit-sig-row">
-                      <td class="kpit-sig-td"></td>
-                      <td class="kpit-sig-td kpit-sig-name">{{ sig.signal_name }}</td>
-                      <td class="kpit-sig-td kpit-sig-raw">{{ sig.raw_value }}</td>
-                      <td class="kpit-sig-td kpit-sig-decoded" colspan="4">
-                        <span class="kpit-decoded-val">{{ sig.label }}</span>
-                      </td>
-                    </tr>
-                  }
-                }
-              }
-            </tbody>
-          </table>
+          <app-frame-table
+            [frames]="filteredVisibleFrames()"
+            [sessionStartTs]="selectedSession()?.startTs ?? 0"
+            [visibleSignalNames]="visibleSignalNames()">
+          </app-frame-table>
         </div>
       }
 
