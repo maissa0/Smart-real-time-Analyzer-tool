@@ -18,6 +18,7 @@ import { Chart, ArcElement, DoughnutController, Tooltip } from 'chart.js';
 import { LiveTelemetryService } from '../../core/services/live-telemetry.service';
 import { DashboardStore } from './dashboard.store';
 import { KpiCardComponent } from './kpi-card/kpi-card.component';
+import { MessageFrequencyChartComponent } from './message-frequency-chart/message-frequency-chart.component';
 
 // Register only what we need — avoids bundling the entire Chart.js library
 Chart.register(ArcElement, DoughnutController, Tooltip);
@@ -25,7 +26,7 @@ Chart.register(ArcElement, DoughnutController, Tooltip);
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DecimalPipe, HttpClientModule, KpiCardComponent],
+  imports: [CommonModule, DecimalPipe, HttpClientModule, KpiCardComponent, MessageFrequencyChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="p-6 space-y-6">
@@ -100,32 +101,19 @@ Chart.register(ArcElement, DoughnutController, Tooltip);
         <!-- ── Middle row: Top Messages + Fault Donut ──────────────────── -->
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
-          <!-- Top Message IDs -->
+          <!-- Top Message IDs — Chart.js bar chart -->
           <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-5">
             <h2 class="text-sm font-semibold text-gray-700 mb-4">
               Top Message IDs
             </h2>
-            <div class="space-y-3">
-              @for (msg of stats.topMessageIds; track msg.msgId) {
-                <div class="flex items-center gap-3">
-                  <span class="font-mono text-xs text-gray-500 w-16 shrink-0">
-                    {{ msg.msgId }}
-                  </span>
-                  <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                    <div class="h-full rounded-full"
-                      style="background:#b0ff44;"
-                      [style.width.%]="barWidth(msg.count, stats.topMessageIds)">
-                    </div>
-                  </div>
-                  <span class="text-xs text-gray-400 w-14 text-right shrink-0">
-                    {{ msg.count | number }}
-                  </span>
-                </div>
-              }
-              @if (stats.topMessageIds.length === 0) {
-                <p class="text-xs text-gray-400">No frames yet</p>
-              }
-            </div>
+            @if (stats.topMessageIds.length > 0) {
+              <app-message-frequency-chart
+                [data]="stats.topMessageIds" />
+            } @else {
+              <p class="text-xs text-gray-400 py-8 text-center">
+                No frames yet
+              </p>
+            }
           </div>
 
           <!-- Fault Distribution — Chart.js doughnut -->
@@ -382,14 +370,6 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         hour: '2-digit', minute: '2-digit',
       });
     } catch { return ''; }
-  }
-
-  barWidth(
-    count: number,
-    items: Array<{ msgId: string; count: number }>
-  ): number {
-    const max = Math.max(...items.map((i) => i.count), 1);
-    return Math.round((count / max) * 100);
   }
 
   faultEntries(
