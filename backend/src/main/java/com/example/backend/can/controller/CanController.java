@@ -5,6 +5,7 @@ import com.example.backend.can.dto.CanSessionResponse;
 import com.example.backend.can.service.CanSessionService;
 import com.example.backend.can.service.InfluxWriteService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,24 +39,54 @@ public class CanController {
     }
 
     @GetMapping("/sessions/{sessionId}/frames")
-    public ResponseEntity<List<CanFrameResponse>> getFrames(
+    public ResponseEntity<?> getFrames(
             @PathVariable String sessionId,
             @RequestParam(required = false) String msgId,
             @RequestParam(required = false, defaultValue = "false") boolean faultsOnly,
-            @RequestParam(required = false, defaultValue = "false") boolean anomalyOnly) {
-        // faultsOnly takes priority
+            @RequestParam(required = false, defaultValue = "false") boolean anomalyOnly,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false, defaultValue = "500") int size) {
+
+        // faultsOnly — always returns full list (filter overrides pagination)
         if (faultsOnly) {
             return ResponseEntity.ok(canSessionService.getFramesWithFaults(sessionId));
         }
-        // anomalyOnly — anomaly_results entity not yet implemented;
-        // return empty list to avoid 500 (placeholder for AI sprint)
+        // anomalyOnly — placeholder (AI sprint not yet implemented)
         if (anomalyOnly) {
             return ResponseEntity.ok(List.of());
         }
+
+        // Paginated mode — when page param is present
+        if (page != null) {
+            if (msgId != null && !msgId.isBlank()) {
+                return ResponseEntity.ok(
+                    canSessionService.getFramesBySessionAndMsgIdPaged(
+                        sessionId, msgId, page, size));
+            }
+            return ResponseEntity.ok(
+                canSessionService.getFramesBySessionPaged(sessionId, page, size));
+        }
+
+        // Backward-compatible non-paginated mode (no page param)
         if (msgId != null && !msgId.isBlank()) {
-            return ResponseEntity.ok(canSessionService.getFramesBySessionAndMsgId(sessionId, msgId));
+            return ResponseEntity.ok(
+                canSessionService.getFramesBySessionAndMsgId(sessionId, msgId));
         }
         return ResponseEntity.ok(canSessionService.getFramesBySession(sessionId));
+    }
+
+    /**
+     * Frame count for a session — used by pagination UI to compute total pages.
+     * GET /api/can/sessions/{sessionId}/frame-count
+     */
+    @GetMapping("/sessions/{sessionId}/frame-count")
+    public ResponseEntity<Map<String, Object>> getFrameCount(
+            @PathVariable String sessionId) {
+        long count = canSessionService.getFrameCount(sessionId);
+        Map<String, Object> body = new HashMap<>();
+        body.put("sessionId", sessionId);
+        body.put("count", count);
+        return ResponseEntity.ok(body);
     }
 
     /**

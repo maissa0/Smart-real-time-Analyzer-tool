@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -140,6 +141,38 @@ public class CanSessionService {
                 .sorted(Comparator.comparingDouble(CanFrameEntity::getTimestamp))
                 .map(this::toFrameResponse)
                 .toList();
+    }
+
+    /**
+     * Paginated frames for a session.
+     * Returns Page<CanFrameResponse> with totalElements, totalPages, content.
+     */
+    public Page<CanFrameResponse> getFramesBySessionPaged(
+            String sessionId, int page, int size) {
+        PageRequest pageable = PageRequest.of(
+                page, size, Sort.by("timestamp").ascending());
+        return canFrameRepository
+                .findBySessionIdOrderByTimestampAsc(sessionId, pageable)
+                .map(this::toFrameResponse);
+    }
+
+    /**
+     * Paginated frames filtered by msgId.
+     */
+    public Page<CanFrameResponse> getFramesBySessionAndMsgIdPaged(
+            String sessionId, String msgId, int page, int size) {
+        PageRequest pageable = PageRequest.of(
+                page, size, Sort.by("timestamp").ascending());
+        return canFrameRepository
+                .findBySessionIdAndMsgIdOrderByTimestampAsc(sessionId, msgId, pageable)
+                .map(this::toFrameResponse);
+    }
+
+    /**
+     * Total frame count for a session — used by pagination UI.
+     */
+    public long getFrameCount(String sessionId) {
+        return canFrameRepository.countBySessionId(sessionId);
     }
 
     @Transactional
