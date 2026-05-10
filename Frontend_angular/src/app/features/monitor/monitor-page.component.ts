@@ -9,7 +9,6 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
-import { Router } from '@angular/router';
 import { SnifferComponent } from '../sniffer/sniffer.component';
 import { API_BASE_URL } from '../../core/config/api.config';
 
