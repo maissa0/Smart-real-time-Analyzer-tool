@@ -59,15 +59,12 @@ public class CarController {
      */
     @GetMapping
     public ResponseEntity<List<CarDto>> getMyCars() {
-        UUID userId = requireCurrentUserId();
-        byte[] ownerUserIdBytes = uuidToBytes(userId);
-
-        // Admin: return all cars; regular user: return own cars only
-        List<CarDto> cars = isAdmin()
-                ? carService.getAllCars()
-                : carService.getCarsByUser(ownerUserIdBytes);
-
-        return ResponseEntity.ok(cars);
+        // Return all active cars for all authenticated users.
+        // Per-user ownership filtering is reserved for a future
+        // multi-tenant deployment where users manage private fleets.
+        // For the current single-organisation deployment (KPIT PFE),
+        // all users share visibility of the full vehicle fleet.
+        return ResponseEntity.ok(carService.getAllCars());
     }
 
     // ── POST /api/cars ────────────────────────────────────────────────────────
