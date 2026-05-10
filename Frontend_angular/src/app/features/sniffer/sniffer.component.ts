@@ -691,6 +691,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
           );
           const merged = [...data, ...extra];
           this.allFrames.set(merged);
+          this._frameBuffer = [...merged];
           this.telemetry.loadSession(merged);
           this.liveChartGroups.set(this.buildLiveChartGroupBindings());
         } else {
