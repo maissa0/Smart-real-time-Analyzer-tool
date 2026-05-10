@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/logs")
@@ -65,6 +67,54 @@ public class LogUploadController {
                     body.put("durationSeconds", lf.getDurationSeconds() != null ? lf.getDurationSeconds() : 0.0);
                     body.put("createdAt", lf.getCreatedAt() != null ? lf.getCreatedAt().toString() : "");
                     return ResponseEntity.ok(body);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Upload history — last N log files ordered by createdAt DESC.
+     * GET /api/logs/history?size=10
+     */
+    @GetMapping("/history")
+    public ResponseEntity<List<Map<String, Object>>> getHistory(
+            @RequestParam(defaultValue = "10") int size) {
+        List<Map<String, Object>> history = logFileRepository
+                .findTopNOrderByCreatedAtDesc(size)
+                .stream()
+                .map(lf -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("id", lf.getId());
+                    item.put("sessionId", lf.getSessionId());
+                    item.put("filename", lf.getFilename());
+                    item.put("status", lf.getStatus());
+                    item.put("frameCount", lf.getFrameCount() != null ? lf.getFrameCount() : 0);
+                    item.put("fileSize", lf.getFileSize() != null ? lf.getFileSize() : 0);
+                    item.put("createdAt", lf.getCreatedAt() != null ? lf.getCreatedAt().toString() : "");
+                    return item;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(history);
+    }
+
+    /**
+     * Retry a failed upload — re-queues the log file for processing.
+     * POST /api/logs/retry/{logFileId}
+     */
+    @PostMapping("/retry/{logFileId}")
+    public ResponseEntity<Map<String, String>> retry(@PathVariable Long logFileId) {
+        return logFileRepository.findById(logFileId)
+                .map(lf -> {
+                    try {
+                        String sessionId = logUploadService.retryProcessing(lf);
+                        return ResponseEntity.ok(Map.of(
+                                "sessionId", sessionId,
+                                "status", "processing"
+                        ));
+                    } catch (Exception e) {
+                        log.error("Retry failed for logFileId={}", logFileId, e);
+                        return ResponseEntity.<Map<String, String>>internalServerError()
+                                .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Retry failed"));
+                    }
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
