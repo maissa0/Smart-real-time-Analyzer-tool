@@ -72,7 +72,7 @@ public class LogUploadService {
      * {@code processUpload}: {@code sessionId + "_" + originalFilename}.
      */
     public String retryProcessing(LogFileEntity logFile) throws Exception {
-        logFile.setStatus("processing");
+        logFile.setStatus("PROCESSING");
         logFileRepository.save(logFile);
         Path filePath = Paths.get(uploadsDir)
                 .resolve(logFile.getSessionId() + "_" + logFile.getFilename());

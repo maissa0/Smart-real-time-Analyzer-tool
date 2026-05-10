@@ -5,6 +5,7 @@ import com.example.backend.can.dto.CanSessionResponse;
 import com.example.backend.can.entity.CanFrameEntity;
 import com.example.backend.can.entity.CanSessionEntity;
 import com.example.backend.can.repository.CanFrameRepository;
+import com.example.backend.can.repository.CanSessionRepository;
 import com.example.backend.can.repository.CarRepository;
 import com.example.backend.can.repository.IntegrityFaultRepository;
 import com.example.backend.can.repository.LogFileRepository;

@@ -44,7 +44,7 @@ public class LogFileService {
                 entity.setStartTs(toDouble(data.get("start_ts")));
                 entity.setEndTs(toDouble(data.get("end_ts")));
                 entity.setDurationSeconds(toDouble(data.get("duration_seconds")));
-                entity.setStatus("processing");
+                entity.setStatus("PROCESSING");
 
                 logFileRepository.save(entity);
                 log.info("Log file metadata saved: session={} file={} frames={}",
@@ -52,7 +52,7 @@ public class LogFileService {
 
             } else if ("complete".equals(event)) {
                 logFileRepository.findBySessionId(sessionId).ifPresent(entity -> {
-                    entity.setStatus("complete");
+                    entity.setStatus("COMPLETED");
                     entity.setCompletedAt(LocalDateTime.now());
                     if (data.containsKey("frame_count")) {
                         entity.setFrameCount(toInteger(data.get("frame_count")));
@@ -63,7 +63,7 @@ public class LogFileService {
 
             } else if ("error".equals(event)) {
                 logFileRepository.findBySessionId(sessionId).ifPresent(entity -> {
-                    entity.setStatus("error");
+                    entity.setStatus("FAILED");
                     entity.setErrorMessage((String) data.getOrDefault("error", "Unknown error"));
                     entity.setCompletedAt(LocalDateTime.now());
                     logFileRepository.save(entity);
