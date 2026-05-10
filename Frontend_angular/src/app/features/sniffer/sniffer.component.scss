@@ -855,3 +855,41 @@
     transform: rotate(360deg);
   }
 }
+
+/* ═══ ACTION BAR ═══ */
+.kpit-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgba(176,255,68,0.08);
+  background: #0d1117;
+}
+
+.kpit-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border: 1px solid #30363d;
+  background: #161b22;
+  color: #c9d1d9;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.kpit-action-btn:hover {
+  border-color: rgba(176,255,68,0.4);
+  color: #b0ff44;
+}
+.kpit-action-btn--ai {
+  border-color: rgba(176,255,68,0.3);
+  color: #b0ff44;
+  background: rgba(176,255,68,0.06);
+}
+.kpit-action-btn--ai:hover {
+  background: rgba(176,255,68,0.12);
+}

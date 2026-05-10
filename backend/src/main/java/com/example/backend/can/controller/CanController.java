@@ -5,6 +5,7 @@ import com.example.backend.can.dto.CanSessionResponse;
 import com.example.backend.can.service.CanSessionService;
 import com.example.backend.can.service.InfluxWriteService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,6 +45,50 @@ public class CanController {
             return ResponseEntity.ok(canSessionService.getFramesBySessionAndMsgId(sessionId, msgId));
         }
         return ResponseEntity.ok(canSessionService.getFramesBySession(sessionId));
+    }
+
+    /**
+     * Export all frames for a session as CSV.
+     * GET /api/can/sessions/{sessionId}/frames/export.csv
+     */
+    @GetMapping("/sessions/{sessionId}/frames/export.csv")
+    public ResponseEntity<String> exportFramesCsv(
+            @PathVariable String sessionId) {
+        List<CanFrameResponse> frames =
+                canSessionService.getFramesBySession(sessionId);
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("id,sessionId,timestamp,channel,channelName,")
+           .append("msgId,msgName,direction,rawBytes\n");
+
+        for (CanFrameResponse f : frames) {
+            csv.append(f.id()).append(',')
+               .append(f.sessionId()).append(',')
+               .append(f.timestamp()).append(',')
+               .append(f.channel() != null ? f.channel().toString() : "").append(',')
+               .append(escapeCsv(f.channelName())).append(',')
+               .append(escapeCsv(f.msgId())).append(',')
+               .append(escapeCsv(f.msgName())).append(',')
+               .append(escapeCsv(f.direction())).append(',')
+               .append(escapeCsv(f.rawBytes())).append('\n');
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"session-" + sessionId + ".csv\"");
+        headers.add(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(csv.toString());
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) return "";
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
     }
 
     @DeleteMapping("/sessions/{sessionId}")

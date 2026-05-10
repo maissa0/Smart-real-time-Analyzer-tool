@@ -3,6 +3,7 @@ import {
   Component,
   input,
   output,
+  signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CanFrame } from '../../../data/models/can.model';
@@ -112,6 +113,32 @@ export interface ParsedSignal {
     }
     .ft-raw  { color: #484f58; font-size: 0.65rem; }
 
+    .ft-signals-col { width: 80px; text-align: center; }
+    .ft-signals-cell { text-align: center; white-space: nowrap; }
+
+    .ft-expand-btn {
+      background: transparent;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      color: #8a9ab0;
+      font-size: 0.65rem;
+      padding: 1px 5px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .ft-expand-btn:hover, .ft-expand-btn.open {
+      border-color: #b0ff44;
+      color: #b0ff44;
+    }
+
+    .ft-fault-badge {
+      display: inline-block;
+      margin-left: 4px;
+      color: #ffaa00;
+      font-size: 0.75rem;
+      cursor: help;
+    }
+
     /* Signal sub-rows */
     .ft-sig-row { background: #0d1117; }
     .ft-sig-row td { padding: 2px 8px; }
@@ -139,12 +166,13 @@ export interface ParsedSignal {
             <th class="ft-msg">Message</th>
             <th class="ft-dir">Dir</th>
             <th class="ft-raw">Raw Bytes</th>
+            <th class="ft-signals-col">Signals</th>
           </tr>
         </thead>
         <tbody>
           @if (frames().length === 0) {
             <tr>
-              <td colspan="7" class="ft-empty">
+              <td colspan="8" class="ft-empty">
                 No frames to display
               </td>
             </tr>
@@ -169,13 +197,29 @@ export interface ParsedSignal {
                 </span>
               </td>
               <td class="ft-raw">{{ frame.rawBytes }}</td>
+              <!-- Signals expand button + fault badge -->
+              <td class="ft-signals-cell">
+                @if (parseSignals(frame).length > 0) {
+                  <button type="button" class="ft-expand-btn"
+                    [class.open]="expandedFrameId() === frame.id"
+                    (click)="toggleExpand(frame.id); $event.stopPropagation()">
+                    {{ expandedFrameId() === frame.id ? '▼' : '▶' }}
+                  </button>
+                }
+                @if (faultsByFrameId().has(frame.id)) {
+                  <span class="ft-fault-badge"
+                    [title]="faultsByFrameId().get(frame.id)">
+                    ⚠
+                  </span>
+                }
+              </td>
             </tr>
-            <!-- Signal sub-rows -->
-            @for (sig of parseSignals(frame); track sig.signal_name) {
-              @if (visibleSignalNames().size === 0 || visibleSignalNames().has(sig.signal_name)) {
+            <!-- Expanded signal rows — shown when row is expanded -->
+            @if (expandedFrameId() === frame.id) {
+              @for (sig of parseSignals(frame); track sig.signal_name) {
                 <tr class="ft-sig-row">
                   <td></td>
-                  <td class="ft-sig-name">{{ sig.signal_name }}</td>
+                  <td class="ft-sig-name" colspan="2">{{ sig.signal_name }}</td>
                   <td class="ft-sig-raw">{{ sig.raw_value }}</td>
                   <td class="ft-sig-decoded" colspan="4">{{ sig.label }}</td>
                 </tr>
@@ -201,8 +245,20 @@ export class FrameTableComponent {
    */
   readonly visibleSignalNames = input<Set<string>>(new Set());
 
+  /** Map of frameId → faultType for ⚠ badge display. */
+  readonly faultsByFrameId = input<Map<number, string>>(new Map());
+
+  /** Currently expanded frame row (shows signal details inline). */
+  readonly expandedFrameId = signal<number | null>(null);
+
   /** Emits frame.id when user clicks a row. */
   readonly frameClicked = output<number>();
+
+  toggleExpand(frameId: number): void {
+    this.expandedFrameId.set(
+      this.expandedFrameId() === frameId ? null : frameId
+    );
+  }
 
   /** Parse signals JSON string into typed array. */
   parseSignals(frame: CanFrame): ParsedSignal[] {

@@ -206,8 +206,32 @@
           <app-frame-table
             [frames]="filteredVisibleFrames()"
             [sessionStartTs]="selectedSession()?.startTs ?? 0"
-            [visibleSignalNames]="visibleSignalNames()">
+            [visibleSignalNames]="visibleSignalNames()"
+            [faultsByFrameId]="faultsByFrameId()">
           </app-frame-table>
+        </div>
+
+        <!-- Action bar below frame table -->
+        <div class="kpit-action-bar">
+          <!-- Export CSV — direct browser download via anchor -->
+          <a class="kpit-action-btn"
+            [href]="csvExportUrl()"
+            [download]="'session-' + selectedSession()!.sessionId + '.csv'"
+            target="_blank">
+            ↓ Export CSV
+          </a>
+
+          <!-- View Charts — switches to charts tab -->
+          <button type="button" class="kpit-action-btn"
+            (click)="setTab('charts')">
+            📊 View Charts
+          </button>
+
+          <!-- Run AI Analysis — placeholder route -->
+          <button type="button" class="kpit-action-btn kpit-action-btn--ai"
+            (click)="navigateToAi()">
+            🤖 Run AI Analysis
+          </button>
         </div>
       }
 

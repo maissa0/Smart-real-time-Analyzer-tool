@@ -13,6 +13,7 @@ import {
   Input,
   SimpleChanges,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
@@ -66,6 +67,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
   });
 
   private canService = inject(CanService);
+  private readonly router = inject(Router);
   private toastService = inject(ToastService);
   readonly telemetry = inject(TelemetryService);
   readonly liveTelemetry = inject(LiveTelemetryService);
@@ -217,6 +219,33 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       )
       .forEach((f) => map.set(f.msgId, f.msgName));
     return [...map.entries()].map(([msgId, msgName]) => ({ msgId, msgName }));
+  });
+
+  /**
+   * CSV export URL for the selected session.
+   * Used by the Export CSV anchor in the action bar.
+   */
+  readonly csvExportUrl = computed(() => {
+    const session = this.selectedSession();
+    if (!session) return '#';
+    const token = localStorage.getItem('access_token') ?? '';
+    // Note: token in URL is acceptable for file download endpoints
+    // where Authorization header cannot be set on <a href>.
+    return `http://localhost:8080/api/can/sessions/${session.sessionId}/frames/export.csv?token=${token}`;
+  });
+
+  /**
+   * Map of frameId → IntegrityFault for O(1) lookup in the frame table.
+   * Used to show ⚠ badge on frames with known faults.
+   */
+  readonly faultsByFrameId = computed(() => {
+    const map = new Map<number, string>();
+    for (const fault of this.integrityFaults()) {
+      if (fault.frameId != null) {
+        map.set(fault.frameId, fault.faultType);
+      }
+    }
+    return map;
   });
 
   // Frame stats
@@ -760,6 +789,15 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     this.visibleMessages.set(new Set());
     this.visibleSignalNames.set(new Set());
     this.filterByMsgId('');
+  }
+
+  navigateToAi(): void {
+    const session = this.selectedSession();
+    if (session) {
+      this.router.navigate(['/admin/ai'], {
+        queryParams: { sessionId: session.sessionId },
+      });
+    }
   }
 
   togglePlayback(): void {
