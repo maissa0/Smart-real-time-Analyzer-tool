@@ -775,15 +775,10 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   loadChartJs(): void {
-    if ((window as unknown as { Chart?: unknown }).Chart) {
-      this.chartJsLoaded.set(true);
-      return;
-    }
-    const script = document.createElement('script');
-    script.src =
-      'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-    script.onload = () => this.chartJsLoaded.set(true);
-    document.head.appendChild(script);
+    // Chart.js is now bundled via node_modules — no CDN required.
+    // This allows the app to work offline (demo venue Wi-Fi may be restricted).
+    // Registration is done at module level in signal-chart.component.ts.
+    this.chartJsLoaded.set(true);
   }
 
   getSignals(frame: CanFrame) {

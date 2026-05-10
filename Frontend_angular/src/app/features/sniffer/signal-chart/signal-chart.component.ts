@@ -11,6 +11,27 @@ import {
   ViewChildren,
 } from '@angular/core';
 
+import {
+  Chart,
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  Filler,
+  Tooltip,
+} from 'chart.js';
+
+// Register Chart.js components needed for signal line charts.
+// ArcElement and DoughnutController are registered in dashboard.component.ts.
+Chart.register(
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  Filler,
+  Tooltip,
+);
+
 export interface ChartDataset {
   signalName: string;
   color: string;
@@ -152,7 +173,9 @@ export class SignalChartComponent implements AfterViewInit, OnChanges, OnDestroy
   }
 
   private getChartJs(): any {
-    return (window as any)['Chart'];
+    // Chart.js is now imported directly from node_modules.
+    // (window as any)['Chart'] is no longer needed.
+    return Chart;
   }
 
   private buildAllLabels(ds: ChartDataset): Record<number, string> {
