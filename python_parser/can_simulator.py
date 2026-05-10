@@ -130,6 +130,10 @@ class CanSimulator:
             "timing_gaps": 0,
             "counter_errors": 0,
         }
+        # Non-blocking timing gap: stores the wall-clock time until which
+        # the simulator should suppress frame output. Set in trigger_timing_gap().
+        # Main loop checks this instead of blocking with time.sleep(16-20).
+        self.gap_active_until: float = 0.0
 
     def _load_messages_from_catalog(self, catalog=None) -> list[dict]:
         """Build simulator message dicts from XML catalog (same shape as former MESSAGES)."""
@@ -193,10 +197,24 @@ class CanSimulator:
         return corrupted
 
     def inject_timing_gap(self):
+        """Legacy blocking version — kept for replay mode compatibility."""
         gap = random.uniform(16.0, 20.0)
         print(f"  [FAULT] Timing gap injected: sleeping {gap:.1f}s")
         self.fault_stats["timing_gaps"] += 1
         time.sleep(gap)
+
+    def trigger_timing_gap(self) -> None:
+        """Non-blocking timing gap for random mode.
+
+        Sets gap_active_until to a future timestamp.
+        The main loop skips frame output while time.time() < gap_active_until,
+        yielding with time.sleep(0.001) instead of blocking for 16-20 seconds.
+        This keeps the process responsive to signals (SIGTERM, Kafka flush, etc).
+        """
+        gap = random.uniform(16.0, 20.0)
+        self.gap_active_until = time.time() + gap
+        self.fault_stats["timing_gaps"] += 1
+        print(f"  [FAULT] Timing gap triggered: {gap:.1f}s suppression window started")
 
     def inject_counter_error(self):
         skip = random.randint(2, 5)
@@ -384,21 +402,27 @@ class CanSimulator:
         try:
             while True:
                 now = time.time()
-                sent_any = False
 
+                # ── Non-blocking timing gap check ──────────────────────────
+                # If a gap is active, yield the thread for 1ms and skip
+                # this iteration entirely — no frames sent during the gap.
+                if now < self.gap_active_until:
+                    time.sleep(0.001)
+                    continue
+
+                sent_any = False
                 for msg in messages:
                     cycle = cycle_times.get(msg["msg_id"], 2.0) / self.args.speed
 
+                    # Trigger a new timing gap (non-blocking)
                     if self.args.inject_timing_gaps and self.should_inject_fault():
-                        last_sent[msg["msg_id"]] = now
-                        self.inject_timing_gap()
+                        self.trigger_timing_gap()
                         continue
 
                     if now - last_sent[msg["msg_id"]] >= cycle:
                         if random.random() < 0.3:
                             sig = random.choice(msg["signals"])
                             state[sig["signal_name"]] = random.choice(sig["valid_values"])
-
                         signals = [
                             DecodedSignal(
                                 signal_name=sig["signal_name"],
