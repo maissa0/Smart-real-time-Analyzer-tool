@@ -1,12 +1,8 @@
 import {
-  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
   OnInit,
-  ViewChild,
-  effect,
   inject,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -14,19 +10,16 @@ import { CommonModule, DecimalPipe } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { interval } from 'rxjs';
-import { Chart, ArcElement, DoughnutController, Tooltip } from 'chart.js';
 import { LiveTelemetryService } from '../../core/services/live-telemetry.service';
 import { DashboardStore } from './dashboard.store';
 import { KpiCardComponent } from './kpi-card/kpi-card.component';
 import { MessageFrequencyChartComponent } from './message-frequency-chart/message-frequency-chart.component';
-
-// Register only what we need — avoids bundling the entire Chart.js library
-Chart.register(ArcElement, DoughnutController, Tooltip);
+import { FaultDonutChartComponent, FaultEntry } from './fault-donut-chart/fault-donut-chart.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DecimalPipe, HttpClientModule, KpiCardComponent, MessageFrequencyChartComponent],
+  imports: [CommonModule, DecimalPipe, HttpClientModule, KpiCardComponent, MessageFrequencyChartComponent, FaultDonutChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="p-6 space-y-6">
@@ -116,39 +109,13 @@ Chart.register(ArcElement, DoughnutController, Tooltip);
             }
           </div>
 
-          <!-- Fault Distribution — Chart.js doughnut -->
+          <!-- Fault Distribution — FaultDonutChartComponent -->
           <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-5">
             <h2 class="text-sm font-semibold text-gray-700 mb-4">
               Fault Distribution
             </h2>
-            @if (stats.totalFaults > 0) {
-              <div class="flex items-center gap-6">
-                <!-- Donut canvas — fixed size for projector readability -->
-                <div class="shrink-0" style="width:140px; height:140px;">
-                  <canvas #faultChart></canvas>
-                </div>
-                <!-- Text labels to the right — no Chart.js legend plugin -->
-                <div class="space-y-3 text-sm">
-                  @for (entry of faultEntries(stats.faultsByType);
-                        track entry.type) {
-                    <div class="flex items-center gap-2">
-                      <span class="inline-block w-3 h-3 rounded-sm shrink-0"
-                        [style.background]="faultColor(entry.type)">
-                      </span>
-                      <span class="text-gray-600">{{ entry.type }}</span>
-                      <span class="ml-auto font-medium pl-4"
-                        [style.color]="faultColor(entry.type)">
-                        {{ faultPct(entry.count, stats.faultsByType) }}%
-                      </span>
-                    </div>
-                  }
-                </div>
-              </div>
-            } @else {
-              <p class="text-xs text-green-600 py-8 text-center">
-                ✓ No faults detected
-              </p>
-            }
+            <app-fault-donut-chart
+              [data]="toFaultEntries(stats.faultsByType)" />
           </div>
 
         </div>
@@ -259,100 +226,17 @@ Chart.register(ArcElement, DoughnutController, Tooltip);
     </div>
   `,
 })
-export class DashboardComponent implements OnInit, AfterViewInit {
+export class DashboardComponent implements OnInit {
   readonly liveTelemetry = inject(LiveTelemetryService);
   readonly store         = inject(DashboardStore);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router     = inject(Router);
-
-  @ViewChild('faultChart') faultChartRef!: ElementRef<HTMLCanvasElement>;
-  private chart: Chart<'doughnut'> | null = null;
-
-  // Fault type → display color
-  private readonly FAULT_COLORS: Record<string, string> = {
-    SIGNAL_RANGE: '#ff4444',
-    TIMING_GAP:   '#ffaa00',
-    DUPLICATE:    '#4488ff',
-  };
-  private readonly OTHER_COLOR = '#8b949e';
-
-  constructor() {
-    // React to stats changes — use setTimeout(0) to let Angular
-    // finish rendering the @if block before accessing the canvas.
-    effect(() => {
-      const stats = this.store.stats();
-      if (stats && stats.totalFaults > 0) {
-        setTimeout(() => this.updateChart(stats.faultsByType), 0);
-      }
-    });
-  }
 
   ngOnInit(): void {
     this.store.loadStats();
     interval(30_000)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.store.loadStats());
-  }
-
-  ngAfterViewInit(): void {
-    // Chart is created after first stats load via effect()
-  }
-
-  // ── Chart ────────────────────────────────────────────────────────────────
-
-  private updateChart(faultsByType: Record<string, number>): void {
-    const entries = Object.entries(faultsByType);
-    if (entries.length === 0) return;
-
-    const labels = entries.map(([type]) => type);
-    const data   = entries.map(([, count]) => count);
-    const colors = labels.map((l) => this.FAULT_COLORS[l] ?? this.OTHER_COLOR);
-
-    if (this.chart) {
-      // Update existing chart data in place
-      this.chart.data.labels = labels;
-      this.chart.data.datasets[0].data   = data;
-      this.chart.data.datasets[0].backgroundColor = colors;
-      this.chart.update('none'); // 'none' = no animation on refresh
-      return;
-    }
-
-    const canvas = this.faultChartRef?.nativeElement;
-    if (!canvas) return;
-
-    this.chart = new Chart(canvas, {
-      type: 'doughnut',
-      data: {
-        labels,
-        datasets: [{
-          data,
-          backgroundColor: colors,
-          borderWidth: 2,
-          borderColor: '#ffffff',
-          hoverBorderColor: '#ffffff',
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        cutout: '68%',        // thin ring — more readable at projector res
-        plugins: {
-          legend: { display: false },   // no legend — labels shown as text
-          tooltip: {
-            callbacks: {
-              label: (ctx) => {
-                const total = (ctx.dataset.data as number[])
-                  .reduce((a, b) => a + b, 0);
-                const pct = total > 0
-                  ? Math.round(((ctx.raw as number) / total) * 100)
-                  : 0;
-                return ` ${ctx.label}: ${ctx.raw} (${pct}%)`;
-              },
-            },
-          },
-        },
-      },
-    });
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -373,24 +257,11 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     } catch { return ''; }
   }
 
-  faultEntries(
-    faultsByType: Record<string, number>
-  ): Array<{ type: string; count: number }> {
+  /** Convert faultsByType Record to FaultEntry[] for FaultDonutChartComponent */
+  toFaultEntries(faultsByType: Record<string, number>): FaultEntry[] {
     return Object.entries(faultsByType).map(([type, count]) => ({
-      type, count,
+      type,
+      count,
     }));
-  }
-
-  faultColor(type: string): string {
-    return this.FAULT_COLORS[type] ?? this.OTHER_COLOR;
-  }
-
-  faultPct(count: number, faultsByType: Record<string, number>): number {
-    const total = Object.values(faultsByType).reduce((a, b) => a + b, 0);
-    return total === 0 ? 0 : Math.round((count / total) * 100);
-  }
-
-  objectKeys(obj: Record<string, unknown>): string[] {
-    return Object.keys(obj);
   }
 }
