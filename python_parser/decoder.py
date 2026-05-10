@@ -42,7 +42,7 @@ def make_consumer(bootstrap_servers: str, group_id: str) -> Consumer:
             "bootstrap.servers": bootstrap_servers,
             "group.id": group_id,
             "auto.offset.reset": "earliest",
-            "enable.auto.commit": True,
+            "enable.auto.commit": False,
         }
     )
 
@@ -247,7 +247,18 @@ class CanDecoderService:
                 raw_json = msg.value().decode("utf-8") if msg.value() else ""
 
                 if raw_json:
-                    self._process_message(raw_json, session_key)
+                    try:
+                        self._process_message(raw_json, session_key)
+                        # Commit only after successful processing.
+                        # If processing fails, offset is NOT committed —
+                        # message will be redelivered on next consumer start.
+                        self.consumer.commit(msg)
+                    except Exception as e:
+                        self.error_count += 1
+                        log.error(
+                            "Failed to process message — offset NOT committed "
+                            "(will retry on restart): %s", e
+                        )
 
         finally:
             self.consumer.close()

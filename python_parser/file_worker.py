@@ -46,7 +46,7 @@ def make_consumer(bootstrap_servers: str, group_id: str) -> Consumer:
         "bootstrap.servers": bootstrap_servers,
         "group.id": group_id,
         "auto.offset.reset": "earliest",
-        "enable.auto.commit": True,
+        "enable.auto.commit": False,
     })
 
 
@@ -391,8 +391,19 @@ class FileProcessingWorker:
                 try:
                     job = json.loads(msg.value().decode("utf-8"))
                     self._process_job(job)
+                    # Commit only after successful job processing.
+                    # If _process_job raises, offset is NOT committed —
+                    # the job will be redelivered on next worker start,
+                    # preventing silent data loss on crash.
+                    self.consumer.commit(msg)
                 except json.JSONDecodeError as e:
-                    log.error("Invalid job JSON: %s", e)
+                    log.error("Invalid job JSON: %s — offset NOT committed", e)
+                    self.error_count += 1
+                except Exception as e:
+                    log.error(
+                        "Failed to process job — offset NOT committed "
+                        "(will retry on restart): %s", e
+                    )
                     self.error_count += 1
 
         finally:
