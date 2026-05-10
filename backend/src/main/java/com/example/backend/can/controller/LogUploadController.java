@@ -44,7 +44,7 @@ public class LogUploadController {
             return ResponseEntity.ok(Map.of(
                     "sessionId", sessionId,
                     "filename", name,
-                    "status", "processing"
+                    "status", "PROCESSING"
             ));
         } catch (Exception e) {
             log.error("Upload failed", e);
@@ -108,7 +108,7 @@ public class LogUploadController {
                         String sessionId = logUploadService.retryProcessing(lf);
                         return ResponseEntity.ok(Map.of(
                                 "sessionId", sessionId,
-                                "status", "processing"
+                                "status", "PROCESSING"
                         ));
                     } catch (Exception e) {
                         log.error("Retry failed for logFileId={}", logFileId, e);
