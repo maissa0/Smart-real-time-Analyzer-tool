@@ -1,8 +1,12 @@
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   OnInit,
+  ViewChild,
+  effect,
   inject,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -10,9 +14,13 @@ import { CommonModule, DecimalPipe } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { interval } from 'rxjs';
+import { Chart, ArcElement, DoughnutController, Tooltip } from 'chart.js';
 import { LiveTelemetryService } from '../../core/services/live-telemetry.service';
 import { DashboardStore } from './dashboard.store';
 import { KpiCardComponent } from './kpi-card/kpi-card.component';
+
+// Register only what we need — avoids bundling the entire Chart.js library
+Chart.register(ArcElement, DoughnutController, Tooltip);
 
 @Component({
   selector: 'app-dashboard',
@@ -89,12 +97,11 @@ import { KpiCardComponent } from './kpi-card/kpi-card.component';
             [isLive]="false" />
         </div>
 
-        <!-- ── Middle row: Top Messages + Fault Breakdown ──────────────── -->
+        <!-- ── Middle row: Top Messages + Fault Donut ──────────────────── -->
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
           <!-- Top Message IDs -->
-          <div class="rounded-xl bg-white border border-gray-100
-                      shadow-sm p-5">
+          <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-5">
             <h2 class="text-sm font-semibold text-gray-700 mb-4">
               Top Message IDs
             </h2>
@@ -104,7 +111,6 @@ import { KpiCardComponent } from './kpi-card/kpi-card.component';
                   <span class="font-mono text-xs text-gray-500 w-16 shrink-0">
                     {{ msg.msgId }}
                   </span>
-                  <!-- Bar -->
                   <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
                     <div class="h-full rounded-full"
                       style="background:#b0ff44;"
@@ -122,45 +128,47 @@ import { KpiCardComponent } from './kpi-card/kpi-card.component';
             </div>
           </div>
 
-          <!-- Fault Breakdown -->
-          <div class="rounded-xl bg-white border border-gray-100
-                      shadow-sm p-5">
+          <!-- Fault Distribution — Chart.js doughnut -->
+          <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-5">
             <h2 class="text-sm font-semibold text-gray-700 mb-4">
-              Fault Breakdown
+              Fault Distribution
             </h2>
-            <div class="space-y-3">
-              @for (entry of faultEntries(stats.faultsByType);
-                    track entry.type) {
-                <div class="flex items-center gap-3">
-                  <span class="text-xs text-gray-600 w-32 shrink-0">
-                    {{ entry.type }}
-                  </span>
-                  <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                    <div class="h-full rounded-full bg-red-400"
-                      [style.width.%]="faultBarWidth(
-                        entry.count, stats.faultsByType)">
-                    </div>
-                  </div>
-                  <span class="text-xs font-medium w-10 text-right shrink-0"
-                    [class.text-red-500]="entry.count > 0"
-                    [class.text-gray-400]="entry.count === 0">
-                    {{ entry.count | number }}
-                  </span>
+            @if (stats.totalFaults > 0) {
+              <div class="flex items-center gap-6">
+                <!-- Donut canvas — fixed size for projector readability -->
+                <div class="shrink-0" style="width:140px; height:140px;">
+                  <canvas #faultChart></canvas>
                 </div>
-              }
-              @if (objectKeys(stats.faultsByType).length === 0) {
-                <p class="text-xs text-green-600">✓ No faults detected</p>
-              }
-            </div>
+                <!-- Text labels to the right — no Chart.js legend plugin -->
+                <div class="space-y-3 text-sm">
+                  @for (entry of faultEntries(stats.faultsByType);
+                        track entry.type) {
+                    <div class="flex items-center gap-2">
+                      <span class="inline-block w-3 h-3 rounded-sm shrink-0"
+                        [style.background]="faultColor(entry.type)">
+                      </span>
+                      <span class="text-gray-600">{{ entry.type }}</span>
+                      <span class="ml-auto font-medium pl-4"
+                        [style.color]="faultColor(entry.type)">
+                        {{ faultPct(entry.count, stats.faultsByType) }}%
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+            } @else {
+              <p class="text-xs text-green-600 py-8 text-center">
+                ✓ No faults detected
+              </p>
+            }
           </div>
+
         </div>
 
         <!-- ── Recent Sessions ──────────────────────────────────────────── -->
         <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-5">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-sm font-semibold text-gray-700">
-              Recent Sessions
-            </h2>
+            <h2 class="text-sm font-semibold text-gray-700">Recent Sessions</h2>
             <button
               class="text-xs text-gray-400 hover:text-gray-600 transition-colors"
               (click)="goTo('/admin/sniffer')">
@@ -205,9 +213,7 @@ import { KpiCardComponent } from './kpi-card/kpi-card.component';
 
         <!-- ── Quick Actions ────────────────────────────────────────────── -->
         <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-5">
-          <h2 class="text-sm font-semibold text-gray-700 mb-4">
-            Quick Actions
-          </h2>
+          <h2 class="text-sm font-semibold text-gray-700 mb-4">Quick Actions</h2>
           <div class="flex flex-wrap gap-3">
             <button
               class="flex items-center gap-2 px-4 py-2 rounded-lg
@@ -265,11 +271,31 @@ import { KpiCardComponent } from './kpi-card/kpi-card.component';
     </div>
   `,
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, AfterViewInit {
   readonly liveTelemetry = inject(LiveTelemetryService);
   readonly store         = inject(DashboardStore);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router     = inject(Router);
+
+  @ViewChild('faultChart') faultChartRef!: ElementRef<HTMLCanvasElement>;
+  private chart: Chart<'doughnut'> | null = null;
+
+  // Fault type → display color
+  private readonly FAULT_COLORS: Record<string, string> = {
+    TIMING_GAP:   '#ff4444',
+    DUPLICATE:    '#ffaa00',
+  };
+  private readonly OTHER_COLOR = '#8b949e';
+
+  constructor() {
+    // React to stats changes and update the chart
+    effect(() => {
+      const stats = this.store.stats();
+      if (stats && this.faultChartRef?.nativeElement) {
+        this.updateChart(stats.faultsByType);
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.store.loadStats();
@@ -278,31 +304,85 @@ export class DashboardComponent implements OnInit {
       .subscribe(() => this.store.loadStats());
   }
 
-  /** Navigate to a route */
+  ngAfterViewInit(): void {
+    // Chart is created after first stats load via effect()
+  }
+
+  // ── Chart ────────────────────────────────────────────────────────────────
+
+  private updateChart(faultsByType: Record<string, number>): void {
+    const entries = Object.entries(faultsByType);
+    if (entries.length === 0) return;
+
+    const labels = entries.map(([type]) => type);
+    const data   = entries.map(([, count]) => count);
+    const colors = labels.map((l) => this.FAULT_COLORS[l] ?? this.OTHER_COLOR);
+
+    if (this.chart) {
+      // Update existing chart data in place
+      this.chart.data.labels = labels;
+      this.chart.data.datasets[0].data   = data;
+      this.chart.data.datasets[0].backgroundColor = colors;
+      this.chart.update('none'); // 'none' = no animation on refresh
+      return;
+    }
+
+    const canvas = this.faultChartRef?.nativeElement;
+    if (!canvas) return;
+
+    this.chart = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: colors,
+          borderWidth: 2,
+          borderColor: '#ffffff',
+          hoverBorderColor: '#ffffff',
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '68%',        // thin ring — more readable at projector res
+        plugins: {
+          legend: { display: false },   // no legend — labels shown as text
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const total = (ctx.dataset.data as number[])
+                  .reduce((a, b) => a + b, 0);
+                const pct = total > 0
+                  ? Math.round(((ctx.raw as number) / total) * 100)
+                  : 0;
+                return ` ${ctx.label}: ${ctx.raw} (${pct}%)`;
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
   goTo(path: string): void {
     this.router.navigate([path]);
   }
 
-  /** Navigate to sniffer with sessionId query param */
   openSession(sessionId: string): void {
-    this.router.navigate(['/admin/sniffer'], {
-      queryParams: { sessionId },
-    });
+    this.router.navigate(['/admin/sniffer'], { queryParams: { sessionId } });
   }
 
-  /** Format ISO date string to HH:mm */
   formatDate(iso: string): string {
     try {
       return new Date(iso).toLocaleTimeString('fr-FR', {
-        hour: '2-digit',
-        minute: '2-digit',
+        hour: '2-digit', minute: '2-digit',
       });
-    } catch {
-      return '';
-    }
+    } catch { return ''; }
   }
 
-  /** Bar width as percentage of max value in topMessageIds */
   barWidth(
     count: number,
     items: Array<{ msgId: string; count: number }>
@@ -311,23 +391,23 @@ export class DashboardComponent implements OnInit {
     return Math.round((count / max) * 100);
   }
 
-  /** Bar width as percentage of total faults */
-  faultBarWidth(count: number, faultsByType: Record<string, number>): number {
-    const total = Object.values(faultsByType).reduce((a, b) => a + b, 0);
-    return total === 0 ? 0 : Math.round((count / total) * 100);
-  }
-
-  /** Convert faultsByType Record to array for @for iteration */
   faultEntries(
     faultsByType: Record<string, number>
   ): Array<{ type: string; count: number }> {
     return Object.entries(faultsByType).map(([type, count]) => ({
-      type,
-      count,
+      type, count,
     }));
   }
 
-  /** Expose Object.keys to template */
+  faultColor(type: string): string {
+    return this.FAULT_COLORS[type] ?? this.OTHER_COLOR;
+  }
+
+  faultPct(count: number, faultsByType: Record<string, number>): number {
+    const total = Object.values(faultsByType).reduce((a, b) => a + b, 0);
+    return total === 0 ? 0 : Math.round((count / total) * 100);
+  }
+
   objectKeys(obj: Record<string, unknown>): string[] {
     return Object.keys(obj);
   }
