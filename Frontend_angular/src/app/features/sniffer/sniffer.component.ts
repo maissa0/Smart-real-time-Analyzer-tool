@@ -69,8 +69,6 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
   private toastService = inject(ToastService);
   readonly telemetry = inject(TelemetryService);
   readonly liveTelemetry = inject(LiveTelemetryService);
-  // Example: reactive stream for Engine_RPM_High signal
-  readonly engineRpm$ = this.liveTelemetry.getSignalStream('Engine_RPM_High');
   private destroyRef = inject(DestroyRef);
 
   private simRefreshInterval: ReturnType<typeof setInterval> | null = null;
@@ -80,6 +78,14 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     { value: number; label: string; sessionStartTs: number }
   >();
   private lastRealFrameTime = 0;
+
+  /**
+   * Mutable ring buffer for live frames — avoids O(n²) spread on every frame.
+   * Capped at MAX_LIVE_FRAMES. The signal allFrames is updated once per RAF
+   * cycle, not once per Kafka message.
+   */
+  private readonly MAX_LIVE_FRAMES = 2000;
+  private _frameBuffer: CanFrame[] = [];
 
   sessions = signal<CanSession[]>([]);
   deletingSessionId = signal<string | null>(null);
@@ -378,9 +384,15 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       const session = this.selectedSession();
       if (!session || frame.sessionId !== session.sessionId) return;
 
-      const updatedFrames = [...this.allFrames(), frame];
-      this.allFrames.set(updatedFrames);
-      this.liveFrames.update((current) => [...current, frame]);
+      // O(1) ring buffer push — signal update deferred to RAF loop
+      this._frameBuffer.push(frame);
+      if (this._frameBuffer.length > this.MAX_LIVE_FRAMES) {
+        this._frameBuffer.shift();
+      }
+      this.liveFrames.update((current) => {
+        const next = [...current, frame];
+        return next.length > this.MAX_LIVE_FRAMES ? next.slice(-this.MAX_LIVE_FRAMES) : next;
+      });
       this.telemetry.appendLiveFrame(frame);
 
       const relTime = parseFloat((frame.timestamp - session.startTs).toFixed(3));
@@ -525,6 +537,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     this.visibleSignalNames.set(new Set());
     this.telemetry.stop();
     this.liveFrames.set([]);
+    this._frameBuffer = [];
     this.liveChartGroups.set(null);
 
     const isLive = session.sourceFilename === 'live_simulation' || session.frameCount === 0;
@@ -593,6 +606,11 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     if (this.rafRunning) return;
     this.rafRunning = true;
     const loop = () => {
+      // Update allFrames signal once per RAF — not once per Kafka message
+      if (this._frameBuffer.length > 0 && this.isLiveSession()) {
+        this.allFrames.set([...this._frameBuffer]);
+      }
+
       if (this.pendingChartPoints.length > 0) {
         const batch = this.pendingChartPoints.splice(0);
         for (const { signalName, point } of batch) {
