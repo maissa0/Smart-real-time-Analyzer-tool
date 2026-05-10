@@ -329,22 +329,34 @@ type UploadStep = 'idle' | 'uploading' | 'processing' | 'complete' | 'error';
                 <td>{{ formatSize(item.fileSize) }}</td>
                 <td>{{ item.createdAt | slice:0:10 }}</td>
                 <td>
-                  @if (item.status === 'complete') {
+                  @if (
+                    item.status === 'complete' || item.status === 'completed'
+                    || item.status === 'COMPLETED'
+                  ) {
                     <span class="up-status-done">✅ Done</span>
-                  } @else if (item.status === 'error') {
+                  } @else if (
+                    item.status === 'error' || item.status === 'failed'
+                    || item.status === 'FAILED'
+                  ) {
                     <span class="up-status-fail">❌ Failed</span>
                   } @else {
                     <span class="up-status-proc">⏳ {{ item.status }}</span>
                   }
                 </td>
                 <td>
-                  @if (item.status === 'complete' && item.sessionId) {
+                  @if (
+                    (item.status === 'complete' || item.status === 'completed'
+                    || item.status === 'COMPLETED') && item.sessionId
+                  ) {
                     <button type="button" class="up-action-btn"
                       (click)="viewSession(item.sessionId)">
                       View
                     </button>
                   }
-                  @if (item.status === 'error') {
+                  @if (
+                    item.status === 'error' || item.status === 'failed'
+                    || item.status === 'FAILED'
+                  ) {
                     <button type="button" class="up-action-btn retry"
                       (click)="retryUpload(item.id)">
                       Retry
@@ -538,19 +550,22 @@ export class UploadPageComponent implements OnInit {
           )
         ),
         tap(res => {
-          if (res.status === 'COMPLETED') {
+          // Backend uses lowercase: "complete" / "error" / "processing"
+          const s = (res.status ?? '').toLowerCase();
+          if (s === 'complete' || s === 'completed') {
             this.frameCount.set(res.frameCount ?? 0);
             this.step.set('complete');
             this.loadHistory();
-          } else if (res.status === 'FAILED') {
+          } else if (s === 'error' || s === 'failed') {
             this.step.set('error');
             this.errorMsg.set('Processing failed on server');
           }
         }),
-        takeWhile(
-          res => res.status !== 'COMPLETED' && res.status !== 'FAILED',
-          true   // inclusive — emit the terminal value before unsubscribing
-        ),
+        takeWhile(res => {
+          const s = (res.status ?? '').toLowerCase();
+          return s !== 'complete' && s !== 'completed'
+              && s !== 'error'   && s !== 'failed';
+        }, true),
       )
       .subscribe({
         error: () => {},
