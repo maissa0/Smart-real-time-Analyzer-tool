@@ -2,8 +2,6 @@ package com.example.backend.can.service;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.QueryApi;
-import com.influxdb.query.FluxRecord;
-import com.influxdb.query.FluxTable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,17 +9,20 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import jakarta.annotation.PreDestroy;
+
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +40,12 @@ public class PlaybackService {
 
     // Active playback jobs — keyed by playbackId
     private final Map<String, Future<?>> activePlaybacks = new ConcurrentHashMap<>();
-    private final ExecutorService executor = Executors.newCachedThreadPool();
+    /**
+     * Fixed thread pool — limits concurrent playback sessions to 10.
+     * Prevents unbounded thread creation under load.
+     * newCachedThreadPool() could spawn thousands of threads with many users.
+     */
+    private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
     /**
      * Start streaming signal points from InfluxDB to WebSocket.
@@ -100,6 +106,19 @@ public class PlaybackService {
     }
 
     /**
+     * Graceful shutdown — called by Spring on application stop.
+     * Prevents thread leak when the application is restarted.
+     */
+    @PreDestroy
+    public void shutdown() {
+        log.info("Shutting down PlaybackService executor...");
+        executor.shutdown();
+        activePlaybacks.forEach((id, future) -> future.cancel(true));
+        activePlaybacks.clear();
+        log.info("PlaybackService executor shut down.");
+    }
+
+    /**
      * Core playback loop — queries InfluxDB and streams points via WebSocket.
      */
     private void runPlayback(
@@ -147,47 +166,65 @@ public class PlaybackService {
         startEvent.put("sessionStartTs", startTs); // pass exact startTs to Angular
         messagingTemplate.convertAndSend("/topic/playback/" + sessionId, startEvent);
 
-        List<FluxTable> tables = queryApi.query(flux, influxOrg);
+        log.info("Playback streaming query started: id={} signals={}", playbackId, signals);
 
-        // Collect all records sorted by time
-        List<Map<String, Object>> records = new ArrayList<>();
-        for (FluxTable table : tables) {
-            for (FluxRecord record : table.getRecords()) {
-                Map<String, Object> point = new LinkedHashMap<>();
-                point.put("type", "point");
-                point.put("playbackId", playbackId);
-                point.put("sessionId", sessionId);
-                // Use nanosecond precision to avoid floating point loss
-                long nanos = record.getTime() != null ? record.getTime().toEpochMilli() : 0L;
-                point.put("time", nanos / 1000.0); // convert to seconds with ms precision
-                point.put("value", record.getValue());
-                point.put("signalName", record.getValueByKey("signal_name"));
-                point.put("label", record.getValueByKey("label"));
-                point.put("msgId", record.getValueByKey("msg_id"));
-                point.put("msgName", record.getValueByKey("msg_name"));
-                point.put("channelName", record.getValueByKey("channel_name"));
-                records.add(point);
-            }
+        /* Streaming via callback API — influxdb-client-java 7.1 has no QueryApi.queryStream(...).
+           Records are processed incrementally instead of buffering List<FluxTable>. */
+        final int[] pointCount = {0};
+        CountDownLatch streamDone = new CountDownLatch(1);
+        AtomicReference<Throwable> streamError = new AtomicReference<>();
+
+        queryApi.query(
+                flux,
+                influxOrg,
+                (cancellable, record) -> {
+                    if (Thread.currentThread().isInterrupted()) {
+                        cancellable.cancel();
+                        return;
+                    }
+                    Map<String, Object> point = new LinkedHashMap<>();
+                    point.put("type", "point");
+                    point.put("playbackId", playbackId);
+                    point.put("sessionId", sessionId);
+                    long millis = record.getTime() != null ? record.getTime().toEpochMilli() : 0L;
+                    point.put("time", millis / 1000.0);
+                    point.put("value", record.getValue());
+                    point.put("signalName", record.getValueByKey("signal_name"));
+                    point.put("label", record.getValueByKey("label"));
+                    point.put("msgId", record.getValueByKey("msg_id"));
+                    point.put("msgName", record.getValueByKey("msg_name"));
+                    point.put("channelName", record.getValueByKey("channel_name"));
+                    messagingTemplate.convertAndSend("/topic/playback/" + sessionId, point);
+                    pointCount[0]++;
+                },
+                err -> {
+                    streamError.set(err);
+                    streamDone.countDown();
+                },
+                streamDone::countDown
+        );
+
+        try {
+            streamDone.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
 
-        // Sort all records by time
-        records.sort(Comparator.comparingDouble(r -> ((Number) r.get("time")).doubleValue()));
-
-        log.info("Playback streaming {} points: id={}", records.size(), playbackId);
-
-        // Send all points immediately — Angular handles timing using timestamps
-        for (Map<String, Object> point : records) {
-            if (Thread.currentThread().isInterrupted()) {
-                break;
+        Throwable fatal = streamError.get();
+        if (fatal != null) {
+            if (fatal instanceof RuntimeException re) {
+                throw re;
             }
-            messagingTemplate.convertAndSend("/topic/playback/" + sessionId, point);
+            throw new RuntimeException(fatal);
         }
+
+        log.info("Playback streaming complete: id={} points={}", playbackId, pointCount[0]);
 
         // Send completion event
         Map<String, Object> done = new HashMap<>();
         done.put("type", "complete");
         done.put("playbackId", playbackId);
-        done.put("totalPoints", records.size());
+        done.put("totalPoints", pointCount[0]);
         messagingTemplate.convertAndSend(
                 "/topic/playback/" + sessionId,
                 done

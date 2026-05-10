@@ -65,6 +65,7 @@ public class CanSessionService {
         });
     }
 
+    @Transactional
     public CanFrameEntity saveFrame(String json) throws JsonProcessingException {
         Map<String, Object> map = objectMapper.readValue(json, new TypeReference<>() {});
         String rawBytesJson = objectMapper.writeValueAsString(map.get("raw_bytes"));
