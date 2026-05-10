@@ -1,173 +1,307 @@
 import {
-  Component, Output, EventEmitter, signal,
-  ChangeDetectionStrategy, inject
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+  signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Output, EventEmitter } from '@angular/core';
+import { interval } from 'rxjs';
 import { API_BASE_URL } from '../../../core/config/api.config';
 import { SimulatorStateService } from '../../../core/services/simulator-state.service';
+
+interface Car {
+  carUid: string;
+  make: string;
+  model: string;
+  year: number;
+  isVirtual: boolean;
+}
+
+interface SimStatus {
+  simulators: Record<string, string>;
+  count: number;
+}
 
 @Component({
   selector: 'app-simulator-control',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, FormsModule],
+  styles: [`
+    .sc-wrap { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* Section label */
+    .sc-section { display: flex; flex-direction: column; gap: 0.5rem; }
+    .sc-label {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.18em;
+      color: #b0ff44; text-transform: uppercase;
+    }
+
+    /* Select / input base */
+    .sc-select, .sc-input {
+      width: 100%;
+      background: #161b22;
+      border: 1px solid rgba(176,255,68,0.20);
+      border-radius: 6px;
+      color: #e6edf3;
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .sc-select:focus, .sc-input:focus {
+      border-color: rgba(176,255,68,0.5);
+    }
+
+    /* Mode radio buttons */
+    .sc-mode-row { display: flex; gap: 0.5rem; }
+    .sc-mode-btn {
+      flex: 1; padding: 6px; border-radius: 6px; font-size: 0.75rem;
+      font-weight: 600; border: 1px solid #30363d;
+      background: transparent; color: #8a9ab0; cursor: pointer;
+      transition: all 0.2s; text-align: center;
+    }
+    .sc-mode-btn.active {
+      border-color: #b0ff44; color: #b0ff44;
+      background: rgba(176,255,68,0.08);
+    }
+
+    /* Slider */
+    .sc-slider-row { display: flex; align-items: center; gap: 0.75rem; }
+    .sc-slider {
+      flex: 1; accent-color: #b0ff44; cursor: pointer;
+    }
+    .sc-slider-val {
+      font-size: 0.78rem; font-weight: 700; color: #b0ff44;
+      min-width: 48px; text-align: right;
+    }
+
+    /* Checkboxes */
+    .sc-checks { display: flex; flex-direction: column; gap: 0.4rem; }
+    .sc-check-label {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.78rem; color: #c9d1d9; cursor: pointer;
+    }
+    .sc-check-label input[type="checkbox"] { accent-color: #ffaa00; }
+
+    /* START button */
+    .sc-start-btn {
+      width: 100%; padding: 12px;
+      background: #b0ff44; color: #07090b;
+      font-size: 0.9rem; font-weight: 700;
+      border: none; border-radius: 8px;
+      cursor: pointer; transition: opacity 0.2s;
+      letter-spacing: 0.04em;
+    }
+    .sc-start-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .sc-start-btn:not(:disabled):hover { opacity: 0.88; }
+
+    /* STOP button */
+    .sc-stop-btn {
+      width: 100%; padding: 10px;
+      background: transparent; color: #ff4444;
+      font-size: 0.82rem; font-weight: 600;
+      border: 1px solid #ff4444; border-radius: 8px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .sc-stop-btn:hover { background: rgba(255,68,68,0.08); }
+
+    /* Status row */
+    .sc-status-row {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 8px 10px;
+      background: #0d1117; border: 1px solid #21262d; border-radius: 6px;
+      font-size: 0.72rem; flex-wrap: wrap;
+    }
+    .sc-status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #484f58; flex-shrink: 0;
+    }
+    .sc-status-dot.running {
+      background: #b0ff44;
+      animation: sc-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes sc-pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+    .sc-status-text { color: #8a9ab0; }
+    .sc-status-val { color: #e6edf3; font-weight: 600; }
+    .sc-status-id { color: #484f58; font-family: monospace; font-size: 0.65rem; }
+
+    .sc-error { font-size: 0.75rem; color: #ff4444; }
+  `],
   template: `
-    <div class="bg-gray-900 border border-gray-700 rounded-xl p-3 mb-3">
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-xs font-semibold text-purple-400">🎮 CAN Simulator</span>
-        @if (simId()) {
-          <span class="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded-full animate-pulse">
-            ● RUNNING
-          </span>
+    <div class="sc-wrap">
+
+      <!-- VEHICLE -->
+      <div class="sc-section">
+        <span class="sc-label">Vehicle</span>
+        <select class="sc-select" [(ngModel)]="selectedCarUid">
+          <option value="">No vehicle</option>
+          @for (car of cars(); track car.carUid) {
+            <option [value]="car.carUid">
+              {{ car.make }} {{ car.model }} {{ car.year }}
+              {{ car.isVirtual ? '(virtual)' : '' }}
+            </option>
+          }
+        </select>
+      </div>
+
+      <!-- MODE -->
+      <div class="sc-section">
+        <span class="sc-label">Mode</span>
+        <div class="sc-mode-row">
+          <button type="button" class="sc-mode-btn"
+            [class.active]="mode() === 'random'"
+            (click)="mode.set('random')">
+            🎲 Random
+          </button>
+          <button type="button" class="sc-mode-btn"
+            [class.active]="mode() === 'replay'"
+            (click)="mode.set('replay')">
+            ▶ Replay
+          </button>
+        </div>
+        @if (mode() === 'replay') {
+          <input class="sc-input" [(ngModel)]="logFile"
+            placeholder="C:/path/to/log_file.txt">
         }
       </div>
 
+      <!-- FREQUENCY -->
+      <div class="sc-section">
+        <span class="sc-label">Frequency</span>
+        <div class="sc-slider-row">
+          <input type="range" class="sc-slider"
+            min="1" max="100" step="1"
+            [(ngModel)]="frequency">
+          <span class="sc-slider-val">{{ frequency }} Hz</span>
+        </div>
+      </div>
+
+      <!-- FAULT INJECTION -->
+      <div class="sc-section">
+        <span class="sc-label">Fault Injection</span>
+        <div class="sc-checks">
+          <label class="sc-check-label">
+            <input type="checkbox" [(ngModel)]="injectTimingGaps">
+            ⚠ Timing gaps (random 16–20s gaps)
+          </label>
+          <label class="sc-check-label">
+            <input type="checkbox" [(ngModel)]="injectCounterErrors">
+            ⚠ Counter errors
+          </label>
+          <label class="sc-check-label">
+            <input type="checkbox" [(ngModel)]="injectValueErrors">
+            ⚠ Signal range violations
+          </label>
+          @if (injectValueErrors || injectTimingGaps || injectCounterErrors) {
+            <div class="sc-slider-row" style="margin-top:0.25rem">
+              <span style="font-size:0.72rem;color:#8a9ab0;min-width:64px">Fault rate</span>
+              <input type="range" class="sc-slider"
+                min="0.01" max="0.5" step="0.01"
+                [(ngModel)]="faultRate">
+              <span class="sc-slider-val">{{ (faultRate * 100).toFixed(0) }}%</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- START / STOP -->
       @if (!simId()) {
-        <div class="space-y-2">
-          <div class="flex gap-2">
-            <button type="button" (click)="mode.set('random')"
-              class="flex-1 text-xs py-1.5 rounded transition-colors"
-              [class]="mode() === 'random'
-                ? 'bg-purple-700 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'">
-              🎲 Random
-            </button>
-            <button type="button" (click)="mode.set('replay')"
-              class="flex-1 text-xs py-1.5 rounded transition-colors"
-              [class]="mode() === 'replay'
-                ? 'bg-purple-700 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'">
-              ▶ Replay
-            </button>
-          </div>
-
-          @if (mode() === 'replay') {
-            <input
-              [(ngModel)]="logFile"
-              placeholder="C:/path/to/log_file.txt"
-              class="w-full text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-gray-300 placeholder-gray-600">
-          }
-
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-gray-500 w-12">Speed:</span>
-            <div class="flex gap-1">
-              @for (s of [0.5, 1, 2, 5]; track s) {
-                <button type="button" (click)="speed.set(s)"
-                  class="text-xs px-2 py-1 rounded transition-colors"
-                  [class]="speed() === s
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'">
-                  {{ s }}x
-                </button>
-              }
-            </div>
-          </div>
-
-          <div class="space-y-1">
-            <span class="text-xs text-gray-500">Fault injection:</span>
-            <div class="flex flex-wrap gap-2">
-              <label class="flex items-center gap-1 text-xs text-gray-300 cursor-pointer">
-                <input type="checkbox" [(ngModel)]="injectValueErrors"
-                  class="accent-orange-500"> Value errors
-              </label>
-              <label class="flex items-center gap-1 text-xs text-gray-300 cursor-pointer">
-                <input type="checkbox" [(ngModel)]="injectTimingGaps"
-                  class="accent-yellow-500"> Timing gaps
-              </label>
-              <label class="flex items-center gap-1 text-xs text-gray-300 cursor-pointer">
-                <input type="checkbox" [(ngModel)]="injectCounterErrors"
-                  class="accent-red-500"> Counter errors
-              </label>
-            </div>
-            @if (injectValueErrors || injectTimingGaps || injectCounterErrors) {
-              <div class="flex items-center gap-2 mt-1">
-                <span class="text-xs text-gray-500">Fault rate:</span>
-                <input type="range" min="0.01" max="0.5" step="0.01"
-                  [(ngModel)]="faultRate" class="flex-1 accent-orange-500">
-                <span class="text-xs text-orange-400 w-8">{{ (faultRate * 100).toFixed(0) }}%</span>
-              </div>
-            }
-          </div>
-
-          @if (mode() === 'replay') {
-            <label class="flex items-center gap-1 text-xs text-gray-300 cursor-pointer">
-              <input type="checkbox" [(ngModel)]="loop" class="accent-purple-500"> Loop replay
-            </label>
-          }
-
-          <button type="button" (click)="startSimulator()"
-            [disabled]="starting()"
-            class="w-full text-xs py-2 rounded-lg font-medium transition-colors"
-            [class]="starting()
-              ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-              : 'bg-purple-600 hover:bg-purple-500 text-white'">
-            @if (starting()) {
-              <span class="animate-pulse">Starting...</span>
-            } @else {
-              🚀 Start Simulator
-            }
-          </button>
-
-          @if (error()) {
-            <p class="text-xs text-red-400">{{ error() }}</p>
-          }
-        </div>
+        <button type="button" class="sc-start-btn"
+          [disabled]="starting()"
+          (click)="startSimulator()">
+          {{ starting() ? 'Starting…' : '▶ START SIMULATOR' }}
+        </button>
       } @else {
-        <div class="space-y-2">
-          <div class="text-xs text-gray-400">
-            Mode: <span class="text-purple-300">{{ mode() }}</span> ·
-            Speed: <span class="text-purple-300">{{ speed() }}x</span>
-          </div>
-          <div class="text-xs font-mono text-gray-500 truncate">ID: {{ simId() }}</div>
-          <button type="button" (click)="stopSimulator()"
-            class="w-full text-xs py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white font-medium transition-colors">
-            ⏹ Stop Simulator
-          </button>
-        </div>
+        <button type="button" class="sc-stop-btn"
+          (click)="stopSimulator()">
+          ⏹ Stop Simulator
+        </button>
       }
+
+      @if (error()) {
+        <p class="sc-error">{{ error() }}</p>
+      }
+
+      <!-- STATUS ROW -->
+      <div class="sc-status-row">
+        <span class="sc-status-dot" [class.running]="!!simId()"></span>
+        <span class="sc-status-text">Status:</span>
+        <span class="sc-status-val">{{ simId() ? 'Running' : 'Idle' }}</span>
+        @if (simId()) {
+          <span class="sc-status-text">·</span>
+          <span class="sc-status-text">Simulators active:</span>
+          <span class="sc-status-val">{{ activeCount() }}</span>
+          <span class="sc-status-text">·</span>
+          <span class="sc-status-id">{{ simId()!.substring(0, 8) }}…</span>
+        }
+      </div>
+
     </div>
-  `
+  `,
 })
-export class SimulatorControlComponent {
+export class SimulatorControlComponent implements OnInit {
   @Output() simulatorStarted = new EventEmitter<void>();
   @Output() simulatorStopped = new EventEmitter<void>();
 
-  private http = inject(HttpClient);
-  private simulatorState = inject(SimulatorStateService);
-  private base = `${API_BASE_URL}/api/simulator`;
+  private readonly http           = inject(HttpClient);
+  private readonly simulatorState = inject(SimulatorStateService);
+  private readonly destroyRef     = inject(DestroyRef);
+  private readonly base           = `${API_BASE_URL}/api/simulator`;
 
-  mode = signal<'random' | 'replay'>('random');
-  speed = signal(1);
-  readonly simId = this.simulatorState.simId;
-  starting = signal(false);
-  error = signal<string | null>(null);
+  // ── Vehicle state ─────────────────────────────────────────────────────────
+  readonly cars = signal<Car[]>([]);
+  selectedCarUid = '';
 
-  logFile = 'C:/tools/Kpit_c/log_file.txt';
-  loop = false;
+  // ── Simulator config ──────────────────────────────────────────────────────
+  readonly mode     = signal<'random' | 'replay'>('random');
+  readonly simId    = this.simulatorState.simId;
+  readonly starting = signal(false);
+  readonly error    = signal<string | null>(null);
+
+  logFile           = 'C:/tools/Kpit_c/log_file.txt';
+  frequency         = 60;
+  loop              = false;
   injectValueErrors = false;
-  injectTimingGaps = false;
+  injectTimingGaps  = true;
   injectCounterErrors = false;
-  faultRate = 0.05;
+  faultRate         = 0.05;
+
+  // ── Status polling ────────────────────────────────────────────────────────
+  readonly activeCount = signal(0);
+
+  ngOnInit(): void {
+    this.loadCars();
+    // Poll status every 2s when a simulator is running
+    interval(2_000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.simId()) this.pollStatus();
+      });
+  }
 
   startSimulator(): void {
     this.starting.set(true);
     this.error.set(null);
-
     const body = {
-      mode: this.mode(),
-      logFile: this.mode() === 'replay' ? this.logFile : '',
-      speed: this.speed(),
-      loop: this.loop,
-      injectValueErrors: this.injectValueErrors,
-      injectTimingGaps: this.injectTimingGaps,
+      mode:               this.mode(),
+      logFile:            this.mode() === 'replay' ? this.logFile : '',
+      speed:              this.frequency / 10, // map Hz slider to speed multiplier
+      loop:               this.loop,
+      carUid:             this.selectedCarUid || null,
+      injectValueErrors:  this.injectValueErrors,
+      injectTimingGaps:   this.injectTimingGaps,
       injectCounterErrors: this.injectCounterErrors,
-      faultRate: this.faultRate,
+      faultRate:          this.faultRate,
     };
-
     this.http.post<{ simId: string; status: string }>(
-      `${this.base}/start`, body
+      `${this.base}/start`, body, { headers: this.authHeaders() }
     ).subscribe({
       next: (res) => {
         this.simulatorState.setRunning(res.simId);
@@ -177,19 +311,49 @@ export class SimulatorControlComponent {
       error: (err) => {
         this.starting.set(false);
         this.error.set(err?.error?.error ?? 'Failed to start simulator');
-      }
+      },
     });
   }
 
   stopSimulator(): void {
     const id = this.simId();
     if (!id) return;
-    this.http.post(`${this.base}/stop/${id}`, {}).subscribe({
-      next: () => {
-        this.simulatorState.setStopped();
-        this.simulatorStopped.emit();
-      },
-      error: () => this.simulatorState.setStopped()
-    });
+    this.http.post(`${this.base}/stop/${id}`, {}, { headers: this.authHeaders() })
+      .subscribe({
+        next: () => {
+          this.simulatorState.setStopped();
+          this.simulatorStopped.emit();
+        },
+        error: () => this.simulatorState.setStopped(),
+      });
+  }
+
+  // ── Private ───────────────────────────────────────────────────────────────
+
+  private loadCars(): void {
+    this.http
+      .get<Car[]>(`${API_BASE_URL}/api/cars`, { headers: this.authHeaders() })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cars) => this.cars.set(cars),
+        error: () => {},
+      });
+  }
+
+  private pollStatus(): void {
+    this.http
+      .get<SimStatus>(`${this.base}/status`, { headers: this.authHeaders() })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (s) => this.activeCount.set(s.count),
+        error: () => {},
+      });
+  }
+
+  private authHeaders(): HttpHeaders {
+    const token = localStorage.getItem('access_token');
+    return token
+      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
+      : new HttpHeaders();
   }
 }
