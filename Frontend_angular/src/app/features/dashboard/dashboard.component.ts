@@ -288,11 +288,12 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   private readonly OTHER_COLOR = '#8b949e';
 
   constructor() {
-    // React to stats changes and update the chart
+    // React to stats changes — use setTimeout(0) to let Angular
+    // finish rendering the @if block before accessing the canvas.
     effect(() => {
       const stats = this.store.stats();
-      if (stats && this.faultChartRef?.nativeElement) {
-        this.updateChart(stats.faultsByType);
+      if (stats && stats.totalFaults > 0) {
+        setTimeout(() => this.updateChart(stats.faultsByType), 0);
       }
     });
   }
