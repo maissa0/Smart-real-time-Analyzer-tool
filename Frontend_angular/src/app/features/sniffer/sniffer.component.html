@@ -19,11 +19,6 @@
 
     <!-- Log Sessions -->
     <div class="kpit-lp-section">
-      <div class="kpit-lp-title">
-        LOG SESSIONS
-        <span class="kpit-lp-count">{{ filteredSessions().length }}</span>
-      </div>
-
       @if (!hideUpload) {
         <app-log-upload (uploadComplete)="onUploadComplete($event)"></app-log-upload>
       }
@@ -33,58 +28,10 @@
           (simulatorStopped)="onSimulatorStopped()">
         </app-simulator-control>
       }
-
-      @if (loadingSessions()) {
-        <div class="kpit-skeleton-list">
-          @for (_ of [1,2,3]; track $index) {
-            <div class="kpit-skeleton"></div>
-          }
-        </div>
-      }
-
-      @if (!loadingSessions() && filteredSessions().length === 0) {
-        <div class="kpit-empty-sessions">No sessions found</div>
-      }
-
-      <div class="kpit-session-list">
-        @for (session of filteredSessions(); track session.id) {
-          <div class="kpit-session-item"
-            [class.active]="selectedSession()?.sessionId === session.sessionId"
-            (click)="selectSession(session)">
-            <div class="kpit-session-info">
-              <span class="kpit-session-name">{{ session.sourceFilename }}</span>
-              <span class="kpit-session-frames">{{ session.frameCount }} frames</span>
-            </div>
-            <div class="kpit-session-meta">
-              {{ session.createdAt | date:'MM/dd HH:mm' }}
-            </div>
-            <button type="button" class="kpit-session-delete"
-              (click)="deleteSession(session, $event)"
-              [disabled]="deletingSessionId() === session.sessionId"
-              title="Delete">
-              @if (deletingSessionId() === session.sessionId) {
-                <svg class="spin" width="12" height="12" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"/>
-                  <path fill="currentColor" d="M4 12a8 8 0 018-8v8z" opacity="0.75"/>
-                </svg>
-              } @else {
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-                </svg>
-              }
-            </button>
-          </div>
-        }
-        @if (hasMore()) {
-          <div class="kpit-load-more" (click)="loadMoreSessions()">
-            @if (loadingMore()) {
-              <span class="kpit-pulse">Loading...</span>
-            } @else {
-              Load more
-            }
-          </div>
-        }
-      </div>
+      <app-session-list
+        [liveOnly]="liveOnly"
+        (sessionSelected)="selectSession($event)">
+      </app-session-list>
     </div>
 
     <!-- Filter section — only when session selected -->
@@ -332,6 +279,8 @@
                     [msgName]="group.msgName"
                     [datasets]="group.datasets"
                     [chartHeight]="90"
+                    [miniChartHeight]="kpitMonitorChartTheme ? 200 : 60"
+                    [miniChartHeightBottom]="kpitMonitorChartTheme ? 200 : 80"
                     [playheadTime]="playheadRelativeTime()">
                   </app-signal-chart>
                 }
@@ -342,6 +291,8 @@
                     [msgName]="group.msgName"
                     [datasets]="group.datasets"
                     [chartHeight]="90"
+                    [miniChartHeight]="kpitMonitorChartTheme ? 200 : 60"
+                    [miniChartHeightBottom]="kpitMonitorChartTheme ? 200 : 80"
                     [playheadTime]="playheadRelativeTime()">
                   </app-signal-chart>
                 }

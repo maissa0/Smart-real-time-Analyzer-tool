@@ -28,12 +28,13 @@ import {
 } from './signal-chart/signal-chart.component';
 import { LogUploadComponent } from './upload/log-upload.component';
 import { SimulatorControlComponent } from './simulator/simulator-control.component';
+import { SessionListComponent } from './session-list/session-list.component';
 
 @Component({
   selector: 'app-sniffer',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, SignalChartComponent, LogUploadComponent, SimulatorControlComponent],
+  imports: [CommonModule, FormsModule, SignalChartComponent, LogUploadComponent, SimulatorControlComponent, SessionListComponent],
   templateUrl: './sniffer.component.html',
   styleUrl: './sniffer.component.scss',
 })
@@ -46,6 +47,8 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
   @Input() uploadOnly = false;
   @Input() autoSelectLive = false;
   @Input() autoSelectSessionId: string | undefined = undefined;
+  /** Live Monitor KPIT styling: lime primary line height, taller canvases — see monitor-page.component.scss */
+  @Input() kpitMonitorChartTheme = false;
 
   /** Mirrors `liveOnly` input so `filteredSessions` stays reactive with signals. */
   private readonly liveOnlyFlag = signal(false);
@@ -340,7 +343,12 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
             color: palette[i % palette.length],
             allPoints: pointMap.get(key)?.allPoints ?? [],
           }))
-          .filter((d) => d.allPoints.length > 0),
+          .filter((d) => d.allPoints.length > 0)
+          .map((d, idx) => ({
+            ...d,
+            color:
+              this.kpitMonitorChartTheme && idx === 0 ? '#b0ff44' : d.color,
+          })),
       }))
       .filter((g) => g.signalDefs.length > 0);
   });
