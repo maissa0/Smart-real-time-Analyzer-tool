@@ -37,10 +37,17 @@ export class CanService {
     return this.http.get<any>(`${API_BASE_URL}/api/logs/status/${sessionId}`);
   }
 
-  getFrames(sessionId: string, msgId?: string): Observable<CanFrame[]> {
-    const params = msgId ? `?msgId=${msgId}` : '';
+  getFrames(
+    sessionId: string,
+    filters?: { msgId?: string; faultsOnly?: boolean; anomalyOnly?: boolean }
+  ): Observable<CanFrame[]> {
+    const params = new URLSearchParams();
+    if (filters?.msgId)       params.set('msgId', filters.msgId);
+    if (filters?.faultsOnly)  params.set('faultsOnly', 'true');
+    if (filters?.anomalyOnly) params.set('anomalyOnly', 'true');
+    const qs = params.toString();
     return this.http.get<CanFrame[]>(
-      `${this.base}/sessions/${sessionId}/frames${params}`,
+      `${this.base}/sessions/${sessionId}/frames${qs ? '?' + qs : ''}`,
     );
   }
 

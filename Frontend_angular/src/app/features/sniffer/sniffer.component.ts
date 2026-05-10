@@ -184,6 +184,9 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
   // Filter signals
   filterAddress = signal('');
   filterBus = signal('');
+  // Advanced filter signals — wired to API query params
+  faultsOnly = signal(false);
+  anomalyOnly = signal(false);
   visibleMessages = signal<Set<string>>(new Set());
   visibleSignalNames = signal<Set<string>>(new Set());
 
@@ -220,6 +223,17 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       .forEach((f) => map.set(f.msgId, f.msgName));
     return [...map.entries()].map(([msgId, msgName]) => ({ msgId, msgName }));
   });
+
+  /**
+   * Derived filter object passed to canService.getFrames().
+   * Reacts to selectedMsgId, faultsOnly, anomalyOnly signals.
+   * When any filter changes, loadFrames() is called in the effect below.
+   */
+  readonly frameApiFilters = computed(() => ({
+    msgId:       this.selectedMsgId() || undefined,
+    faultsOnly:  this.faultsOnly(),
+    anomalyOnly: this.anomalyOnly(),
+  }));
 
   /**
    * CSV export URL for the selected session.
@@ -706,7 +720,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
 
   loadFrames(sessionId: string): void {
     this.loadingFrames.set(true);
-    this.canService.getFrames(sessionId).subscribe({
+    this.canService.getFrames(sessionId, this.frameApiFilters()).subscribe({
       next: (data) => {
         if (this.isLiveSession()) {
           const extra = this.liveFrames().filter(
@@ -789,6 +803,24 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     this.visibleMessages.set(new Set());
     this.visibleSignalNames.set(new Set());
     this.filterByMsgId('');
+    this.faultsOnly.set(false);
+    this.anomalyOnly.set(false);
+    const session = this.selectedSession();
+    if (session) this.loadFrames(session.sessionId);
+  }
+
+  toggleFaultsOnly(): void {
+    this.faultsOnly.update(v => !v);
+    this.anomalyOnly.set(false); // mutually exclusive
+    const session = this.selectedSession();
+    if (session) this.loadFrames(session.sessionId);
+  }
+
+  toggleAnomalyOnly(): void {
+    this.anomalyOnly.update(v => !v);
+    this.faultsOnly.set(false); // mutually exclusive
+    const session = this.selectedSession();
+    if (session) this.loadFrames(session.sessionId);
   }
 
   navigateToAi(): void {

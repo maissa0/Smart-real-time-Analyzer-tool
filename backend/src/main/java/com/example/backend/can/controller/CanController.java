@@ -40,8 +40,19 @@ public class CanController {
     @GetMapping("/sessions/{sessionId}/frames")
     public ResponseEntity<List<CanFrameResponse>> getFrames(
             @PathVariable String sessionId,
-            @RequestParam(required = false) String msgId) {
-        if (msgId != null) {
+            @RequestParam(required = false) String msgId,
+            @RequestParam(required = false, defaultValue = "false") boolean faultsOnly,
+            @RequestParam(required = false, defaultValue = "false") boolean anomalyOnly) {
+        // faultsOnly takes priority
+        if (faultsOnly) {
+            return ResponseEntity.ok(canSessionService.getFramesWithFaults(sessionId));
+        }
+        // anomalyOnly — anomaly_results entity not yet implemented;
+        // return empty list to avoid 500 (placeholder for AI sprint)
+        if (anomalyOnly) {
+            return ResponseEntity.ok(List.of());
+        }
+        if (msgId != null && !msgId.isBlank()) {
             return ResponseEntity.ok(canSessionService.getFramesBySessionAndMsgId(sessionId, msgId));
         }
         return ResponseEntity.ok(canSessionService.getFramesBySession(sessionId));

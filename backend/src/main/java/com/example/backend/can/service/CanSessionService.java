@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -106,6 +107,30 @@ public class CanSessionService {
 
     public List<CanFrameResponse> getFramesBySessionAndMsgId(String sessionId, String msgId) {
         return canFrameRepository.findBySessionIdAndMsgIdOrderByTimestampAsc(sessionId, msgId).stream()
+                .map(this::toFrameResponse)
+                .toList();
+    }
+
+    /**
+     * Returns frames for a session that have at least one integrity fault.
+     * Uses IntegrityFaultRepository to find affected frame IDs,
+     * then loads only those frames.
+     */
+    public List<CanFrameResponse> getFramesWithFaults(String sessionId) {
+        List<Long> faultFrameIds = integrityFaultRepository
+                .findBySessionIdOrderByFrameTimestampAsc(sessionId)
+                .stream()
+                .filter(f -> f.getFrameId() != null)
+                .map(f -> f.getFrameId())
+                .distinct()
+                .toList();
+
+        if (faultFrameIds.isEmpty()) return List.of();
+
+        return canFrameRepository
+                .findAllById(faultFrameIds)
+                .stream()
+                .sorted(Comparator.comparingDouble(CanFrameEntity::getTimestamp))
                 .map(this::toFrameResponse)
                 .toList();
     }

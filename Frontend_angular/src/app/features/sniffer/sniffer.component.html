@@ -83,6 +83,23 @@
           </div>
         }
 
+        <!-- Advanced filter toggles -->
+        <div class="kpit-advanced-filters">
+          <button type="button"
+            class="kpit-filter-toggle"
+            [class.active]="faultsOnly()"
+            (click)="toggleFaultsOnly()"
+            title="Show only frames with integrity faults">
+            ⚠ Faults only
+          </button>
+          <button type="button"
+            class="kpit-filter-toggle"
+            [class.active]="anomalyOnly()"
+            (click)="toggleAnomalyOnly()"
+            title="Show only anomalous frames (AI detected)">
+            🔴 Anomalies only
+          </button>
+        </div>
         <button class="kpit-clear-btn" type="button" (click)="clearAllFilters()">Clear filters</button>
 
         <div class="kpit-filter-count">
