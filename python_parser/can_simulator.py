@@ -79,6 +79,12 @@ def build_argparser():
         help="Loop replay indefinitely (replay mode only)",
     )
     p.add_argument(
+        "--car-uid",
+        type=str,
+        default=None,
+        help="Car UID to associate with the session (passed to session-meta)",
+    )
+    p.add_argument(
         "--inject-value-errors",
         action="store_true",
         help="Randomly inject out-of-range signal values",
@@ -246,6 +252,9 @@ class CanSimulator:
             "end_ts": end_ts,
             "frame_count": frame_count,
         }
+        # Link session to a vehicle if --car-uid was provided
+        if getattr(self.args, 'car_uid', None):
+            meta["car_uid"] = self.args.car_uid
         self._producer.produce(
             "session-meta",
             key=self.session_id.encode("utf-8"),

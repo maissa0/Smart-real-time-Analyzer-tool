@@ -5,7 +5,7 @@ import com.example.backend.can.dto.CanSessionResponse;
 import com.example.backend.can.entity.CanFrameEntity;
 import com.example.backend.can.entity.CanSessionEntity;
 import com.example.backend.can.repository.CanFrameRepository;
-import com.example.backend.can.repository.CanSessionRepository;
+import com.example.backend.can.repository.CarRepository;
 import com.example.backend.can.repository.IntegrityFaultRepository;
 import com.example.backend.can.repository.LogFileRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -33,6 +33,7 @@ import java.util.Map;
 public class CanSessionService {
 
     private final CanSessionRepository canSessionRepository;
+    private final CarRepository carRepository;
     private final CanFrameRepository canFrameRepository;
     private final IntegrityFaultRepository integrityFaultRepository;
     private final LogFileRepository logFileRepository;
@@ -46,14 +47,19 @@ public class CanSessionService {
         Map<String, Object> map = objectMapper.readValue(json, new TypeReference<>() {});
         String sessionId = stringVal(map.get("session_id"));
         return canSessionRepository.findBySessionId(sessionId).orElseGet(() -> {
-            CanSessionEntity entity = CanSessionEntity.builder()
+            CanSessionEntity.CanSessionEntityBuilder builder = CanSessionEntity.builder()
                     .sessionId(sessionId)
                     .sourceFilename(stringVal(map.get("source_filename")))
                     .startTs(toDouble(map.get("start_ts")))
                     .endTs(toDouble(map.get("end_ts")))
-                    .frameCount(toInteger(map.get("frame_count")))
-                    .build();
-            return canSessionRepository.save(entity);
+                    .frameCount(toInteger(map.get("frame_count")));
+            // Link to vehicle if car_uid is present in the message
+            String carUid = (String) map.get("car_uid");
+            if (carUid != null && !carUid.isBlank()) {
+                carRepository.findByCarUid(carUid)
+                        .ifPresent(car -> builder.carId(car.getId()));
+            }
+            return canSessionRepository.save(builder.build());
         });
     }
 

@@ -126,6 +126,12 @@ public class SimulatorController {
             if (injectTimingGaps)    cmd.add("--inject-timing-gaps");
             if (injectCounterErrors) cmd.add("--inject-counter-errors");
 
+            String carUid = config.get("carUid") instanceof String s ? s : null;
+            if (carUid != null && !carUid.isBlank()) {
+                cmd.add("--car-uid");
+                cmd.add(carUid);
+            }
+
             String simId = UUID.randomUUID().toString();
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.redirectErrorStream(true);
