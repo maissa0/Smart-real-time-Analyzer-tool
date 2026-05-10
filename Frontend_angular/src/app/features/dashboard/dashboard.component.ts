@@ -270,8 +270,9 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
   // Fault type → display color
   private readonly FAULT_COLORS: Record<string, string> = {
-    TIMING_GAP:   '#ff4444',
-    DUPLICATE:    '#ffaa00',
+    SIGNAL_RANGE: '#ff4444',
+    TIMING_GAP:   '#ffaa00',
+    DUPLICATE:    '#4488ff',
   };
   private readonly OTHER_COLOR = '#8b949e';
 
