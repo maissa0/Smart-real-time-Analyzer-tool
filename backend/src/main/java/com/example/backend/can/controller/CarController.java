@@ -183,20 +183,27 @@ public class CarController {
     }
 
     /**
-     * Check if the authenticated user owns the car or is an admin.
-     * Throws 403 Forbidden if neither condition is met.
+     * Check if the authenticated user owns the car, is an admin, or the car
+     * has no owner (organisation-wide fleet / seeded vehicles like Legacy).
+     * Throws 403 Forbidden only when the car is privately owned by another user.
      */
     private void checkOwnershipOrAdmin(String carUid) {
         if (isAdmin()) return;
+        CarEntity car = carRepository.findByCarUid(carUid)
+                .filter(c -> c.getDeletedAt() == null)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Car not found: " + carUid));
+        if (car.getOwnerUserId() == null) {
+            return;
+        }
         UUID userId = requireCurrentUserId();
         byte[] ownerBytes = uuidToBytes(userId);
-        carRepository.findByCarUid(carUid)
-                .filter(c -> c.getDeletedAt() == null)
-                .filter(c -> c.getOwnerUserId() != null &&
-                             java.util.Arrays.equals(c.getOwnerUserId(), ownerBytes))
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.FORBIDDEN,
-                        "You do not have access to this car"));
+        if (java.util.Arrays.equals(car.getOwnerUserId(), ownerBytes)) {
+            return;
+        }
+        throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "You do not have access to this car");
     }
 
     /**
