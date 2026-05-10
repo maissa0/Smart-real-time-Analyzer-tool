@@ -4,6 +4,7 @@ import {
   OnDestroy,
   OnChanges,
   ChangeDetectionStrategy,
+  HostListener,
   inject,
   signal,
   computed,
@@ -13,7 +14,7 @@ import {
   Input,
   SimpleChanges,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
@@ -68,6 +69,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
 
   private canService = inject(CanService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private toastService = inject(ToastService);
   readonly telemetry = inject(TelemetryService);
   readonly liveTelemetry = inject(LiveTelemetryService);
@@ -422,6 +424,28 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
   ngOnInit(): void {
     this.liveOnlyFlag.set(this.liveOnly);
     this.uploadOnlyFlag.set(this.uploadOnly);
+
+    // ── URL state restore on load ────────────────────────────────────────
+    // Read sessionId from query params on first load so deep links work.
+    // Example: /admin/sniffer?sessionId=abc-123 auto-selects that session.
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const sessionId = params['sessionId'];
+        if (sessionId && !this.selectedSession()) {
+          // Wait for sessions to load then auto-select
+          const trySelect = () => {
+            const found = this.sessions().find((s) => s.sessionId === sessionId);
+            if (found) {
+              this.selectSession(found);
+            }
+          };
+          // Retry after sessions load (polling already runs in SessionListComponent)
+          setTimeout(trySelect, 800);
+          setTimeout(trySelect, 2000);
+        }
+      });
+
     this.liveTelemetry.frames$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((raw) => {
       const frame = this.normalizeLiveFrame(raw);
       const session = this.selectedSession();
@@ -599,6 +623,14 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       this.liveTelemetry.disconnect();
       this.stopLiveTicker();
     }
+
+    // Sync selected session to URL for deep linking + back button support
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { sessionId: session.sessionId },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   private startLiveTicker(): void {
@@ -829,6 +861,63 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       this.router.navigate(['/admin/ai'], {
         queryParams: { sessionId: session.sessionId },
       });
+    }
+  }
+
+  /** Space bar — toggle playback pause/resume (prevent page scroll) */
+  @HostListener('document:keydown.space', ['$event'])
+  onSpaceBar(event: Event): void {
+    // Only handle if not typing in an input/textarea/select
+    const tag = (event.target as HTMLElement).tagName.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+    event.preventDefault();
+    const session = this.selectedSession();
+    if (!session || this.isLiveSession()) return;
+    this.togglePlayback();
+  }
+
+  /** Arrow Left — seek backward 1 second in playback */
+  @HostListener('document:keydown.arrowleft', ['$event'])
+  onArrowLeft(event: Event): void {
+    const tag = (event.target as HTMLElement).tagName.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+    const session = this.selectedSession();
+    if (!session || this.isLiveSession()) return;
+
+    const current = this.telemetry.currentTime();
+    const target = Math.max(0, current - 1);
+    // Find the frame index closest to target time
+    const frames = this.allFrames();
+    const idx = frames.findIndex(
+      (f) => f.timestamp - session.startTs >= target,
+    );
+    if (idx >= 0) {
+      this.telemetry.seekToPlayhead(idx);
+    }
+  }
+
+  /** Arrow Right — seek forward 1 second in playback */
+  @HostListener('document:keydown.arrowright', ['$event'])
+  onArrowRight(event: Event): void {
+    const tag = (event.target as HTMLElement).tagName.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+    const session = this.selectedSession();
+    if (!session || this.isLiveSession()) return;
+
+    const current = this.telemetry.currentTime();
+    const target = current + 1;
+    const frames = this.allFrames();
+    const idx = frames.findIndex(
+      (f) => f.timestamp - session.startTs >= target,
+    );
+    if (idx >= 0) {
+      this.telemetry.seekToPlayhead(idx);
+    } else {
+      // Jump to last frame
+      this.telemetry.seekToPlayhead(frames.length - 1);
     }
   }
 
