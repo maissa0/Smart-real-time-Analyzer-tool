@@ -112,7 +112,7 @@ public class LogUploadController {
                         ));
                     } catch (Exception e) {
                         log.error("Retry failed for logFileId={}", logFileId, e);
-                        return ResponseEntity.<Map<String, String>>internalServerError()
+                        return ResponseEntity.internalServerError()
                                 .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Retry failed"));
                     }
                 })
