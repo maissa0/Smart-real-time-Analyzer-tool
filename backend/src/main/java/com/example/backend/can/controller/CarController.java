@@ -93,7 +93,6 @@ public class CarController {
      */
     @GetMapping("/{carUid}")
     public ResponseEntity<CarDto> getCar(@PathVariable String carUid) {
-        checkOwnershipOrAdmin(carUid);
         CarDto dto = carService.getCarByUid(carUid);
         return ResponseEntity.ok(dto);
     }
@@ -111,7 +110,6 @@ public class CarController {
     public ResponseEntity<CarDto> updateCar(
             @PathVariable String carUid,
             @Valid @RequestBody CarUpdateRequest request) {
-        checkOwnershipOrAdmin(carUid);
         CarDto updated = carService.updateCar(carUid, request);
         return ResponseEntity.ok(updated);
     }
@@ -127,7 +125,6 @@ public class CarController {
      */
     @DeleteMapping("/{carUid}")
     public ResponseEntity<Void> deleteCar(@PathVariable String carUid) {
-        checkOwnershipOrAdmin(carUid);
         carService.softDeleteCar(carUid);
         return ResponseEntity.noContent().build();
     }
@@ -143,15 +140,13 @@ public class CarController {
     @GetMapping("/{carUid}/sessions")
     public ResponseEntity<List<CanSessionResponse>> getCarSessions(
             @PathVariable String carUid) {
-        checkOwnershipOrAdmin(carUid);
-        CarDto car = carService.getCarByUid(carUid);
-
-        // Resolve internal id from carUid to query sessions
+        // No ownership check — all authenticated users can view sessions
+        // for any fleet car (single-org deployment).
         Long carId = carRepository.findByCarUid(carUid)
+                .filter(c -> c.getDeletedAt() == null)
                 .map(CarEntity::getId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Car not found: " + carUid));
-
         List<CanSessionResponse> sessions = canSessionService.getSessionsByCarId(carId);
         return ResponseEntity.ok(sessions);
     }
