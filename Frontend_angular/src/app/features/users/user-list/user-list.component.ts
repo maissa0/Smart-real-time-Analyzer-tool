@@ -75,6 +75,10 @@ export class UserListComponent implements OnInit {
     this.searchInput$
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe((search) => this.userStore.setFilter({ search }));
+
+    // Force reload every time the component mounts —
+    // the store onInit only runs once on first injection.
+    this.userStore.loadUsers();
   }
 
   // ── search ───────────────────────────────────────────────────────────────
