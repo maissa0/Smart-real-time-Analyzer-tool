@@ -106,7 +106,7 @@ export class UserListComponent implements OnInit {
 
   // ── invite ───────────────────────────────────────────────────────────────
   openInviteModal(): void {
-    this.inviteForm.reset({ role: 'ROLE_VIEWER' });
+    this.inviteForm.reset({ role: 'User' });
     this.showInviteModal.set(true);
   }
   closeInviteModal(): void { this.showInviteModal.set(false); }
