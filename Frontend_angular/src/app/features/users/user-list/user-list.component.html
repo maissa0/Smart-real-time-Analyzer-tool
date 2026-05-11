@@ -167,17 +167,6 @@
                     </svg>
                   </button>
 
-                  <!-- Reset password -->
-                  <button type="button" (click)="onResetPassword(user)" title="Reset password"
-                    style="background:none; border:none; padding:6px; border-radius:6px;
-                      color:#8a9ab0; cursor:pointer; transition:all 0.15s;"
-                    onmouseover="this.style.background='rgba(88,166,255,0.1)'; this.style.color='#58a6ff'"
-                    onmouseout="this.style.background='none'; this.style.color='#8a9ab0'">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                    </svg>
-                  </button>
-
                   <!-- Deactivate / Activate -->
                   @if (user.isActive) {
                     <button type="button" (click)="openDeactivateModal(user)" title="Deactivate"
@@ -321,9 +310,8 @@
               style="width:100%; background:#161b22; border:1px solid rgba(176,255,68,0.2);
                 border-radius:6px; color:#e6edf3; font-size:0.82rem;
                 padding:8px 12px; outline:none; cursor:pointer; box-sizing:border-box;">
-              <option value="ROLE_VIEWER">Viewer</option>
-              <option value="ROLE_ANALYST">Analyst</option>
-              <option value="ROLE_ADMIN">Admin</option>
+              <option value="User">Standard User</option>
+              <option value="Admin">Administrator</option>
             </select>
           </div>
 

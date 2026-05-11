@@ -44,7 +44,7 @@ public class UserControllerV1 {
     @PostMapping("/invite")
     @AuditLog(action = "USER_INVITE", resource = "users")
     @Operation(summary = "Admin invites a new user — creates account and sends email")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:write') or hasRole('ADMIN') or hasRole('Admin')")
     public ResponseEntity<UserDetailResponse> inviteUser(
             @Valid @RequestBody InviteUserRequest request
     ) {
@@ -102,7 +102,7 @@ public class UserControllerV1 {
     @DeleteMapping("/{id}")
     @AuditLog(action = "USER_DELETE", resource = "users", resourceIdParam = "id")
     @Operation(summary = "Soft-delete a user (sets deleted_at)")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:write') or hasRole('ADMIN') or hasRole('Admin')")
     public ResponseEntity<Void> deleteUser(
             @PathVariable UUID id
     ) {

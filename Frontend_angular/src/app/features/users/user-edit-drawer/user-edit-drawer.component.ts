@@ -1,13 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  effect,
+  inject,
   input,
   output,
-  inject,
-  effect,
   signal,
 } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import type { User } from '../../../data/models';
 import { UserService } from '../../../core/services/user.service';
 
@@ -19,57 +19,44 @@ import { UserService } from '../../../core/services/user.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserEditDrawerComponent {
-  private readonly fb = inject(FormBuilder);
+  private readonly fb          = inject(FormBuilder);
   private readonly userService = inject(UserService);
 
-  user = input.required<User>();
+  user   = input.required<User>();
   closed = output<void>();
-  saved = output<User>();
+  saved  = output<User>();
 
   readonly isSaving = signal(false);
+
+  // Only jobTitle and department are editable by admin
   readonly form = this.fb.nonNullable.group({
-    fullName: ['', [Validators.required, Validators.minLength(2)]],
-    jobTitle: [''],
+    jobTitle:   [''],
     department: [''],
-    timezone: [''],
-    phone: [''],
-    bio: [''],
   });
 
   constructor() {
     effect(() => {
       const u = this.user();
       this.form.patchValue({
-        fullName: u.fullName ?? '',
-        jobTitle: u.jobTitle ?? '',
+        jobTitle:   u.jobTitle   ?? '',
         department: u.department ?? '',
-        timezone: u.timezone ?? '',
-        phone: u.phone ?? '',
-        bio: u.bio ?? '',
       });
     });
   }
 
-  onClose(): void {
-    this.closed.emit();
-  }
+  onClose(): void { this.closed.emit(); }
 
   onSubmit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-    const { fullName, jobTitle, department, timezone, phone, bio } = this.form.getRawValue();
+    if (this.form.invalid) return;
+    const { jobTitle, department } = this.form.getRawValue();
     const userId = this.user().id;
     this.isSaving.set(true);
-    this.userService.updateUser(userId, { fullName, jobTitle, department, timezone, phone, bio }).subscribe({
+    this.userService.updateUser(userId, { jobTitle, department }).subscribe({
       next: (updated) => {
         this.isSaving.set(false);
         this.saved.emit(updated);
       },
-      error: () => {
-        this.isSaving.set(false);
-      },
+      error: () => { this.isSaving.set(false); },
     });
   }
 }

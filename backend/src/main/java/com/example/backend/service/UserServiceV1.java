@@ -170,10 +170,9 @@ public class UserServiceV1 {
                 .verified(false)
                 .build();
 
-        // Assign role — default to ROLE_VIEWER if not specified (maps to DB role "User")
-        String roleSlug = (request.role() != null && !request.role().isBlank())
-                ? request.role() : "ROLE_VIEWER";
-        String roleName = mapInviteRoleSelectToDbRoleName(roleSlug);
+        // DB roles are named "Admin" and "User" — no slug column exists
+        String roleName = (request.role() != null && !request.role().isBlank())
+                ? request.role() : "User";
         roleRepository.findByName(roleName).ifPresent(r -> user.getRoles().add(r));
 
         userRepository.save(user);
