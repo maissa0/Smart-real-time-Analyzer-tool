@@ -11,6 +11,7 @@ import com.example.backend.repository.UserRepository;
 import com.example.backend.specification.UserSpecification;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceV1 {
 
     private final UserRepository userRepository;
@@ -181,9 +183,12 @@ public class UserServiceV1 {
         try {
             emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(),
                     "You have been invited to KPIT Smart CAN Analyser. " +
-                    "Use the link below to set your password.");
+                    "Use the Forgot Password link on the login page to set your password.");
+            log.info("Invitation email sent to {}", user.getEmail());
         } catch (Exception e) {
-            // Log but don't fail — user is created, email can be resent
+            // Log the real error so we can see it in IntelliJ console
+            log.error("Failed to send invitation email to {}: {}", user.getEmail(), e.getMessage(), e);
+            // Do not fail the invite — user is created, admin can resend manually
         }
 
         return findById(user.getId());

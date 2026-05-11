@@ -89,15 +89,7 @@ export const UserStore = signalStore(
 
     deleteUserById(userId: string): void {
       userService.deleteUser(userId).subscribe({
-        next: () => {
-          patchState(store, {
-            users: store.users().filter((u) => u.id !== userId),
-            pagination: {
-              ...store.pagination(),
-              totalCount: Math.max(0, store.pagination().totalCount - 1),
-            },
-          });
-        },
+        next: () => fetchUsers(),
         error: (err: Error) =>
           patchState(store, { error: err.message ?? 'Failed to delete user' }),
       });
