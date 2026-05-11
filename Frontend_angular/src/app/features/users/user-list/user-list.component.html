@@ -1,73 +1,67 @@
 <div class="space-y-4 p-6">
+  <!-- Breadcrumb + header -->
   <div class="flex flex-col gap-2">
     <app-breadcrumb />
-    <h1 class="text-2xl font-bold text-gray-900">Users List</h1>
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">Users List</h1>
+      <button
+        type="button"
+        (click)="openInviteModal()"
+        class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Invite User
+      </button>
+    </div>
   </div>
 
+  <!-- Table card -->
   <div class="rounded-lg border border-able-border bg-white p-4 shadow-able-card">
+    <!-- Filters -->
     <div class="mb-4 flex flex-wrap gap-4">
       <input
         type="search"
         placeholder="Search users"
-        class="rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary"
+        class="rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none"
         [value]="searchValue()"
-        (input)="onSearchInput($any($event.target).value)"
-      />
+        (input)="onSearchInput($any($event.target).value)"/>
       <select
-        class="rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary"
-        (change)="userStore.setFilter({ status: $any($event.target).value })"
-      >
-        <option value="all" [selected]="userStore.filter().status === 'all'">All</option>
-        <option value="active" [selected]="userStore.filter().status === 'active'">Active</option>
-        <option value="inactive" [selected]="userStore.filter().status === 'inactive'">Inactive</option>
+        class="rounded-lg border border-able-border px-3 py-2 text-sm focus:outline-none"
+        (change)="userStore.setFilter({ status: $any($event.target).value })">
+        <option value="all">All</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
       </select>
     </div>
 
     @if (userStore.isLoading()) {
       <app-table-skeleton [rowCount]="5" [columnCount]="4" />
-    } @else if (filteredUsers().length === 0 && (userStore.filter().search || userStore.filter().status !== 'all')) {
-      <div class="flex flex-col items-center justify-center py-16 text-center">
-        <svg class="mb-4 h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <h3 class="mb-2 text-lg font-medium text-gray-900">No results found</h3>
-        <p class="mb-4 max-w-sm text-sm text-gray-500">
-          No users match your filters. Try a different search or status.
-        </p>
-        <button
-          type="button"
-          (click)="clearSearch()"
-          class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Clear search
-        </button>
-      </div>
     } @else if (filteredUsers().length === 0) {
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <svg class="mb-4 h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-        <h3 class="mb-2 text-lg font-medium text-gray-900">No users yet</h3>
-        <p class="text-sm text-gray-500">Get started by inviting your first user.</p>
+        <p class="text-gray-500">No users found.</p>
+        <button type="button" (click)="clearSearch()"
+          class="mt-3 text-sm text-blue-600 hover:underline">Clear filters</button>
       </div>
     } @else {
+
+      <!-- # cell -->
       <ng-template #indexCellTpl let-row let-index="index">
         {{ (index ?? 0) + 1 }}
       </ng-template>
 
+      <!-- Profile cell -->
       <ng-template #profileCellTpl let-row>
         <div class="flex items-center gap-3">
-          <div class="h-10 w-10 overflow-hidden rounded-full bg-able-primary">
-            <span class="flex h-full w-full items-center justify-center text-sm font-medium text-white">
-              {{ row.fullName?.charAt(0) ?? 'U' }}
-            </span>
+          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
+            {{ row.fullName?.charAt(0) ?? 'U' }}
           </div>
           <div>
             <div class="flex items-center gap-1.5">
               <span class="font-medium text-gray-900">{{ row.fullName }}</span>
               @if (row.verified) {
                 <svg class="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                 </svg>
               }
             </div>
@@ -76,41 +70,83 @@
         </div>
       </ng-template>
 
+      <!-- Role cell -->
+      <ng-template #roleCellTpl let-row>
+        @if (row.roles && row.roles.length > 0) {
+          <span class="inline-flex rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+            {{ row.roles[0]?.name ?? 'Viewer' }}
+          </span>
+        } @else {
+          <span class="text-xs text-gray-400">No role</span>
+        }
+      </ng-template>
+
+      <!-- Status cell -->
       <ng-template #statusCellTpl let-row>
         @if (row.isActive) {
           <span class="inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Active</span>
         } @else {
-          <span class="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">Inactive</span>
+          <span class="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">Inactive</span>
         }
       </ng-template>
 
+      <!-- Actions cell -->
       <ng-template #actionsCellTpl let-row>
-        <div class="flex justify-end gap-2">
-          <button type="button" class="rounded p-1.5 text-gray-500 hover:bg-gray-100" title="Chat">
+        <div class="flex items-center justify-end gap-1">
+
+          <!-- Edit -->
+          <button type="button" (click)="onEdit(row)"
+            class="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700" title="Edit">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
             </svg>
           </button>
+
+          <!-- Reset password -->
+          <button type="button" (click)="onResetPassword(row)"
+            class="rounded p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600" title="Reset password">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+            </svg>
+          </button>
+
+          <!-- Activate / Deactivate -->
           @if (row.isActive) {
-            <button type="button" (click)="onDeactivate(row)" class="rounded p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600" title="Deactivate">
+            <button type="button" (click)="openDeactivateModal(row)"
+              class="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600" title="Deactivate">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
               </svg>
             </button>
           } @else {
-            <button type="button" (click)="onActivate(row)" class="rounded p-1.5 text-gray-500 hover:bg-green-50 hover:text-green-600" title="Activate">
+            <button type="button" (click)="onActivate(row)"
+              class="rounded p-1.5 text-gray-400 hover:bg-green-50 hover:text-green-600" title="Activate">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
             </button>
           }
+
+          <!-- Delete -->
+          <button type="button" (click)="openDeleteModal(row)"
+            class="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600" title="Delete">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+
         </div>
       </ng-template>
 
       <app-data-table
         [data]="filteredUsers()"
         [columns]="columns"
-        [cellTemplates]="{ index: indexCellTpl, profile: profileCellTpl, status: statusCellTpl }"
+        [cellTemplates]="{ index: indexCellTpl, profile: profileCellTpl, role: roleCellTpl, status: statusCellTpl }"
         [actionsTemplate]="actionsCellTpl"
         [pageSizeOptions]="[5, 10, 25]"
         [defaultPageSize]="userStore.pagination().pageSize || 10"
@@ -124,10 +160,138 @@
   </div>
 </div>
 
+<!-- ── Edit drawer ──────────────────────────────────────────────────────── -->
 @if (showEditDrawer()) {
   <app-user-edit-drawer
     [user]="selectedUser()!"
     (closed)="onDrawerClosed()"
-    (saved)="onUserSaved($event)"
-  />
+    (saved)="onUserSaved($event)"/>
+}
+
+<!-- ── Invite modal ─────────────────────────────────────────────────────── -->
+@if (showInviteModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900">Invite New User</h2>
+        <button type="button" (click)="closeInviteModal()"
+          class="rounded p-1 text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+      <form [formGroup]="inviteForm" (ngSubmit)="submitInvite()" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">Full Name *</label>
+          <input type="text" formControlName="fullName"
+            class="w-full rounded-lg border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            [class.border-red-500]="inviteForm.get('fullName')?.invalid && inviteForm.get('fullName')?.touched"
+            placeholder="Jane Doe"/>
+          @if (inviteForm.get('fullName')?.invalid && inviteForm.get('fullName')?.touched) {
+            <p class="mt-1 text-xs text-red-600">Full name is required (min 2 characters)</p>
+          }
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">Email *</label>
+          <input type="email" formControlName="email"
+            class="w-full rounded-lg border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            [class.border-red-500]="inviteForm.get('email')?.invalid && inviteForm.get('email')?.touched"
+            placeholder="jane@kpit.com"/>
+          @if (inviteForm.get('email')?.invalid && inviteForm.get('email')?.touched) {
+            <p class="mt-1 text-xs text-red-600">Valid email is required</p>
+          }
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Job Title</label>
+            <input type="text" formControlName="jobTitle"
+              class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none"
+              placeholder="Engineer"/>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700">Department</label>
+            <input type="text" formControlName="department"
+              class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none"
+              placeholder="R&D"/>
+          </div>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700">Role</label>
+          <select formControlName="role"
+            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none">
+            <option value="ROLE_VIEWER">Viewer</option>
+            <option value="ROLE_ANALYST">Analyst</option>
+            <option value="ROLE_ADMIN">Admin</option>
+          </select>
+        </div>
+        <p class="text-xs text-gray-500">
+          An email will be sent to the user with a link to set their password.
+        </p>
+        <div class="flex gap-3 pt-2">
+          <button type="button" (click)="closeInviteModal()"
+            class="flex-1 rounded-lg border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit" [disabled]="isInviting()"
+            class="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+            {{ isInviting() ? 'Sending...' : 'Send Invitation' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ── Deactivate modal ─────────────────────────────────────────────────── -->
+@if (showDeactivateModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+      <h2 class="mb-2 text-lg font-semibold text-gray-900">Deactivate User</h2>
+      <p class="mb-4 text-sm text-gray-600">
+        Deactivating <strong>{{ deactivateTargetUser()?.fullName ?? deactivateTargetUser()?.email }}</strong>
+        will prevent them from logging in.
+      </p>
+      <div class="mb-4">
+        <label class="mb-1 block text-sm font-medium text-gray-700">Reason (required)</label>
+        <textarea rows="3"
+          class="w-full rounded-lg border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          placeholder="e.g. Employee offboarded, Account compromised..."
+          [value]="deactivateReason()"
+          (input)="deactivateReason.set($any($event.target).value)">
+        </textarea>
+      </div>
+      <div class="flex gap-3">
+        <button type="button" (click)="closeDeactivateModal()"
+          class="flex-1 rounded-lg border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+          Cancel
+        </button>
+        <button type="button" (click)="confirmDeactivate()"
+          [disabled]="!deactivateReason().trim()"
+          class="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+          Deactivate
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── Delete confirm modal ─────────────────────────────────────────────── -->
+@if (showDeleteModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+      <h2 class="mb-2 text-lg font-semibold text-gray-900">Delete User</h2>
+      <p class="mb-6 text-sm text-gray-600">
+        Are you sure you want to permanently delete
+        <strong>{{ deleteTargetUser()?.fullName ?? deleteTargetUser()?.email }}</strong>?
+        This action cannot be undone.
+      </p>
+      <div class="flex gap-3">
+        <button type="button" (click)="closeDeleteModal()"
+          class="flex-1 rounded-lg border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+          Cancel
+        </button>
+        <button type="button" (click)="confirmDelete()"
+          class="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
 }

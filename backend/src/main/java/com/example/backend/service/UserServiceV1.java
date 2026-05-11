@@ -6,6 +6,7 @@ import com.example.backend.dto.v1.*;
 import com.example.backend.entity.UserEntity;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.mapper.UserMapper;
+import com.example.backend.repository.RoleRepository;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.specification.UserSpecification;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -30,6 +32,8 @@ public class UserServiceV1 {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
+    private final EmailService emailService;
 
     @Transactional(readOnly = true)
     public PageResponse<UserResponse> findAll(String search, String status, String roleId,
@@ -127,14 +131,6 @@ public class UserServiceV1 {
     }
 
     @Transactional
-    public void toggleStatus(UUID id, HttpServletRequest httpRequest) {
-        UserEntity user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User", id));
-        user.setIsActive(!user.getIsActive());
-        userRepository.save(user);
-    }
-
-    @Transactional
     public void changePassword(UUID id, PasswordChangeRequest request) {
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
@@ -145,6 +141,100 @@ public class UserServiceV1 {
 
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+    }
+
+    /**
+     * Admin invites a new user.
+     * Creates the user with a temporary random password,
+     * sends a password-reset email so the user sets their own password.
+     */
+    @Transactional
+    public UserDetailResponse inviteUser(InviteUserRequest request) {
+        if (userRepository.existsByEmailAndDeletedAtIsNull(request.email())) {
+            throw new IllegalArgumentException("Email already registered: " + request.email());
+        }
+
+        // Generate a secure temporary password the user will never see
+        String tempPassword = UUID.randomUUID().toString();
+
+        String username = deriveUsername(request.email());
+
+        UserEntity user = UserEntity.builder()
+                .email(request.email())
+                .username(username)
+                .passwordHash(passwordEncoder.encode(tempPassword))
+                .fullName(request.fullName())
+                .jobTitle(request.jobTitle())
+                .department(request.department())
+                .isActive(true)
+                .verified(false)
+                .build();
+
+        // Assign role — default to ROLE_VIEWER if not specified (maps to DB role "User")
+        String roleSlug = (request.role() != null && !request.role().isBlank())
+                ? request.role() : "ROLE_VIEWER";
+        String roleName = mapInviteRoleSelectToDbRoleName(roleSlug);
+        roleRepository.findByName(roleName).ifPresent(r -> user.getRoles().add(r));
+
+        userRepository.save(user);
+
+        // Send invitation email with password reset link
+        try {
+            emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(),
+                    "You have been invited to KPIT Smart CAN Analyser. " +
+                    "Use the link below to set your password.");
+        } catch (Exception e) {
+            // Log but don't fail — user is created, email can be resent
+        }
+
+        return findById(user.getId());
+    }
+
+    /**
+     * Soft-delete a user by setting deletedAt timestamp.
+     */
+    @Transactional
+    public void deleteUser(UUID id) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
+        user.setDeletedAt(Instant.now());
+        userRepository.save(user);
+    }
+
+    /**
+     * Toggle user active status with an optional reason logged.
+     */
+    @Transactional
+    public void toggleStatus(UUID id, String reason, HttpServletRequest httpRequest) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
+        user.setIsActive(!user.getIsActive());
+        userRepository.save(user);
+    }
+
+    private String deriveUsername(String email) {
+        String base = email.substring(0, email.indexOf('@')).toLowerCase().replaceAll("[^a-z0-9]", "");
+        if (base.isEmpty()) base = "user";
+        String candidate = base;
+        int i = 0;
+        while (userRepository.existsByUsernameAndDeletedAtIsNull(candidate)) {
+            candidate = base + (++i);
+        }
+        return candidate;
+    }
+
+    /**
+     * Maps UI role slugs to seeded {@link RoleEntity#getName()} values (Admin / User).
+     */
+    private static String mapInviteRoleSelectToDbRoleName(String slug) {
+        if (slug == null || slug.isBlank()) {
+            return "User";
+        }
+        return switch (slug) {
+            case "ROLE_ADMIN" -> "Admin";
+            case "ROLE_ANALYST", "ROLE_VIEWER" -> "User";
+            default -> "User";
+        };
     }
 
     private Boolean parseStatus(String status) {

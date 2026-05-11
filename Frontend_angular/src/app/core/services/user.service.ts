@@ -34,11 +34,19 @@ export class UserService {
     return this.http.put<User>(`${this.base}/${id}`, body);
   }
 
-  patchStatus(id: string): Observable<void> {
-    return this.http.patch<void>(`${this.base}/${id}/status`, {});
-  }
-
   patchPassword(id: string, currentPassword: string, newPassword: string): Observable<void> {
     return this.http.patch<void>(`${this.base}/${id}/password`, { currentPassword, newPassword });
+  }
+
+  inviteUser(body: { fullName: string; email: string; jobTitle?: string; department?: string; role?: string }): Observable<User> {
+    return this.http.post<User>(`${this.base}/invite`, body);
+  }
+
+  deleteUser(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
+  toggleStatus(id: string, reason?: string): Observable<void> {
+    return this.http.patch<void>(`${this.base}/${id}/status`, { reason: reason ?? null });
   }
 }

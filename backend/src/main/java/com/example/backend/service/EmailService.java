@@ -42,6 +42,26 @@ public class EmailService {
     }
 
     /**
+     * Invitation / set-password notice (HTML). Body text is caller-provided.
+     */
+    @Async
+    public void sendPasswordResetEmail(String toEmail, String recipientName, String introText) {
+        String safeName = recipientName != null ? recipientName : "User";
+        String subject = "KPIT Smart CAN Analyser — Set your password";
+        String htmlBody = """
+            <!DOCTYPE html>
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <p>Hello %s,</p>
+            <p>%s</p>
+            <p>Use <strong>Forgot password</strong> on the login page to receive a verification code and choose your password.</p>
+            </body>
+            </html>
+            """.formatted(safeName.replace("<", ""), introText != null ? introText.replace("<", "") : "");
+        sendHtmlEmail(toEmail, subject, htmlBody);
+    }
+
+    /**
      * Synchronous test email for health check (not @Async).
      */
     public void sendTestEmailSync(String toEmail) {

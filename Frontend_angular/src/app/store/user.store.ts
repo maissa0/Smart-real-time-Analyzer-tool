@@ -79,21 +79,27 @@ export const UserStore = signalStore(
       );
       patchState(store, { users });
     },
-    deleteUser(userId: string): void {
-      const users = store.users().filter((u) => u.id !== userId);
-      patchState(store, {
-        users,
-        pagination: {
-          ...store.pagination(),
-          totalCount: Math.max(0, store.pagination().totalCount - 1),
-        },
-      });
-    },
-    patchStatus(userId: string): void {
-      userService.patchStatus(userId).subscribe({
+    patchStatus(userId: string, reason?: string): void {
+      userService.toggleStatus(userId, reason).subscribe({
         next: () => fetchUsers(),
         error: (err: Error) =>
           patchState(store, { error: err.message ?? 'Failed to update status' }),
+      });
+    },
+
+    deleteUserById(userId: string): void {
+      userService.deleteUser(userId).subscribe({
+        next: () => {
+          patchState(store, {
+            users: store.users().filter((u) => u.id !== userId),
+            pagination: {
+              ...store.pagination(),
+              totalCount: Math.max(0, store.pagination().totalCount - 1),
+            },
+          });
+        },
+        error: (err: Error) =>
+          patchState(store, { error: err.message ?? 'Failed to delete user' }),
       });
     },
     setFilter(partial: Partial<UserFilterCriteria>): void {

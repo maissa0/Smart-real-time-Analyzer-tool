@@ -41,6 +41,17 @@ public class UserControllerV1 {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/invite")
+    @AuditLog(action = "USER_INVITE", resource = "users")
+    @Operation(summary = "Admin invites a new user — creates account and sends email")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserDetailResponse> inviteUser(
+            @Valid @RequestBody InviteUserRequest request
+    ) {
+        UserDetailResponse user = userService.inviteUser(request);
+        return ResponseEntity.status(201).body(user);
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Get full user details including roles and permissions")
     @PreAuthorize("hasAuthority('user:read') or hasRole('ADMIN')")
@@ -64,13 +75,15 @@ public class UserControllerV1 {
 
     @PatchMapping("/{id}/status")
     @AuditLog(action = "USER_TOGGLE_STATUS", resource = "users", resourceIdParam = "id")
-    @Operation(summary = "Toggle user is_active status")
+    @Operation(summary = "Toggle user active status with optional reason")
     @PreAuthorize("hasAuthority('user:write') or hasRole('ADMIN')")
     public ResponseEntity<Void> toggleStatus(
             @PathVariable UUID id,
+            @RequestBody(required = false) StatusUpdateRequest request,
             HttpServletRequest httpRequest
     ) {
-        userService.toggleStatus(id, httpRequest);
+        String reason = request != null ? request.reason() : null;
+        userService.toggleStatus(id, reason, httpRequest);
         return ResponseEntity.ok().build();
     }
 
@@ -84,5 +97,16 @@ public class UserControllerV1 {
     ) {
         userService.changePassword(id, request);
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}")
+    @AuditLog(action = "USER_DELETE", resource = "users", resourceIdParam = "id")
+    @Operation(summary = "Soft-delete a user (sets deleted_at)")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable UUID id
+    ) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -10,6 +10,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { DataTableComponent, type DataTableColumn } from '../../../shared/components/data-table';
 import { TableSkeletonComponent } from '../../../shared/components/skeleton/table-skeleton.component';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
@@ -17,36 +19,68 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { UserStore } from '../../../store/user.store';
+import { UserService } from '../../../core/services/user.service';
 import type { User } from '../../../data/models';
 import { UserEditDrawerComponent } from '../user-edit-drawer/user-edit-drawer.component';
 
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [DataTableComponent, UserEditDrawerComponent, TableSkeletonComponent, BreadcrumbComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    DataTableComponent,
+    UserEditDrawerComponent,
+    TableSkeletonComponent,
+    BreadcrumbComponent,
+  ],
   templateUrl: './user-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserListComponent implements OnInit {
-  readonly userStore = inject(UserStore);
-  private readonly breadcrumb = inject(BreadcrumbService);
+  readonly userStore  = inject(UserStore);
+  private readonly breadcrumb  = inject(BreadcrumbService);
   private readonly authService = inject(AuthService);
-  private readonly toast = inject(ToastService);
-  private readonly destroyRef = inject(DestroyRef);
-
+  private readonly userService = inject(UserService);
+  private readonly toast       = inject(ToastService);
+  private readonly destroyRef  = inject(DestroyRef);
+  private readonly fb          = inject(FormBuilder);
   private readonly searchInput$ = new Subject<string>();
 
-  readonly showEditDrawer = signal(false);
-  readonly selectedUser = signal<User | null>(null);
-
-  /** Users from API (already filtered by UserStore filter/pagination) */
+  // ── table ────────────────────────────────────────────────────────────────
   readonly filteredUsers = computed(() => this.userStore.users());
-
   readonly columns: DataTableColumn<User>[] = [
-    { key: 'index', header: '#', field: 'id', sortable: false, templateKey: 'index' },
-    { key: 'profile', header: 'User Profile', field: 'fullName', sortable: true, templateKey: 'profile' },
-    { key: 'status', header: 'Status', field: 'isActive', sortable: false, templateKey: 'status' },
+    { key: 'index',   header: '#',            field: 'id',       sortable: false, templateKey: 'index' },
+    { key: 'profile', header: 'User Profile', field: 'fullName', sortable: true,  templateKey: 'profile' },
+    { key: 'role',    header: 'Role',         field: 'id',       sortable: false, templateKey: 'role' },
+    { key: 'status',  header: 'Status',       field: 'isActive', sortable: false, templateKey: 'status' },
   ];
+
+  // ── edit drawer ──────────────────────────────────────────────────────────
+  readonly showEditDrawer = signal(false);
+  readonly selectedUser   = signal<User | null>(null);
+
+  // ── invite modal ─────────────────────────────────────────────────────────
+  readonly showInviteModal = signal(false);
+  readonly isInviting      = signal(false);
+  readonly inviteForm = this.fb.nonNullable.group({
+    fullName:   ['', [Validators.required, Validators.minLength(2)]],
+    email:      ['', [Validators.required, Validators.email]],
+    jobTitle:   [''],
+    department: [''],
+    role:       ['ROLE_VIEWER'],
+  });
+
+  // ── deactivate modal ─────────────────────────────────────────────────────
+  readonly showDeactivateModal  = signal(false);
+  readonly deactivateTargetUser = signal<User | null>(null);
+  readonly deactivateReason     = signal('');
+
+  // ── delete confirm ───────────────────────────────────────────────────────
+  readonly showDeleteModal  = signal(false);
+  readonly deleteTargetUser = signal<User | null>(null);
+
+  readonly searchValue = signal('');
 
   ngOnInit(): void {
     this.breadcrumb.set([
@@ -59,62 +93,103 @@ export class UserListComponent implements OnInit {
       .subscribe((search) => this.userStore.setFilter({ search }));
   }
 
-  readonly searchValue = signal('');
-
+  // ── search ───────────────────────────────────────────────────────────────
   onSearchInput(value: string): void {
     this.searchValue.set(value);
     this.searchInput$.next(value);
   }
-
   clearSearch(): void {
     this.searchValue.set('');
     this.userStore.setFilter({ search: '', status: 'all' });
   }
-
   onSortChange(event: { sortBy: string; sortDirection: 'asc' | 'desc' }): void {
-    const sortByMap: Record<string, string> = {
-      fullName: 'full_name',
-      email: 'email',
-      username: 'username',
-      createdAt: 'created_at',
+    const map: Record<string, string> = {
+      fullName: 'full_name', email: 'email',
+      username: 'username', createdAt: 'created_at',
     };
-    const backendSortBy = sortByMap[event.sortBy] ?? 'created_at';
-    this.userStore.setFilter({ sortBy: backendSortBy, sortDirection: event.sortDirection });
+    this.userStore.setFilter({ sortBy: map[event.sortBy] ?? 'created_at', sortDirection: event.sortDirection });
   }
 
+  // ── edit drawer ──────────────────────────────────────────────────────────
   onEdit(user: User): void {
     this.selectedUser.set(user);
     this.showEditDrawer.set(true);
   }
+  onDrawerClosed(): void {
+    this.showEditDrawer.set(false);
+    this.selectedUser.set(null);
+  }
+  onUserSaved(updated: User): void {
+    this.userStore.updateUser(updated);
+    this.onDrawerClosed();
+  }
 
-  onDeactivate(user: User): void {
-    this.userStore.patchStatus(user.id);
+  // ── invite ───────────────────────────────────────────────────────────────
+  openInviteModal(): void {
+    this.inviteForm.reset({ role: 'ROLE_VIEWER' });
+    this.showInviteModal.set(true);
+  }
+  closeInviteModal(): void { this.showInviteModal.set(false); }
+
+  submitInvite(): void {
+    if (this.inviteForm.invalid) { this.inviteForm.markAllAsTouched(); return; }
+    this.isInviting.set(true);
+    const { fullName, email, jobTitle, department, role } = this.inviteForm.getRawValue();
+    this.userService.inviteUser({ fullName, email, jobTitle, department, role }).subscribe({
+      next: () => {
+        this.isInviting.set(false);
+        this.showInviteModal.set(false);
+        this.toast.success(`Invitation sent to ${email}`);
+        this.userStore.loadUsers();
+      },
+      error: (err: any) => {
+        this.isInviting.set(false);
+        this.toast.error(err?.error?.message ?? 'Failed to invite user');
+      },
+    });
+  }
+
+  // ── deactivate with reason ────────────────────────────────────────────────
+  openDeactivateModal(user: User): void {
+    this.deactivateTargetUser.set(user);
+    this.deactivateReason.set('');
+    this.showDeactivateModal.set(true);
+  }
+  closeDeactivateModal(): void { this.showDeactivateModal.set(false); }
+
+  confirmDeactivate(): void {
+    const user = this.deactivateTargetUser();
+    if (!user) return;
+    this.userStore.patchStatus(user.id, this.deactivateReason());
+    this.showDeactivateModal.set(false);
+    this.toast.success(`${user.fullName ?? user.email} deactivated`);
   }
 
   onActivate(user: User): void {
     this.userStore.patchStatus(user.id);
+    this.toast.success(`${user.fullName ?? user.email} activated`);
   }
 
+  // ── delete ────────────────────────────────────────────────────────────────
+  openDeleteModal(user: User): void {
+    this.deleteTargetUser.set(user);
+    this.showDeleteModal.set(true);
+  }
+  closeDeleteModal(): void { this.showDeleteModal.set(false); }
+
+  confirmDelete(): void {
+    const user = this.deleteTargetUser();
+    if (!user) return;
+    this.userStore.deleteUserById(user.id);
+    this.showDeleteModal.set(false);
+    this.toast.success(`${user.fullName ?? user.email} deleted`);
+  }
+
+  // ── reset password ────────────────────────────────────────────────────────
   onResetPassword(user: User): void {
     this.authService.forgotPassword(user.email).subscribe({
       next: () => this.toast.success('Reset email sent to ' + user.email),
       error: () => {},
     });
-  }
-
-  onDelete(user: User): void {
-    if (confirm(`Are you sure you want to delete ${user.fullName ?? user.email}?`)) {
-      this.userStore.deleteUser(user.id);
-    }
-  }
-
-  onDrawerClosed(): void {
-    this.showEditDrawer.set(false);
-    this.selectedUser.set(null);
-  }
-
-  onUserSaved(updated: User): void {
-    this.userStore.updateUser(updated);
-    this.onDrawerClosed();
   }
 }
