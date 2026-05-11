@@ -222,20 +222,6 @@ public class UserServiceV1 {
         return candidate;
     }
 
-    /**
-     * Maps UI role slugs to seeded {@link RoleEntity#getName()} values (Admin / User).
-     */
-    private static String mapInviteRoleSelectToDbRoleName(String slug) {
-        if (slug == null || slug.isBlank()) {
-            return "User";
-        }
-        return switch (slug) {
-            case "ROLE_ADMIN" -> "Admin";
-            case "ROLE_ANALYST", "ROLE_VIEWER" -> "User";
-            default -> "User";
-        };
-    }
-
     private Boolean parseStatus(String status) {
         if (status == null || "all".equals(status)) return null;
         return "active".equals(status);

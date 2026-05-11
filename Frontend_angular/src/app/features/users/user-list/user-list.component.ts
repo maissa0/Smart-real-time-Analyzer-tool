@@ -52,7 +52,7 @@ export class UserListComponent implements OnInit {
     email:      ['', [Validators.required, Validators.email]],
     jobTitle:   [''],
     department: [''],
-    role:       ['ROLE_VIEWER'],
+    role:       ['User'],
   });
 
   // ── deactivate modal ─────────────────────────────────────────────────────
