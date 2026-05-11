@@ -12,9 +12,6 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { DataTableComponent, type DataTableColumn } from '../../../shared/components/data-table';
-import { TableSkeletonComponent } from '../../../shared/components/skeleton/table-skeleton.component';
-import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -26,14 +23,7 @@ import { UserEditDrawerComponent } from '../user-edit-drawer/user-edit-drawer.co
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    DataTableComponent,
-    UserEditDrawerComponent,
-    TableSkeletonComponent,
-    BreadcrumbComponent,
-  ],
+  imports: [CommonModule, ReactiveFormsModule, UserEditDrawerComponent],
   templateUrl: './user-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -49,12 +39,6 @@ export class UserListComponent implements OnInit {
 
   // ── table ────────────────────────────────────────────────────────────────
   readonly filteredUsers = computed(() => this.userStore.users());
-  readonly columns: DataTableColumn<User>[] = [
-    { key: 'index',   header: '#',            field: 'id',       sortable: false, templateKey: 'index' },
-    { key: 'profile', header: 'User Profile', field: 'fullName', sortable: true,  templateKey: 'profile' },
-    { key: 'role',    header: 'Role',         field: 'id',       sortable: false, templateKey: 'role' },
-    { key: 'status',  header: 'Status',       field: 'isActive', sortable: false, templateKey: 'status' },
-  ];
 
   // ── edit drawer ──────────────────────────────────────────────────────────
   readonly showEditDrawer = signal(false);
@@ -102,14 +86,6 @@ export class UserListComponent implements OnInit {
     this.searchValue.set('');
     this.userStore.setFilter({ search: '', status: 'all' });
   }
-  onSortChange(event: { sortBy: string; sortDirection: 'asc' | 'desc' }): void {
-    const map: Record<string, string> = {
-      fullName: 'full_name', email: 'email',
-      username: 'username', createdAt: 'created_at',
-    };
-    this.userStore.setFilter({ sortBy: map[event.sortBy] ?? 'created_at', sortDirection: event.sortDirection });
-  }
-
   // ── edit drawer ──────────────────────────────────────────────────────────
   onEdit(user: User): void {
     this.selectedUser.set(user);
@@ -191,5 +167,14 @@ export class UserListComponent implements OnInit {
       next: () => this.toast.success('Reset email sent to ' + user.email),
       error: () => {},
     });
+  }
+
+  formatRole(name: string | undefined): string {
+    if (!name) return 'Viewer';
+    return name
+      .replace('ROLE_', '')
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
   }
 }
