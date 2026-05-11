@@ -36,7 +36,7 @@ public class EmailService {
 
     @Async
     public void sendWelcomeEmail(String toEmail, String userName) {
-        String subject = "Welcome to Able Pro IAM";
+        String subject = "Welcome to KPIT Smart CAN Analyser";
         String htmlBody = buildWelcomeEmailHtml(userName);
         sendHtmlEmail(toEmail, subject, htmlBody);
     }
@@ -55,6 +55,7 @@ public class EmailService {
             <p>Hello %s,</p>
             <p>%s</p>
             <p>Use <strong>Forgot password</strong> on the login page to receive a verification code and choose your password.</p>
+            <p class="footer">KPIT Smart CAN Analyser — Real-Time CAN Bus Analysis Platform</p>
             </body>
             </html>
             """.formatted(safeName.replace("<", ""), introText != null ? introText.replace("<", "") : "");
@@ -105,7 +106,7 @@ public class EmailService {
               <p>You requested a password reset. Use the following code to verify your identity:</p>
               <div class="code-box">%s</div>
               <p>This code expires in 5 minutes. If you did not request this, please ignore this email.</p>
-              <p class="footer">Able Pro IAM - Identity & Access Management</p>
+              <p class="footer">KPIT Smart CAN Analyser</p>
             </div></body></html>
             """.formatted(code);
     }
@@ -121,11 +122,11 @@ public class EmailService {
               .footer { font-size: 12px; color: #666; margin-top: 30px; }
             </style></head>
             <body><div class="container">
-              <h2>Welcome to Able Pro IAM</h2>
+              <h2>Welcome to KPIT Smart CAN Analyser</h2>
               <p>Hi %s,</p>
               <p>Your account has been successfully created. You can now sign in and start using the platform.</p>
               <p>If you have any questions, please contact your administrator.</p>
-              <p class="footer">Able Pro IAM - Identity & Access Management</p>
+              <p class="footer">KPIT Smart CAN Analyser</p>
             </div></body></html>
             """.formatted(name);
     }
