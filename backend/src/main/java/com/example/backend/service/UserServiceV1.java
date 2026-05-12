@@ -8,6 +8,7 @@ import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.mapper.UserMapper;
 import com.example.backend.repository.RoleRepository;
 import com.example.backend.repository.UserRepository;
+import com.example.backend.security.JwtService;
 import com.example.backend.specification.UserSpecification;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class UserServiceV1 {
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final EmailService emailService;
+    private final JwtService jwtService;
 
     @Transactional(readOnly = true)
     public PageResponse<UserResponse> findAll(String search, String status, String roleId,
@@ -179,16 +181,20 @@ public class UserServiceV1 {
 
         userRepository.save(user);
 
-        // Send invitation email with password reset link
+        // Generate a one-use reset token (15 min expiry) for first-time password setup
+        String resetToken = jwtService.generateResetToken(user.getEmail(), user.getId());
+        String setPasswordUrl = "http://localhost:4200/auth/set-password?token=" + resetToken;
+
+        // Send invitation email with direct set-password link
         try {
-            emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(),
-                    "You have been invited to KPIT Smart CAN Analyser. " +
-                    "Use the Forgot Password link on the login page to set your password.");
+            emailService.sendInvitationEmail(
+                user.getEmail(),
+                user.getFullName(),
+                setPasswordUrl
+            );
             log.info("Invitation email sent to {}", user.getEmail());
         } catch (Exception e) {
-            // Log the real error so we can see it in IntelliJ console
             log.error("Failed to send invitation email to {}: {}", user.getEmail(), e.getMessage(), e);
-            // Do not fail the invite — user is created, admin can resend manually
         }
 
         return findById(user.getId());

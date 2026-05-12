@@ -63,6 +63,57 @@ public class EmailService {
     }
 
     /**
+     * Sends a first-time invitation email with a direct set-password link.
+     * The link contains a one-use JWT reset token (15-min expiry).
+     */
+    @Async
+    public void sendInvitationEmail(String toEmail, String recipientName, String setPasswordUrl) {
+        String safeName = recipientName != null ? recipientName : "User";
+        String subject = "You've been invited to KPIT Smart CAN Analyser";
+        String htmlBody = """
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="UTF-8"><style>
+              body { font-family: Arial, sans-serif; background:#f4f4f4; margin:0; padding:0; }
+              .container { max-width:520px; margin:40px auto; background:#ffffff; border-radius:8px; overflow:hidden; }
+              .header { background:#0d1117; padding:24px 32px; }
+              .header h1 { color:#b0ff44; margin:0; font-size:20px; letter-spacing:0.05em; }
+              .header p { color:#8a9ab0; margin:4px 0 0; font-size:13px; }
+              .body { padding:32px; }
+              .body p { color:#333; font-size:14px; line-height:1.6; }
+              .btn { display:inline-block; margin:24px 0; padding:12px 28px;
+                     background:#b0ff44; color:#07090b; text-decoration:none;
+                     border-radius:6px; font-weight:700; font-size:15px; }
+              .note { font-size:12px; color:#888; margin-top:8px; }
+              .footer { background:#f9f9f9; padding:16px 32px; font-size:11px; color:#aaa; border-top:1px solid #eee; }
+            </style></head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>KPIT ANALYSER</h1>
+                  <p>Smart Real-Time CAN Bus Analysis Platform</p>
+                </div>
+                <div class="body">
+                  <p>Hello <strong>%s</strong>,</p>
+                  <p>You have been invited to join the <strong>KPIT Smart CAN Analyser</strong> platform.
+                     Click the button below to set your password and activate your account.</p>
+                  <a href="%s" class="btn">Set My Password</a>
+                  <p class="note">⚠ This link expires in <strong>15 minutes</strong>.
+                     If it expires, ask your administrator to resend the invitation.</p>
+                  <p>Your login email: <strong>%s</strong></p>
+                </div>
+                <div class="footer">
+                  KPIT Smart CAN Analyser — Real-Time CAN Bus Analysis Platform<br>
+                  This email was sent automatically. Please do not reply.
+                </div>
+              </div>
+            </body>
+            </html>
+            """.formatted(safeName, setPasswordUrl, toEmail);
+        sendHtmlEmail(toEmail, subject, htmlBody);
+    }
+
+    /**
      * Synchronous test email for health check (not @Async).
      */
     public void sendTestEmailSync(String toEmail) {

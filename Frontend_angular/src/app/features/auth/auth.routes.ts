@@ -8,5 +8,6 @@ export const authRoutes: Route[] = [
   { path: 'verify-code', loadComponent: () => import('./code-verification/code-verification.component').then((m) => m.CodeVerificationComponent) },
   { path: 'mfa-verify', loadComponent: () => import('./mfa-verify/mfa-verify.component').then((m) => m.MfaVerifyComponent) },
   { path: 'reset-password', loadComponent: () => import('./reset-password/reset-password.component').then((m) => m.ResetPasswordComponent) },
+  { path: 'set-password', loadComponent: () => import('./set-password/set-password.component').then((m) => m.SetPasswordComponent) },
   { path: '**', redirectTo: 'login' },
 ];

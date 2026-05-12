@@ -90,4 +90,15 @@ public class AuthController {
         authService.resetPassword(request, httpRequest);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/set-password")
+    @Operation(summary = "Set password for first-time login using invitation token")
+    public ResponseEntity<Void> setPassword(
+            @Valid @RequestBody ResetPasswordRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        // Reuses the same resetPassword flow — token validates, password set
+        authService.resetPassword(request, httpRequest);
+        return ResponseEntity.ok().build();
+    }
 }
