@@ -1,12 +1,15 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.common.PageResponse;
+import com.example.backend.dto.permission.PermissionResponse;
 import com.example.backend.dto.user.UserResponse;
 import com.example.backend.dto.v1.*;
+import com.example.backend.entity.PermissionEntity;
 import com.example.backend.entity.RoleEntity;
 import com.example.backend.entity.UserEntity;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.mapper.UserMapper;
+import com.example.backend.repository.PermissionRepository;
 import com.example.backend.repository.RoleRepository;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.security.JwtService;
@@ -37,6 +40,7 @@ public class UserServiceV1 {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
+    private final PermissionRepository permissionRepository;
     private final EmailService emailService;
     private final JwtService jwtService;
 
@@ -292,6 +296,58 @@ public class UserServiceV1 {
         user.getRoles().add(role);
         userRepository.save(user);
         return findById(userId);
+    }
+
+    /**
+     * Get all permissions for a user:
+     * role permissions + extra per-user permissions.
+     */
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getUserPermissions(UUID userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        var rolePerms = user.getRoles().stream()
+                .flatMap(r -> r.getPermissions().stream())
+                .map(p -> new PermissionResponse(p.getId().toString(), p.getSlug(), p.getDescription()))
+                .distinct().toList();
+
+        var extraPerms = user.getExtraPermissions() == null
+                ? java.util.List.of()
+                : user.getExtraPermissions().stream()
+                .map(p -> new PermissionResponse(p.getId().toString(), p.getSlug(), p.getDescription()))
+                .toList();
+
+        var allPerms = permissionRepository.findAll().stream()
+                .map(p -> new PermissionResponse(p.getId().toString(), p.getSlug(), p.getDescription()))
+                .toList();
+
+        return java.util.Map.of(
+                "rolePermissions", rolePerms,
+                "extraPermissions", extraPerms,
+                "allPermissions", allPerms
+        );
+    }
+
+    /**
+     * Update per-user extra permissions.
+     * permissionIds is the full list of extra permission IDs to assign.
+     */
+    @Transactional
+    public void updateUserPermissions(UUID userId, java.util.List<String> permissionIds) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        var permissions = permissionRepository.findAllById(
+                permissionIds.stream().map(UUID::fromString).toList()
+        );
+
+        if (user.getExtraPermissions() == null) {
+            user.setExtraPermissions(new java.util.HashSet<>());
+        }
+        user.getExtraPermissions().clear();
+        user.getExtraPermissions().addAll(permissions);
+        userRepository.save(user);
     }
 
     private String deriveUsername(String email) {

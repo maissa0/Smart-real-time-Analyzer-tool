@@ -95,6 +95,19 @@ public class UserEntity extends AbstractAuditingEntity {
     @Builder.Default
     private Set<RoleEntity> roles = new HashSet<>();
 
+    /**
+     * Per-user permission overrides — granted in addition to role permissions.
+     * Stored in user_permissions join table.
+     */
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "user_permissions",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+    @Builder.Default
+    private Set<PermissionEntity> extraPermissions = new HashSet<>();
+
     @PrePersist
     protected void onCreate() {
         if (id == null) id = UUID.randomUUID();

@@ -32,7 +32,14 @@ public class CustomUserDetailsService implements UserDetailsService {
         var authorities = user.getRoles().stream()
                 .flatMap(role -> role.getPermissions().stream())
                 .map(p -> new SimpleGrantedAuthority(p.getSlug()))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(java.util.HashSet::new));
+
+        // Add per-user extra permissions (in addition to role permissions)
+        if (user.getExtraPermissions() != null) {
+            user.getExtraPermissions().stream()
+                    .map(p -> new SimpleGrantedAuthority(p.getSlug()))
+                    .forEach(authorities::add);
+        }
 
         // Add role-based authority for @PreAuthorize("hasRole('ADMIN')")
         user.getRoles().forEach(role ->

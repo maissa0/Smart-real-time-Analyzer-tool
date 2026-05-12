@@ -47,14 +47,14 @@ interface AuditLog {
     }
     .udp-panel {
       position:absolute; right:0; top:0; height:100%;
-      width:100%; max-width:500px;
+      width:100%; max-width:720px;
       background:#0d1117;
       border-left:1px solid rgba(176,255,68,0.15);
       display:flex; flex-direction:column; overflow:hidden;
     }
     .udp-header {
       display:flex; align-items:center; justify-content:space-between;
-      padding:1.25rem 1.5rem;
+      padding:1.25rem 2rem;
       border-bottom:1px solid rgba(176,255,68,0.1);
       flex-shrink:0;
     }
@@ -64,37 +64,37 @@ interface AuditLog {
       cursor:pointer; font-size:1.1rem; padding:4px 8px;
     }
     .udp-body {
-      flex:1; overflow-y:auto; padding:1.5rem;
-      display:flex; flex-direction:column; gap:1.5rem;
+      flex:1; overflow-y:auto; padding:2rem;
+      display:flex; flex-direction:column; gap:1.75rem;
     }
     .udp-avatar-row {
-      display:flex; align-items:center; gap:1rem;
-      padding-bottom:1.25rem; border-bottom:1px solid #21262d;
+      display:flex; align-items:center; gap:1.25rem;
+      padding-bottom:1.5rem; border-bottom:1px solid #21262d;
     }
     .udp-avatar {
-      width:56px; height:56px; border-radius:50%; flex-shrink:0;
+      width:64px; height:64px; border-radius:50%; flex-shrink:0;
       background:rgba(176,255,68,0.15);
-      border:1px solid rgba(176,255,68,0.3);
+      border:2px solid rgba(176,255,68,0.3);
       display:flex; align-items:center; justify-content:center;
-      font-size:1.3rem; font-weight:700; color:#b0ff44;
+      font-size:1.5rem; font-weight:700; color:#b0ff44;
     }
-    .udp-name { font-size:1rem; font-weight:700; color:#e6edf3; margin:0 0 0.2rem; }
-    .udp-email { font-size:0.78rem; color:#8a9ab0; margin:0; }
+    .udp-name { font-size:1.1rem; font-weight:700; color:#e6edf3; margin:0 0 0.25rem; }
+    .udp-email { font-size:0.82rem; color:#8a9ab0; margin:0; }
     .udp-section-title {
       font-size:0.65rem; font-weight:700; color:#484f58;
       letter-spacing:0.12em; margin-bottom:0.75rem; text-transform:uppercase;
     }
     .udp-info-grid {
-      display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;
+      display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.75rem;
     }
     .udp-info-item label {
       display:block; font-size:0.65rem; color:#8a9ab0;
       font-weight:600; margin-bottom:0.25rem; letter-spacing:0.05em;
     }
     .udp-info-item p {
-      font-size:0.8rem; color:#e6edf3; margin:0;
+      font-size:0.82rem; color:#e6edf3; margin:0;
       background:#161b22; border:1px solid #21262d;
-      border-radius:5px; padding:6px 10px;
+      border-radius:6px; padding:7px 12px;
     }
     .udp-badge-active {
       display:inline-block;
@@ -114,34 +114,65 @@ interface AuditLog {
       color:#ffaa00; border-radius:20px; padding:3px 12px;
       font-size:0.7rem; font-weight:600;
     }
+    .udp-divider { height:1px; background:#21262d; }
     .udp-role-select {
       width:100%; background:#161b22;
       border:1px solid rgba(176,255,68,0.2);
       border-radius:6px; color:#e6edf3;
-      font-size:0.82rem; padding:8px 12px;
+      font-size:0.85rem; padding:9px 12px;
       outline:none; cursor:pointer;
     }
     .udp-save-btn {
-      margin-top:0.5rem; padding:8px 20px;
+      padding:8px 22px;
       background:#b0ff44; color:#07090b;
       border:none; border-radius:6px;
-      font-size:0.8rem; font-weight:700;
+      font-size:0.82rem; font-weight:700;
       cursor:pointer; transition:opacity 0.2s;
     }
     .udp-save-btn:disabled { opacity:0.4; cursor:not-allowed; }
+    .udp-save-btn-outline {
+      padding:8px 22px;
+      background:transparent; color:#b0ff44;
+      border:1px solid rgba(176,255,68,0.4);
+      border-radius:6px;
+      font-size:0.82rem; font-weight:700;
+      cursor:pointer; transition:all 0.2s;
+    }
+    .udp-save-btn-outline:disabled { opacity:0.4; cursor:not-allowed; }
+
+    /* Permissions grid */
     .udp-perm-grid {
-      display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;
+      display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem;
     }
     .udp-perm-item {
       display:flex; align-items:flex-start; gap:0.5rem;
-      padding:8px 10px;
+      padding:10px 12px;
       background:#161b22; border:1px solid #21262d;
-      border-radius:6px;
+      border-radius:6px; cursor:pointer; transition:all 0.15s;
+      position:relative;
+    }
+    .udp-perm-item.role-perm {
+      border-color:rgba(176,255,68,0.15);
+    }
+    .udp-perm-item.extra-perm {
+      border-color:rgba(88,166,255,0.3);
+      background:rgba(88,166,255,0.05);
+    }
+    .udp-perm-item.selectable:hover {
+      border-color:rgba(176,255,68,0.4);
+      background:rgba(176,255,68,0.05);
+    }
+    .udp-perm-item.selected {
+      border-color:#b0ff44;
+      background:rgba(176,255,68,0.08);
     }
     .udp-perm-dot {
-      width:7px; height:7px; border-radius:50%;
-      background:#b0ff44; flex-shrink:0; margin-top:3px;
+      width:8px; height:8px; border-radius:50%;
+      flex-shrink:0; margin-top:3px;
     }
+    .udp-perm-dot.lime { background:#b0ff44; }
+    .udp-perm-dot.blue { background:#58a6ff; }
+    .udp-perm-dot.gray { background:#30363d; }
     .udp-perm-slug {
       font-size:0.7rem; font-weight:600;
       color:#b0ff44; font-family:monospace; display:block;
@@ -149,9 +180,13 @@ interface AuditLog {
     .udp-perm-desc {
       font-size:0.62rem; color:#8a9ab0; display:block; margin-top:1px;
     }
-    .udp-no-perm {
-      font-size:0.78rem; color:#484f58; text-align:center; padding:1rem;
+    .udp-perm-tag {
+      position:absolute; top:4px; right:6px;
+      font-size:0.55rem; font-weight:700; letter-spacing:0.05em;
+      color:#484f58;
     }
+
+    /* Audit */
     .udp-audit-item {
       display:flex; align-items:center; gap:0.75rem;
       padding:8px 12px;
@@ -165,7 +200,6 @@ interface AuditLog {
     .udp-audit-time {
       font-size:0.65rem; color:#484f58; margin-left:auto; white-space:nowrap;
     }
-    .udp-divider { height:1px; background:#21262d; }
   `],
   template: `
     <div class="udp-overlay">
@@ -190,14 +224,19 @@ interface AuditLog {
               <p class="udp-name">
                 {{ user().fullName }}
                 @if (user().verified) {
-                  <span style="color:#2ea043; font-size:0.8rem;">✓</span>
+                  <span style="color:#2ea043; font-size:0.85rem;">✓</span>
                 }
               </p>
               <p class="udp-email">{{ user().email }}</p>
+              <p style="font-size:0.72rem; color:#484f58; margin:0.2rem 0 0;">
+                @if (user().createdAt) {
+                  Member since {{ user().createdAt | date:'dd MMM yyyy' }}
+                }
+              </p>
             </div>
           </div>
 
-          <!-- Info grid -->
+          <!-- Info -->
           <div>
             <p class="udp-section-title">User Information</p>
             <div class="udp-info-grid">
@@ -210,10 +249,14 @@ interface AuditLog {
                 <p>{{ user().department || '—' }}</p>
               </div>
               <div class="udp-info-item">
+                <label>MFA</label>
+                <p>{{ user().mfaEnabled ? '✓ Enabled' : '✗ Disabled' }}</p>
+              </div>
+              <div class="udp-info-item" style="grid-column:span 2;">
                 <label>STATUS</label>
                 <p style="background:transparent; border:none; padding:0;">
                   @if (user().status === 'PENDING') {
-                    <span class="udp-badge-pending">⏳ Pending</span>
+                    <span class="udp-badge-pending">⏳ Pending approval</span>
                   } @else if (user().isActive) {
                     <span class="udp-badge-active">● Active</span>
                   } @else {
@@ -221,57 +264,85 @@ interface AuditLog {
                   }
                 </p>
               </div>
-              <div class="udp-info-item">
-                <label>MFA</label>
-                <p>{{ user().mfaEnabled ? '✓ Enabled' : '✗ Disabled' }}</p>
-              </div>
             </div>
           </div>
 
           <div class="udp-divider"></div>
 
-          <!-- Role assignment -->
+          <!-- Role -->
           <div>
             <p class="udp-section-title">Role & Access</p>
-            <select class="udp-role-select"
-              [value]="selectedRole()"
-              (change)="selectedRole.set($any($event.target).value)">
-              <option value="User">Standard User</option>
-              <option value="Admin">Administrator</option>
-            </select>
-            <div style="display:flex; align-items:center; gap:0.75rem; margin-top:0.5rem;">
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+              <select class="udp-role-select" style="flex:1;"
+                [value]="selectedRole()"
+                (change)="selectedRole.set($any($event.target).value)">
+                <option value="User">Standard User</option>
+                <option value="Admin">Administrator</option>
+              </select>
               <button class="udp-save-btn"
-                [disabled]="selectedRole() === currentRole() || saving()"
+                [disabled]="selectedRole() === currentRole() || savingRole()"
                 (click)="saveRole()">
-                {{ saving() ? 'Saving…' : 'Save Role' }}
+                {{ savingRole() ? 'Saving…' : 'Save Role' }}
               </button>
-              @if (selectedRole() !== currentRole()) {
-                <span style="font-size:0.7rem; color:#ffaa00;">⚠ Unsaved change</span>
-              }
             </div>
+            @if (selectedRole() !== currentRole()) {
+              <p style="font-size:0.72rem; color:#ffaa00; margin:0.4rem 0 0;">
+                ⚠ Changing role will update inherited permissions
+              </p>
+            }
           </div>
 
           <div class="udp-divider"></div>
 
           <!-- Permissions -->
           <div>
-            <p class="udp-section-title">
-              Permissions
-              <span style="color:#484f58; font-weight:400; text-transform:none;">
-                — inherited from role
-              </span>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+              <p class="udp-section-title" style="margin-bottom:0;">
+                Permissions
+              </p>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <span style="font-size:0.65rem; color:#484f58;">
+                  <span style="color:#b0ff44;">●</span> Role
+                  &nbsp;<span style="color:#58a6ff;">●</span> Extra
+                </span>
+                <button class="udp-save-btn-outline"
+                  [disabled]="!permissionsChanged() || savingPerms()"
+                  (click)="savePermissions()">
+                  {{ savingPerms() ? 'Saving…' : 'Save Permissions' }}
+                </button>
+              </div>
+            </div>
+            <p style="font-size:0.7rem; color:#484f58; margin:0 0 0.75rem;">
+              Click to toggle extra permissions for this user.
+              Role permissions are always inherited and cannot be removed here.
             </p>
-            @if (rolePermissions().length === 0) {
-              <p class="udp-no-perm">No permissions for this role.</p>
+            @if (allPermissions().length === 0) {
+              <p style="color:#484f58; font-size:0.78rem; text-align:center; padding:1rem;">
+                Loading permissions…
+              </p>
             } @else {
               <div class="udp-perm-grid">
-                @for (perm of rolePermissions(); track perm.id) {
-                  <div class="udp-perm-item">
-                    <span class="udp-perm-dot"></span>
-                    <div>
+                @for (perm of allPermissions(); track perm.id) {
+                  <div class="udp-perm-item"
+                    [class.role-perm]="isRolePerm(perm.id) && !isExtraPerm(perm.id)"
+                    [class.extra-perm]="isExtraPerm(perm.id)"
+                    [class.selected]="isExtraPerm(perm.id)"
+                    [class.selectable]="!isRolePerm(perm.id)"
+                    (click)="toggleExtraPerm(perm)">
+                    <span class="udp-perm-dot"
+                      [class.lime]="isRolePerm(perm.id)"
+                      [class.blue]="isExtraPerm(perm.id) && !isRolePerm(perm.id)"
+                      [class.gray]="!isRolePerm(perm.id) && !isExtraPerm(perm.id)">
+                    </span>
+                    <div style="min-width:0;">
                       <span class="udp-perm-slug">{{ perm.slug }}</span>
                       <span class="udp-perm-desc">{{ perm.description }}</span>
                     </div>
+                    @if (isRolePerm(perm.id)) {
+                      <span class="udp-perm-tag">ROLE</span>
+                    } @else if (isExtraPerm(perm.id)) {
+                      <span class="udp-perm-tag" style="color:#58a6ff;">EXTRA</span>
+                    }
                   </div>
                 }
               </div>
@@ -280,17 +351,21 @@ interface AuditLog {
 
           <div class="udp-divider"></div>
 
-          <!-- Recent audit -->
+          <!-- Recent activity -->
           <div>
             <p class="udp-section-title">Recent Activity</p>
             @if (auditLogs().length === 0) {
-              <p class="udp-no-perm">No recent activity.</p>
+              <p style="color:#484f58; font-size:0.78rem; text-align:center; padding:1rem;">
+                No recent activity.
+              </p>
             } @else {
               <div style="display:flex; flex-direction:column; gap:0.4rem;">
                 @for (log of auditLogs(); track log.createdAt) {
                   <div class="udp-audit-item">
                     <span class="udp-audit-action">{{ log.action }}</span>
-                    <span style="font-size:0.68rem; color:#8a9ab0;">{{ log.resource }}</span>
+                    <span style="font-size:0.68rem; color:#8a9ab0;">
+                      {{ log.resource }}
+                    </span>
                     <span class="udp-audit-time">
                       {{ log.createdAt | date:'dd/MM HH:mm' }}
                     </span>
@@ -316,9 +391,13 @@ export class UserDetailPanelComponent implements OnInit {
 
   readonly selectedRole    = signal('User');
   readonly currentRole     = signal('User');
-  readonly rolePermissions = signal<Permission[]>([]);
+  readonly allPermissions  = signal<Permission[]>([]);
+  readonly rolePermIds     = signal<Set<string>>(new Set());
+  readonly extraPermIds    = signal<Set<string>>(new Set());
+  readonly originalExtraIds = signal<Set<string>>(new Set());
   readonly auditLogs       = signal<AuditLog[]>([]);
-  readonly saving          = signal(false);
+  readonly savingRole      = signal(false);
+  readonly savingPerms     = signal(false);
 
   private allRoles: RoleWithPermissions[] = [];
 
@@ -327,17 +406,34 @@ export class UserDetailPanelComponent implements OnInit {
     this.selectedRole.set(role);
     this.currentRole.set(role);
 
-    // Load roles with permissions
+    // Load roles
     this.http.get<RoleWithPermissions[]>(`${API_BASE_URL}/api/v1/roles`)
       .subscribe({
         next: (roles) => {
           this.allRoles = roles;
-          this.updatePermissions(role);
+          this.updateRolePerms(role);
         },
         error: () => {},
       });
 
-    // Load recent audit logs for this user
+    // Load user permissions
+    this.userService.getUserPermissions(this.user().id).subscribe({
+      next: (res) => {
+        this.allPermissions.set(res.allPermissions ?? []);
+        const roleIds = new Set<string>(
+          (res.rolePermissions ?? []).map((p: Permission) => p.id)
+        );
+        const extraIds = new Set<string>(
+          (res.extraPermissions ?? []).map((p: Permission) => p.id)
+        );
+        this.rolePermIds.set(roleIds);
+        this.extraPermIds.set(extraIds);
+        this.originalExtraIds.set(new Set(extraIds));
+      },
+      error: () => {},
+    });
+
+    // Load audit logs
     this.http.get<{ content: AuditLog[] }>(
       `${API_BASE_URL}/api/v1/audit-logs?userId=${this.user().id}&size=5`
     ).subscribe({
@@ -346,26 +442,73 @@ export class UserDetailPanelComponent implements OnInit {
     });
   }
 
+  isRolePerm(id: string): boolean {
+    return this.rolePermIds().has(id);
+  }
+
+  isExtraPerm(id: string): boolean {
+    return this.extraPermIds().has(id);
+  }
+
+  permissionsChanged(): boolean {
+    const current = this.extraPermIds();
+    const original = this.originalExtraIds();
+    if (current.size !== original.size) return true;
+    for (const id of current) {
+      if (!original.has(id)) return true;
+    }
+    return false;
+  }
+
+  toggleExtraPerm(perm: Permission): void {
+    // Cannot toggle role permissions
+    if (this.isRolePerm(perm.id)) return;
+    const current = new Set(this.extraPermIds());
+    if (current.has(perm.id)) {
+      current.delete(perm.id);
+    } else {
+      current.add(perm.id);
+    }
+    this.extraPermIds.set(current);
+  }
+
   saveRole(): void {
     const newRole = this.selectedRole();
-    this.saving.set(true);
+    this.savingRole.set(true);
     this.userService.assignRole(this.user().id, newRole).subscribe({
       next: (updated) => {
-        this.saving.set(false);
+        this.savingRole.set(false);
         this.currentRole.set(newRole);
-        this.updatePermissions(newRole);
+        this.updateRolePerms(newRole);
         this.toast.success(`Role updated to ${newRole}`);
         this.saved.emit(updated as unknown as User);
       },
       error: () => {
-        this.saving.set(false);
+        this.savingRole.set(false);
         this.toast.error('Failed to update role');
       },
     });
   }
 
-  private updatePermissions(roleName: string): void {
+  savePermissions(): void {
+    this.savingPerms.set(true);
+    const permIds = [...this.extraPermIds()];
+    this.userService.updateUserPermissions(this.user().id, permIds).subscribe({
+      next: () => {
+        this.savingPerms.set(false);
+        this.originalExtraIds.set(new Set(this.extraPermIds()));
+        this.toast.success('Permissions updated');
+      },
+      error: () => {
+        this.savingPerms.set(false);
+        this.toast.error('Failed to update permissions');
+      },
+    });
+  }
+
+  private updateRolePerms(roleName: string): void {
     const role = this.allRoles.find(r => r.name === roleName);
-    this.rolePermissions.set(role?.permissions ?? []);
+    const ids = new Set<string>((role?.permissions ?? []).map(p => p.id));
+    this.rolePermIds.set(ids);
   }
 }

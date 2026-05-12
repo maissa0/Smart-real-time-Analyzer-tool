@@ -71,4 +71,16 @@ export class UserService {
       `${this.base.replace('/users', '')}/audit-logs?userId=${userId}&size=5`
     );
   }
+
+  getUserPermissions(id: string): Observable<{
+    rolePermissions: any[];
+    extraPermissions: any[];
+    allPermissions: any[];
+  }> {
+    return this.http.get<any>(`${this.base}/${id}/permissions`);
+  }
+
+  updateUserPermissions(id: string, permissionIds: string[]): Observable<void> {
+    return this.http.put<void>(`${this.base}/${id}/permissions`, { permissionIds });
+  }
 }

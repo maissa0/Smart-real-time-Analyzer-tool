@@ -129,6 +129,25 @@ public class UserControllerV1 {
         return ResponseEntity.ok(user);
     }
 
+    @GetMapping("/{id}/permissions")
+    @Operation(summary = "Get all permissions for a user (role + extra)")
+    @PreAuthorize("hasAuthority('user:read') or hasRole('ADMIN') or hasRole('Admin')")
+    public ResponseEntity<java.util.Map<String, Object>> getUserPermissions(
+            @PathVariable UUID id) {
+        return ResponseEntity.ok(userService.getUserPermissions(id));
+    }
+
+    @AuditLog(action = "USER_PERMISSIONS_UPDATE", resource = "users", resourceIdParam = "id")
+    @PutMapping("/{id}/permissions")
+    @Operation(summary = "Update extra permissions for a user")
+    @PreAuthorize("hasAuthority('user:write') or hasRole('ADMIN') or hasRole('Admin')")
+    public ResponseEntity<Void> updateUserPermissions(
+            @PathVariable UUID id,
+            @RequestBody java.util.Map<String, java.util.List<String>> body) {
+        userService.updateUserPermissions(id, body.getOrDefault("permissionIds", java.util.List.of()));
+        return ResponseEntity.ok().build();
+    }
+
     @PatchMapping("/{id}/password")
     @AuditLog(action = "USER_PASSWORD_CHANGE", resource = "users", resourceIdParam = "id")
     @Operation(summary = "Change user password (verify old, hash new)")
