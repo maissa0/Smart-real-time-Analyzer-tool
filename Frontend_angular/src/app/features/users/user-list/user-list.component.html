@@ -241,17 +241,6 @@
               <td style="padding:12px 10px;">
                 <div style="display:flex; align-items:center; justify-content:flex-end; gap:2px;">
 
-                  <!-- Edit -->
-                  <button type="button" (click)="onEdit(user); $event.stopPropagation()" title="Edit"
-                    style="background:none; border:none; padding:6px; border-radius:6px;
-                      color:#8a9ab0; cursor:pointer; transition:all 0.15s;"
-                    onmouseover="this.style.background='rgba(176,255,68,0.1)'; this.style.color='#b0ff44'"
-                    onmouseout="this.style.background='none'; this.style.color='#8a9ab0'">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                  </button>
-
                   <!-- Delete -->
                   <button type="button" (click)="openDeleteModal(user); $event.stopPropagation()" title="Delete"
                     style="background:none; border:none; padding:6px; border-radius:6px;
@@ -301,14 +290,6 @@
     }
   </div>
 </div>
-
-<!-- ── Edit drawer ──────────────────────────────────────────────────────── -->
-@if (showEditDrawer()) {
-  <app-user-edit-drawer
-    [user]="selectedUser()!"
-    (closed)="onDrawerClosed()"
-    (saved)="onUserSaved($event)"/>
-}
 
 <!-- ── Invite modal ─────────────────────────────────────────────────────── -->
 @if (showInviteModal()) {

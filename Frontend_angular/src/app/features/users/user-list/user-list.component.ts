@@ -18,13 +18,12 @@ import { AuthService } from '../../../core/services/auth.service';
 import { UserStore } from '../../../store/user.store';
 import { UserService } from '../../../core/services/user.service';
 import type { User } from '../../../data/models';
-import { UserEditDrawerComponent } from '../user-edit-drawer/user-edit-drawer.component';
 import { UserDetailPanelComponent } from '../user-detail-panel/user-detail-panel.component';
 
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, UserEditDrawerComponent, UserDetailPanelComponent],
+  imports: [CommonModule, ReactiveFormsModule, UserDetailPanelComponent],
   templateUrl: './user-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -40,10 +39,6 @@ export class UserListComponent implements OnInit {
 
   // ── table ────────────────────────────────────────────────────────────────
   readonly filteredUsers = computed(() => this.userStore.users());
-
-  // ── edit drawer ──────────────────────────────────────────────────────────
-  readonly showEditDrawer = signal(false);
-  readonly selectedUser   = signal<User | null>(null);
 
   // ── invite modal ─────────────────────────────────────────────────────────
   readonly showInviteModal = signal(false);
@@ -102,20 +97,6 @@ export class UserListComponent implements OnInit {
     this.searchValue.set('');
     this.userStore.setFilter({ search: '', status: 'all' });
   }
-  // ── edit drawer ──────────────────────────────────────────────────────────
-  onEdit(user: User): void {
-    this.selectedUser.set(user);
-    this.showEditDrawer.set(true);
-  }
-  onDrawerClosed(): void {
-    this.showEditDrawer.set(false);
-    this.selectedUser.set(null);
-  }
-  onUserSaved(updated: User): void {
-    this.userStore.updateUser(updated);
-    this.onDrawerClosed();
-  }
-
   // ── invite ───────────────────────────────────────────────────────────────
   openInviteModal(): void {
     this.inviteForm.reset({ role: 'User' });

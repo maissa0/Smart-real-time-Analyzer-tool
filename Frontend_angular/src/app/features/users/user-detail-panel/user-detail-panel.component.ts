@@ -6,8 +6,10 @@ import {
   input,
   output,
   signal,
+  effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../../../core/services/toast.service';
 import { UserService } from '../../../core/services/user.service';
@@ -36,7 +38,7 @@ interface AuditLog {
 @Component({
   selector: 'app-user-detail-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .udp-overlay {
@@ -200,6 +202,15 @@ interface AuditLog {
     .udp-audit-time {
       font-size:0.65rem; color:#484f58; margin-left:auto; white-space:nowrap;
     }
+    .udp-edit-input {
+      width:100%; background:#161b22;
+      border:1px solid rgba(176,255,68,0.2);
+      border-radius:6px; color:#e6edf3;
+      font-size:0.82rem; padding:7px 12px;
+      outline:none; box-sizing:border-box;
+      transition:border-color 0.2s;
+    }
+    .udp-edit-input:focus { border-color:rgba(176,255,68,0.5); }
   `],
   template: `
     <div class="udp-overlay">
@@ -236,27 +247,39 @@ interface AuditLog {
             </div>
           </div>
 
-          <!-- Info -->
+          <!-- Info — editable fields auto-save on blur -->
           <div>
             <p class="udp-section-title">User Information</p>
-            <div class="udp-info-grid">
+            <div class="udp-info-grid" [formGroup]="infoForm">
               <div class="udp-info-item">
-                <label>JOB TITLE</label>
-                <p>{{ user().jobTitle || '—' }}</p>
+                <label>FULL NAME</label>
+                <p>{{ user().fullName || '—' }}</p>
               </div>
               <div class="udp-info-item">
-                <label>DEPARTMENT</label>
-                <p>{{ user().department || '—' }}</p>
+                <label>EMAIL</label>
+                <p>{{ user().email }}</p>
               </div>
               <div class="udp-info-item">
                 <label>MFA</label>
                 <p>{{ user().mfaEnabled ? '✓ Enabled' : '✗ Disabled' }}</p>
               </div>
-              <div class="udp-info-item" style="grid-column:span 2;">
+              <div class="udp-info-item">
+                <label>JOB TITLE</label>
+                <input formControlName="jobTitle" class="udp-edit-input"
+                  placeholder="e.g. CAN Engineer"
+                  (blur)="saveInfo()"/>
+              </div>
+              <div class="udp-info-item">
+                <label>DEPARTMENT</label>
+                <input formControlName="department" class="udp-edit-input"
+                  placeholder="e.g. R&D"
+                  (blur)="saveInfo()"/>
+              </div>
+              <div class="udp-info-item">
                 <label>STATUS</label>
                 <p style="background:transparent; border:none; padding:0;">
                   @if (user().status === 'PENDING') {
-                    <span class="udp-badge-pending">⏳ Pending approval</span>
+                    <span class="udp-badge-pending">⏳ Pending</span>
                   } @else if (user().isActive) {
                     <span class="udp-badge-active">● Active</span>
                   } @else {
@@ -265,6 +288,11 @@ interface AuditLog {
                 </p>
               </div>
             </div>
+            @if (savingInfo()) {
+              <p style="font-size:0.7rem; color:#b0ff44; margin:0.5rem 0 0;">
+                Saving…
+              </p>
+            }
           </div>
 
           <div class="udp-divider"></div>
@@ -399,7 +427,26 @@ export class UserDetailPanelComponent implements OnInit {
   readonly savingRole      = signal(false);
   readonly savingPerms     = signal(false);
 
+  private readonly fb = inject(FormBuilder);
+
+  readonly savingInfo = signal(false);
+
+  readonly infoForm = this.fb.nonNullable.group({
+    jobTitle:   [''],
+    department: [''],
+  });
+
   private allRoles: RoleWithPermissions[] = [];
+
+  constructor() {
+    effect(() => {
+      const u = this.user();
+      this.infoForm.patchValue({
+        jobTitle:   u.jobTitle   ?? '',
+        department: u.department ?? '',
+      });
+    });
+  }
 
   ngOnInit(): void {
     const role = this.user().roles?.[0]?.name ?? 'User';
@@ -503,6 +550,22 @@ export class UserDetailPanelComponent implements OnInit {
         this.savingPerms.set(false);
         this.toast.error('Failed to update permissions');
       },
+    });
+  }
+
+  saveInfo(): void {
+    const { jobTitle, department } = this.infoForm.getRawValue();
+    const u = this.user();
+    if (jobTitle === (u.jobTitle ?? '') && department === (u.department ?? '')) {
+      return; // no change
+    }
+    this.savingInfo.set(true);
+    this.userService.updateUser(u.id, { jobTitle, department }).subscribe({
+      next: (updated) => {
+        this.savingInfo.set(false);
+        this.saved.emit(updated as unknown as User);
+      },
+      error: () => { this.savingInfo.set(false); },
     });
   }
 
