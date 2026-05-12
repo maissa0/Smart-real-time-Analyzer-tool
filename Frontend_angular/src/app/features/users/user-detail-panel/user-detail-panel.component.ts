@@ -280,6 +280,8 @@ interface AuditLog {
                 <p style="background:transparent; border:none; padding:0;">
                   @if (user().status === 'PENDING') {
                     <span class="udp-badge-pending">⏳ Pending</span>
+                  } @else if (user().status === 'DELETED') {
+                    <span class="udp-badge-inactive">✕ Deleted</span>
                   } @else if (user().isActive) {
                     <span class="udp-badge-active">● Active</span>
                   } @else {

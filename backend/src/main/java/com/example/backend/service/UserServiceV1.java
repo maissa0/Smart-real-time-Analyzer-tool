@@ -208,14 +208,40 @@ public class UserServiceV1 {
     }
 
     /**
-     * Soft-delete a user by setting deletedAt timestamp.
+     * Soft-delete + anonymize a user.
+     *
+     * Keeps fullName for audit reference ("Jane Doe invited X", "Jane Doe ran simulation").
+     * Erases all PII: email, phone, bio, avatar, password.
+     * Sets status=REJECTED and isActive=false so they can never login.
+     * The row is never hard-deleted — it becomes a tombstone for referential integrity.
+     *
+     * GDPR note: fullName is intentionally kept for operational audit trails.
+     * If full erasure is required, call anonymizeFull() instead.
      */
     @Transactional
     public void deleteUser(UUID id) {
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
+
+        String shortId = id.toString().substring(0, 8);
+
+        // Erase PII — keep fullName for audit reference
+        user.setEmail("deleted-" + shortId + "@purged.local");
+        user.setUsername("deleted-" + shortId);
+        user.setPasswordHash(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+        user.setPhone(null);
+        user.setBio(null);
+        user.setAvatarUrl(null);
+        user.setMfaSecret(null);
+        user.setMfaEnabled(false);
+        user.setIsActive(false);
+        user.setVerified(false);
+        user.setStatus("DELETED");
         user.setDeletedAt(Instant.now());
+        // fullName intentionally preserved for audit trail reference
+
         userRepository.save(user);
+        log.info("User anonymized: id={} name={}", shortId, user.getFullName());
     }
 
     /**
