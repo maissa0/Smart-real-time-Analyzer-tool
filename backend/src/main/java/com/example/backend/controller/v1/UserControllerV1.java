@@ -95,6 +95,7 @@ public class UserControllerV1 {
         return ResponseEntity.ok().build();
     }
 
+    @AuditLog(action = "USER_APPROVE", resource = "users", resourceIdParam = "id")
     @PostMapping("/{id}/approve")
     @Operation(summary = "Approve pending user registration or invitation")
     @PreAuthorize("hasAuthority('user:write') or hasRole('ADMIN') or hasRole('Admin')")
@@ -103,6 +104,7 @@ public class UserControllerV1 {
         return ResponseEntity.ok().build();
     }
 
+    @AuditLog(action = "USER_REJECT", resource = "users", resourceIdParam = "id")
     @PostMapping("/{id}/reject")
     @Operation(summary = "Reject pending user registration or invitation")
     @PreAuthorize("hasAuthority('user:write') or hasRole('ADMIN') or hasRole('Admin')")

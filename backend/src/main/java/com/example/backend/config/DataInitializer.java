@@ -31,7 +31,10 @@ import java.util.UUID;
 public class DataInitializer implements CommandLineRunner {
 
     private static final List<String> PERMISSION_SLUGS = List.of(
-            "user:read", "user:write", "user:create", "audit:view", "billing:view"
+            "user:read", "user:write", "user:create", "audit:view", "billing:view",
+            "car:read", "car:write", "car:delete",
+            "simulation:start", "simulation:stop",
+            "session:read", "log:upload", "log:export"
     );
 
     private static final String ADMIN_EMAIL = "admin@ablepro.com";
@@ -69,7 +72,11 @@ public class DataInitializer implements CommandLineRunner {
      */
     private List<PermissionEntity> seedPermissions() {
         var descriptions = List.of(
-                "View users", "Create and edit users", "Create users", "View audit logs", "View billing"
+                "View users", "Create and edit users", "Create users",
+                "View audit logs", "View billing",
+                "View vehicles", "Add and edit vehicles", "Delete vehicles",
+                "Start CAN simulator", "Stop CAN simulator",
+                "View CAN sessions", "Upload log files", "Export frames as CSV"
         );
         var result = new java.util.ArrayList<PermissionEntity>();
         for (int i = 0; i < PERMISSION_SLUGS.size(); i++) {

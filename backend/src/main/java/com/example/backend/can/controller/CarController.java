@@ -1,5 +1,6 @@
 package com.example.backend.can.controller;
 
+import com.example.backend.audit.AuditLog;
 import com.example.backend.can.dto.CanSessionResponse;
 import com.example.backend.can.dto.CarCreateRequest;
 import com.example.backend.can.dto.CarDto;
@@ -75,6 +76,7 @@ public class CarController {
      * @param request validated create request (make, model, year required)
      * @return 201 Created with the new CarDto
      */
+    @AuditLog(action = "CAR_CREATE", resource = "cars")
     @PostMapping
     public ResponseEntity<CarDto> createCar(@Valid @RequestBody CarCreateRequest request) {
         UUID userId = requireCurrentUserId();
@@ -106,6 +108,7 @@ public class CarController {
      * @param request  fields to update
      * @return 200 OK with updated CarDto
      */
+    @AuditLog(action = "CAR_UPDATE", resource = "cars", resourceIdParam = "carUid")
     @PutMapping("/{carUid}")
     public ResponseEntity<CarDto> updateCar(
             @PathVariable String carUid,
@@ -123,6 +126,7 @@ public class CarController {
      * @param carUid public UUID of the car
      * @return 204 No Content
      */
+    @AuditLog(action = "CAR_DELETE", resource = "cars", resourceIdParam = "carUid")
     @DeleteMapping("/{carUid}")
     public ResponseEntity<Void> deleteCar(@PathVariable String carUid) {
         carService.softDeleteCar(carUid);

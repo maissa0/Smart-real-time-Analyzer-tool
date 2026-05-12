@@ -1,5 +1,6 @@
 package com.example.backend.can.controller;
 
+import com.example.backend.audit.AuditLog;
 import com.example.backend.can.repository.LogFileRepository;
 import com.example.backend.can.service.LogUploadService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class LogUploadController {
     private final LogFileRepository logFileRepository;
 
     /** Upload a CAN log file (.txt/.log/.asc/.blf); job is queued for async processing. */
+    @AuditLog(action = "LOG_UPLOAD", resource = "logs")
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> upload(
             @RequestParam("file") MultipartFile file) {
@@ -100,6 +102,7 @@ public class LogUploadController {
      * Retry a failed upload — re-queues the log file for processing.
      * POST /api/logs/retry/{logFileId}
      */
+    @AuditLog(action = "LOG_RETRY", resource = "logs", resourceIdParam = "logFileId")
     @PostMapping("/retry/{logFileId}")
     public ResponseEntity<Map<String, String>> retry(@PathVariable Long logFileId) {
         return logFileRepository.findById(logFileId)

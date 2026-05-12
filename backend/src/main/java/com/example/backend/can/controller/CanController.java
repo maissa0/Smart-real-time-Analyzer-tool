@@ -1,5 +1,6 @@
 package com.example.backend.can.controller;
 
+import com.example.backend.audit.AuditLog;
 import com.example.backend.can.dto.CanFrameResponse;
 import com.example.backend.can.dto.CanSessionResponse;
 import com.example.backend.can.service.CanSessionService;
@@ -93,6 +94,7 @@ public class CanController {
      * Export all frames for a session as CSV.
      * GET /api/can/sessions/{sessionId}/frames/export.csv
      */
+    @AuditLog(action = "LOG_EXPORT", resource = "sessions", resourceIdParam = "sessionId")
     @GetMapping("/sessions/{sessionId}/frames/export.csv")
     public ResponseEntity<String> exportFramesCsv(
             @PathVariable String sessionId) {
@@ -133,6 +135,7 @@ public class CanController {
         return value;
     }
 
+    @AuditLog(action = "SESSION_DELETE", resource = "sessions", resourceIdParam = "sessionId")
     @DeleteMapping("/sessions/{sessionId}")
     public ResponseEntity<Map<String, Object>> deleteSession(@PathVariable String sessionId) {
         try {

@@ -1,5 +1,6 @@
 package com.example.backend.can.controller;
 
+import com.example.backend.audit.AuditLog;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -88,6 +89,7 @@ public class SimulatorController {
         return resolved;
     }
 
+    @AuditLog(action = "SIMULATION_START", resource = "simulator")
     @PostMapping("/start")
     public ResponseEntity<Map<String, String>> start(@RequestBody Map<String, Object> config) {
         // Remove dead process entries before adding a new one
@@ -167,6 +169,7 @@ public class SimulatorController {
         }
     }
 
+    @AuditLog(action = "SIMULATION_STOP", resource = "simulator", resourceIdParam = "simId")
     @PostMapping("/stop/{simId}")
     public ResponseEntity<Map<String, String>> stop(@PathVariable String simId) {
         SimulatorEntry entry = runningSimulators.remove(simId);
@@ -178,6 +181,7 @@ public class SimulatorController {
         return ResponseEntity.ok(Map.of("simId", simId, "status", "stopped"));
     }
 
+    @AuditLog(action = "SIMULATION_STOP_ALL", resource = "simulator")
     @PostMapping("/stop-all")
     public ResponseEntity<Map<String, Object>> stopAll() {
         int count = runningSimulators.size();
