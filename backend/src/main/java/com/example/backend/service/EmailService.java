@@ -143,6 +143,56 @@ public class EmailService {
         sendHtmlEmail(toEmail, subject, htmlBody);
     }
 
+    @Async
+    public void sendDeactivationEmail(String toEmail, String recipientName, String reason) {
+        String safeName   = recipientName != null ? recipientName : "User";
+        String safeReason = (reason != null && !reason.isBlank())
+                ? reason : "No reason provided.";
+        String subject = "Your KPIT account has been deactivated";
+        String htmlBody = """
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="UTF-8"><style>
+              body { font-family:Arial,sans-serif; background:#f4f4f4; margin:0; padding:0; }
+              .container { max-width:520px; margin:40px auto; background:#fff;
+                           border-radius:8px; overflow:hidden; }
+              .header { background:#0d1117; padding:24px 32px; }
+              .header h1 { color:#b0ff44; margin:0; font-size:20px; }
+              .header p  { color:#8a9ab0; margin:4px 0 0; font-size:13px; }
+              .body { padding:32px; }
+              .body p { color:#333; font-size:14px; line-height:1.6; }
+              .reason-box { background:#fff5f5; border-left:4px solid #ff4444;
+                            padding:12px 16px; margin:16px 0; border-radius:4px;
+                            font-size:13px; color:#555; }
+              .footer { background:#f9f9f9; padding:16px 32px;
+                        font-size:11px; color:#aaa; border-top:1px solid #eee; }
+            </style></head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>KPIT ANALYSER</h1>
+                  <p>Smart Real-Time CAN Bus Analysis Platform</p>
+                </div>
+                <div class="body">
+                  <p>Hello <strong>%s</strong>,</p>
+                  <p>Your account on the <strong>KPIT Smart CAN Analyser</strong>
+                     platform has been <strong style="color:#ff4444;">deactivated</strong>
+                     by an administrator.</p>
+                  <div class="reason-box">
+                    <strong>Reason:</strong> %s
+                  </div>
+                  <p>If you believe this is an error, please contact your KPIT administrator.</p>
+                </div>
+                <div class="footer">
+                  KPIT Smart CAN Analyser — Real-Time CAN Bus Analysis Platform
+                </div>
+              </div>
+            </body>
+            </html>
+            """.formatted(safeName, safeReason);
+        sendHtmlEmail(toEmail, subject, htmlBody);
+    }
+
     /**
      * Registration pending — admin must approve before login.
      */

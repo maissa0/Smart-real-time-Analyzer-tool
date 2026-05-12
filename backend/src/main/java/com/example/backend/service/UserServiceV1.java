@@ -220,8 +220,20 @@ public class UserServiceV1 {
     public void toggleStatus(UUID id, String reason, HttpServletRequest httpRequest) {
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
-        user.setIsActive(!user.getIsActive());
+        boolean wasActive = user.getIsActive();
+        user.setIsActive(!wasActive);
         userRepository.save(user);
+        // Send deactivation email only when deactivating (not when reactivating)
+        if (wasActive) {
+            try {
+                emailService.sendDeactivationEmail(
+                    user.getEmail(), user.getFullName(), reason);
+                log.info("Deactivation email sent to {}", user.getEmail());
+            } catch (Exception e) {
+                log.error("Failed to send deactivation email to {}: {}",
+                    user.getEmail(), e.getMessage());
+            }
+        }
     }
 
     @Transactional
