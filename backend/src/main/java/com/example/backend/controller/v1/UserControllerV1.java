@@ -3,6 +3,7 @@ package com.example.backend.controller.v1;
 import com.example.backend.audit.AuditLog;
 import com.example.backend.dto.common.PageResponse;
 import com.example.backend.dto.user.UserResponse;
+import com.example.backend.dto.v1.AssignRoleRequest;
 import com.example.backend.dto.v1.*;
 import com.example.backend.service.UserServiceV1;
 import io.swagger.v3.oas.annotations.Operation;
@@ -114,6 +115,18 @@ public class UserControllerV1 {
     ) {
         userService.rejectUser(id, request != null ? request.reason() : null);
         return ResponseEntity.ok().build();
+    }
+
+    @AuditLog(action = "USER_ROLE_ASSIGN", resource = "users", resourceIdParam = "id")
+    @PatchMapping("/{id}/role")
+    @Operation(summary = "Assign a role to a user")
+    @PreAuthorize("hasAuthority('user:write') or hasRole('ADMIN') or hasRole('Admin')")
+    public ResponseEntity<UserDetailResponse> assignRole(
+            @PathVariable UUID id,
+            @RequestBody AssignRoleRequest request
+    ) {
+        UserDetailResponse user = userService.assignRole(id, request.roleName());
+        return ResponseEntity.ok(user);
     }
 
     @PatchMapping("/{id}/password")

@@ -61,4 +61,14 @@ export class UserService {
   rejectUser(id: string, reason?: string): Observable<void> {
     return this.http.post<void>(`${this.base}/${id}/reject`, { reason: reason ?? null });
   }
+
+  assignRole(id: string, roleName: string): Observable<User> {
+    return this.http.patch<User>(`${this.base}/${id}/role`, { roleName });
+  }
+
+  getUserAuditLogs(userId: string): Observable<any> {
+    return this.http.get<any>(
+      `${this.base.replace('/users', '')}/audit-logs?userId=${userId}&size=5`
+    );
+  }
 }

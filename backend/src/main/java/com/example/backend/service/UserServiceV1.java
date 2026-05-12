@@ -3,6 +3,7 @@ package com.example.backend.service;
 import com.example.backend.dto.common.PageResponse;
 import com.example.backend.dto.user.UserResponse;
 import com.example.backend.dto.v1.*;
+import com.example.backend.entity.RoleEntity;
 import com.example.backend.entity.UserEntity;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.mapper.UserMapper;
@@ -275,6 +276,22 @@ public class UserServiceV1 {
                 .filter(u -> "PENDING".equals(u.getStatus()))
                 .map(userMapper::toResponse)
                 .toList();
+    }
+
+    /**
+     * Assigns a role to a user by role name.
+     * Replaces all existing roles with the new one.
+     */
+    @Transactional
+    public UserDetailResponse assignRole(UUID userId, String roleName) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        RoleEntity role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new ResourceNotFoundException("Role", roleName));
+        user.getRoles().clear();
+        user.getRoles().add(role);
+        userRepository.save(user);
+        return findById(userId);
     }
 
     private String deriveUsername(String email) {

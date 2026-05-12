@@ -19,11 +19,12 @@ import { UserStore } from '../../../store/user.store';
 import { UserService } from '../../../core/services/user.service';
 import type { User } from '../../../data/models';
 import { UserEditDrawerComponent } from '../user-edit-drawer/user-edit-drawer.component';
+import { UserDetailPanelComponent } from '../user-detail-panel/user-detail-panel.component';
 
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, UserEditDrawerComponent],
+  imports: [CommonModule, ReactiveFormsModule, UserEditDrawerComponent, UserDetailPanelComponent],
   templateUrl: './user-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -63,6 +64,8 @@ export class UserListComponent implements OnInit {
   // ── delete confirm ───────────────────────────────────────────────────────
   readonly showDeleteModal  = signal(false);
   readonly deleteTargetUser = signal<User | null>(null);
+  readonly showDetailPanel = signal(false);
+  readonly detailPanelUser = signal<User | null>(null);
 
   readonly showRejectModal   = signal(false);
   readonly rejectTargetUser  = signal<User | null>(null);
@@ -172,6 +175,18 @@ export class UserListComponent implements OnInit {
     this.userStore.deleteUserById(user.id);
     this.showDeleteModal.set(false);
     this.toast.success(`${user.fullName ?? user.email} deleted`);
+  }
+
+  openDetailPanel(user: User): void {
+    this.detailPanelUser.set(user);
+    this.showDetailPanel.set(true);
+  }
+  closeDetailPanel(): void {
+    this.showDetailPanel.set(false);
+    this.detailPanelUser.set(null);
+  }
+  onUserRoleUpdated(updated: User): void {
+    this.userStore.updateUser(updated);
   }
 
   approveUser(user: User): void {
