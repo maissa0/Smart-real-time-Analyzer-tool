@@ -40,6 +40,12 @@ public final class UserSpecification {
             if (isActive != null) {
                 predicates.add(cb.equal(root.get("isActive"), isActive));
             }
+            // Exclude REJECTED users from normal listing
+            // PENDING users are shown separately
+            // Only exclude if no specific isActive filter is applied
+            if (isActive == null) {
+                predicates.add(cb.notEqual(root.get("status"), "REJECTED"));
+            }
 
             if (roleId != null) {
                 predicates.add(cb.equal(

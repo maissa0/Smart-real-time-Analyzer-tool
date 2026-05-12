@@ -21,6 +21,9 @@ public class AuthResponse {
     private Long expiresIn;
     private List<PermissionDto> permissions;
 
+    /** Informational message — used for pending registration response */
+    private String message;
+
     @Data
     @Builder
     @NoArgsConstructor

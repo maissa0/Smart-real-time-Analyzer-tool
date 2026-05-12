@@ -64,6 +64,11 @@ export class UserListComponent implements OnInit {
   readonly showDeleteModal  = signal(false);
   readonly deleteTargetUser = signal<User | null>(null);
 
+  readonly showRejectModal   = signal(false);
+  readonly rejectTargetUser  = signal<User | null>(null);
+  readonly rejectReason      = signal('');
+  readonly pendingUsers      = signal<User[]>([]);
+
   readonly searchValue = signal('');
 
   ngOnInit(): void {
@@ -79,6 +84,10 @@ export class UserListComponent implements OnInit {
     // Force reload every time the component mounts —
     // the store onInit only runs once on first injection.
     this.userStore.loadUsers();
+    this.userService
+      .getPendingUsers()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (u) => this.pendingUsers.set(u), error: () => {} });
   }
 
   // ── search ───────────────────────────────────────────────────────────────
@@ -163,6 +172,44 @@ export class UserListComponent implements OnInit {
     this.userStore.deleteUserById(user.id);
     this.showDeleteModal.set(false);
     this.toast.success(`${user.fullName ?? user.email} deleted`);
+  }
+
+  approveUser(user: User): void {
+    this.userService.approveUser(user.id).subscribe({
+      next: () => {
+        this.toast.success(`${user.fullName ?? user.email} approved`);
+        this.userStore.loadUsers();
+        this.refreshPending();
+      },
+      error: () => this.toast.error('Failed to approve user'),
+    });
+  }
+
+  openRejectModal(user: User): void {
+    this.rejectTargetUser.set(user);
+    this.rejectReason.set('');
+    this.showRejectModal.set(true);
+  }
+  closeRejectModal(): void { this.showRejectModal.set(false); }
+
+  confirmReject(): void {
+    const user = this.rejectTargetUser();
+    if (!user) return;
+    this.userService.rejectUser(user.id, this.rejectReason()).subscribe({
+      next: () => {
+        this.toast.success(`${user.fullName ?? user.email} rejected`);
+        this.showRejectModal.set(false);
+        this.refreshPending();
+      },
+      error: () => this.toast.error('Failed to reject user'),
+    });
+  }
+
+  private refreshPending(): void {
+    this.userService.getPendingUsers().subscribe({
+      next: (u) => this.pendingUsers.set(u),
+      error: () => {},
+    });
   }
 
   // ── reset password ────────────────────────────────────────────────────────

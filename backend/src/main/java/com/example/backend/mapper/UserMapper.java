@@ -42,6 +42,7 @@ public class UserMapper {
                 .isActive(entity.getIsActive())
                 .mfaEnabled(entity.getMfaEnabled())
                 .verified(entity.getVerified())
+                .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
                 .roles(roles)
                 .build();

@@ -24,6 +24,7 @@ public record UserDetailResponse(
         Boolean isActive,
         Boolean mfaEnabled,
         Boolean verified,
+        String status,
         Instant createdAt,
         List<RoleResponse> roles,
         List<PermissionResponse> permissions

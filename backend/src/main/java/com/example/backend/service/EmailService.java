@@ -113,6 +113,84 @@ public class EmailService {
         sendHtmlEmail(toEmail, subject, htmlBody);
     }
 
+    @Async
+    public void sendApprovalEmail(String toEmail, String recipientName) {
+        String safeName = recipientName != null ? recipientName : "User";
+        String subject = "KPIT — Your registration has been approved";
+        String htmlBody = """
+            <!DOCTYPE html><html><body style="font-family:Arial,sans-serif;">
+            <p>Hello <strong>%s</strong>,</p>
+            <p>Your KPIT Smart CAN Analyser account has been <strong>approved</strong>. You can sign in with your email and password.</p>
+            <p class="footer" style="font-size:12px;color:#666;">KPIT Smart CAN Analyser</p>
+            </body></html>
+            """.formatted(safeName.replace("<", ""));
+        sendHtmlEmail(toEmail, subject, htmlBody);
+    }
+
+    @Async
+    public void sendRejectionEmail(String toEmail, String recipientName, String reason) {
+        String safeName = recipientName != null ? recipientName : "User";
+        String subject = "KPIT — Registration update";
+        String r = (reason != null && !reason.isBlank()) ? reason : "No reason provided.";
+        String htmlBody = """
+            <!DOCTYPE html><html><body style="font-family:Arial,sans-serif;">
+            <p>Hello <strong>%s</strong>,</p>
+            <p>Your registration request could not be approved at this time.</p>
+            <p><strong>Reason:</strong> %s</p>
+            <p class="footer" style="font-size:12px;color:#666;">KPIT Smart CAN Analyser</p>
+            </body></html>
+            """.formatted(safeName.replace("<", ""), r.replace("<", ""));
+        sendHtmlEmail(toEmail, subject, htmlBody);
+    }
+
+    /**
+     * Registration pending — admin must approve before login.
+     */
+    @Async
+    public void sendRegistrationPendingEmail(String toEmail, String recipientName) {
+        String safeName = recipientName != null ? recipientName : "User";
+        String subject  = "KPIT — Registration received, pending approval";
+        String htmlBody = """
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="UTF-8"><style>
+              body { font-family:Arial,sans-serif; background:#f4f4f4; margin:0; padding:0; }
+              .container { max-width:520px; margin:40px auto; background:#ffffff; border-radius:8px; overflow:hidden; }
+              .header { background:#0d1117; padding:24px 32px; }
+              .header h1 { color:#b0ff44; margin:0; font-size:20px; letter-spacing:0.05em; }
+              .header p  { color:#8a9ab0; margin:4px 0 0; font-size:13px; }
+              .body { padding:32px; }
+              .body p { color:#333; font-size:14px; line-height:1.6; }
+              .info-box { background:#fffbea; border-left:4px solid #ffaa00;
+                          padding:12px 16px; margin:16px 0; border-radius:4px;
+                          font-size:13px; color:#555; }
+              .footer { background:#f9f9f9; padding:16px 32px; font-size:11px; color:#aaa; border-top:1px solid #eee; }
+            </style></head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>KPIT ANALYSER</h1>
+                  <p>Smart Real-Time CAN Bus Analysis Platform</p>
+                </div>
+                <div class="body">
+                  <p>Hello <strong>%s</strong>,</p>
+                  <p>Thank you for registering on the <strong>KPIT Smart CAN Analyser</strong> platform.</p>
+                  <div class="info-box">
+                    ⏳ Your account is currently <strong>pending approval</strong> by an administrator.
+                    You will receive another email once your request has been reviewed.
+                  </div>
+                  <p>If you have any questions, please contact your KPIT administrator.</p>
+                </div>
+                <div class="footer">
+                  KPIT Smart CAN Analyser — Real-Time CAN Bus Analysis Platform
+                </div>
+              </div>
+            </body>
+            </html>
+            """.formatted(safeName);
+        sendHtmlEmail(toEmail, subject, htmlBody);
+    }
+
     /**
      * Synchronous test email for health check (not @Async).
      */

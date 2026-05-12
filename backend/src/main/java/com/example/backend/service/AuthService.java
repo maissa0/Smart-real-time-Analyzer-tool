@@ -125,31 +125,26 @@ public class AuthService {
                 .username(username)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getName())
-                .isActive(true)
+                .isActive(false)
                 .mfaEnabled(false)
                 .verified(false)
+                .status("PENDING")
                 .build();
         if (defaultRole != null) {
             user.setRoles(new java.util.HashSet<>(java.util.List.of(defaultRole)));
         }
 
         user = userRepository.save(user);
-
-        SessionEntity session = createSession(user.getId(), httpRequest);
-        String accessToken = jwtService.generateAccessToken(user.getEmail(), user.getId(), session.getId());
-        String refreshToken = jwtService.generateRefreshToken(user.getEmail(), user.getId());
-        storeRefreshToken(user.getId(), refreshToken, session.getId(), httpRequest);
-
-        auditService.logSecurity("USER_REGISTER", "auth", user.getId().toString(),
+        auditService.logSecurity("USER_REGISTER_PENDING", "auth", user.getId().toString(),
                 user.getId(), null, httpRequest);
-
         try {
-            emailService.sendWelcomeEmail(user.getEmail(), user.getFullName());
+            emailService.sendRegistrationPendingEmail(user.getEmail(), user.getFullName());
         } catch (Exception e) {
             // Log but don't fail registration
         }
-
-        return buildAuthResponse(user, accessToken, refreshToken);
+        return AuthResponse.builder()
+                .message("Registration successful. Your account is pending admin approval. You will receive an email once approved.")
+                .build();
     }
 
     @Transactional

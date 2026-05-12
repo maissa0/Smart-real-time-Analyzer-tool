@@ -112,6 +112,7 @@ public class UserServiceV1 {
                 user.getIsActive(),
                 user.getMfaEnabled(),
                 user.getVerified(),
+                user.getStatus(),
                 user.getCreatedAt(),
                 roles,
                 permissions
@@ -170,8 +171,9 @@ public class UserServiceV1 {
                 .fullName(request.fullName())
                 .jobTitle(request.jobTitle())
                 .department(request.department())
-                .isActive(true)
+                .isActive(false)
                 .verified(false)
+                .status("PENDING")
                 .build();
 
         // DB roles are named "Admin" and "User" — no slug column exists
@@ -220,6 +222,47 @@ public class UserServiceV1 {
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
         user.setIsActive(!user.getIsActive());
         userRepository.save(user);
+    }
+
+    @Transactional
+    public void approveUser(UUID id) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
+        user.setIsActive(true);
+        user.setVerified(true);
+        user.setStatus("ACTIVE");
+        userRepository.save(user);
+        try {
+            emailService.sendApprovalEmail(user.getEmail(), user.getFullName());
+        } catch (Exception e) {
+            // non-fatal
+        }
+    }
+
+    @Transactional
+    public void rejectUser(UUID id, String reason) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
+        user.setStatus("REJECTED");
+        user.setDeletedAt(Instant.now());
+        userRepository.save(user);
+        try {
+            emailService.sendRejectionEmail(user.getEmail(), user.getFullName(), reason);
+        } catch (Exception e) {
+            // non-fatal
+        }
+    }
+
+    /**
+     * Returns all users with PENDING status awaiting admin approval.
+     */
+    @Transactional(readOnly = true)
+    public List<UserResponse> getPendingUsers() {
+        return userRepository.findAll().stream()
+                .filter(u -> u.getDeletedAt() == null)
+                .filter(u -> "PENDING".equals(u.getStatus()))
+                .map(userMapper::toResponse)
+                .toList();
     }
 
     private String deriveUsername(String email) {

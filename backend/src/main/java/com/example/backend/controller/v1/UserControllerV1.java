@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -39,6 +40,13 @@ public class UserControllerV1 {
         PageResponse<UserResponse> result = userService.findAll(
                 search, status, roleId, sortBy, sortDirection, page, size);
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/pending")
+    @Operation(summary = "List users pending admin approval")
+    @PreAuthorize("hasAuthority('user:write') or hasRole('ADMIN') or hasRole('Admin')")
+    public ResponseEntity<List<UserResponse>> getPendingUsers() {
+        return ResponseEntity.ok(userService.getPendingUsers());
     }
 
     @PostMapping("/invite")
@@ -84,6 +92,25 @@ public class UserControllerV1 {
     ) {
         String reason = request != null ? request.reason() : null;
         userService.toggleStatus(id, reason, httpRequest);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/approve")
+    @Operation(summary = "Approve pending user registration or invitation")
+    @PreAuthorize("hasAuthority('user:write') or hasRole('ADMIN') or hasRole('Admin')")
+    public ResponseEntity<Void> approveUser(@PathVariable UUID id) {
+        userService.approveUser(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/reject")
+    @Operation(summary = "Reject pending user registration or invitation")
+    @PreAuthorize("hasAuthority('user:write') or hasRole('ADMIN') or hasRole('Admin')")
+    public ResponseEntity<Void> rejectRegistration(
+            @PathVariable UUID id,
+            @RequestBody(required = false) StatusUpdateRequest request
+    ) {
+        userService.rejectUser(id, request != null ? request.reason() : null);
         return ResponseEntity.ok().build();
     }
 

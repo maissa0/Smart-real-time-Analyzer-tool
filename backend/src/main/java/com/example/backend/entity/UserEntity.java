@@ -75,6 +75,17 @@ public class UserEntity extends AbstractAuditingEntity {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    /**
+     * Account status:
+     * PENDING  — registered, waiting for admin approval
+     * ACTIVE   — approved, can login
+     * REJECTED — registration denied by admin
+     * SUSPENDED — temporarily blocked by admin (future use)
+     */
+    @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
+    private String status = "ACTIVE";
+
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "user_roles",

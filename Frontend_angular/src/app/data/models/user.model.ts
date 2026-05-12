@@ -18,6 +18,8 @@ export interface User {
   isActive: boolean;
   mfaEnabled: boolean;
   verified: boolean;
+  /** ACTIVE, PENDING, REJECTED, etc. */
+  status?: string | null;
   createdAt: string;
   roles?: Role[];
   permissions?: import('./permission.model').Permission[];

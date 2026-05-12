@@ -28,6 +28,7 @@ public class UserResponse {
     private Boolean isActive;
     private Boolean mfaEnabled;
     private Boolean verified;
+    private String status;
     private Instant createdAt;
     private List<RoleResponse> roles;
 }

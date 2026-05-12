@@ -49,4 +49,16 @@ export class UserService {
   toggleStatus(id: string, reason?: string): Observable<void> {
     return this.http.patch<void>(`${this.base}/${id}/status`, { reason: reason ?? null });
   }
+
+  getPendingUsers(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.base}/pending`);
+  }
+
+  approveUser(id: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/${id}/approve`, {});
+  }
+
+  rejectUser(id: string, reason?: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/${id}/reject`, { reason: reason ?? null });
+  }
 }
