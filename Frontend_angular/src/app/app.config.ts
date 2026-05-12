@@ -18,6 +18,7 @@ const PUBLIC_AUTH_PATHS = [
   '/api/auth/forgot-password',
   '/api/auth/verify-otp',
   '/api/auth/reset-password',
+  '/api/auth/set-password',
   '/api/auth/mfa/verify',
 ];
 
