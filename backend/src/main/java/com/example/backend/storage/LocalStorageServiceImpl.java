@@ -1,5 +1,6 @@
 package com.example.backend.storage;
 
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -22,6 +23,19 @@ public class LocalStorageServiceImpl implements ImageStorageService {
 
     @Value("${app.base-url:http://localhost:8080}")
     private String baseUrl;
+
+    @PostConstruct
+    public void init() {
+        try {
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+                log.info("Created avatar upload directory: {}", uploadPath);
+            }
+        } catch (Exception e) {
+            log.error("Failed to create upload directory: {}", e.getMessage());
+        }
+    }
 
     @Override
     public String storeImage(UUID userId, MultipartFile file) throws IOException {
