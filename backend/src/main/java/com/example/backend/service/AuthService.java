@@ -94,9 +94,6 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid verification code");
         }
 
-        auditService.logSecurity("LOGIN_SUCCESS", "auth", user.getId().toString(),
-                user.getId(), java.util.Map.of("mfa", true), httpRequest);
-
         return completeLogin(user, httpRequest);
     }
 
