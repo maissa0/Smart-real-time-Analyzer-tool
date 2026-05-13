@@ -51,7 +51,7 @@ public class ProfileControllerV1 {
     }
 
     @PutMapping("/me")
-    @Operation(summary = "Update current user's profile (fullName, phone, bio)")
+    @Operation(summary = "Update current user's profile (fullName, phone)")
     public ResponseEntity<UserDetailResponse> updateMyProfile(
             @Valid @RequestBody UserProfileUpdateRequest request
     ) {

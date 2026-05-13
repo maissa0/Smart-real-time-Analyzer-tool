@@ -71,7 +71,7 @@ public class UserControllerV1 {
 
     @PutMapping("/{id}")
     @AuditLog(action = "USER_UPDATE", resource = "users", resourceIdParam = "id")
-    @Operation(summary = "Update user profile (fullName, phone, bio)")
+    @Operation(summary = "Update user profile (fullName, phone)")
     @PreAuthorize("hasAuthority('user:write') or hasRole('ADMIN')")
     public ResponseEntity<UserDetailResponse> updateProfile(
             @PathVariable UUID id,
