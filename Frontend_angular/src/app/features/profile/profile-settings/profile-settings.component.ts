@@ -29,17 +29,13 @@ export class ProfileSettingsComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
   private readonly toast = inject(ToastService);
 
-  readonly activeTab = signal<'profile' | 'personal' | 'account' | 'password' | 'settings' | 'audit' | 'security'>('profile');
+  readonly activeTab = signal<'profile' | 'password' | 'settings' | 'audit' | 'security'>('profile');
 
   readonly form = this.fb.nonNullable.group({
     fullName: [''],
-    username: [''],
-    email: [''],
-    phone: [''],
-    jobTitle: [''],
-    department: [''],
+    phone:    [''],
     currentPassword: [''],
-    newPassword: [''],
+    newPassword:     [''],
     confirmPassword: [''],
   });
 
@@ -47,12 +43,10 @@ export class ProfileSettingsComponent implements OnInit {
   readonly isChangingPassword = signal(false);
 
   readonly tabs = [
-    { id: 'profile' as const, label: 'Profile' },
-    { id: 'personal' as const, label: 'Personal' },
-    { id: 'account' as const, label: 'My Account' },
+    { id: 'profile'  as const, label: 'My Profile' },
     { id: 'password' as const, label: 'Change Password' },
     { id: 'settings' as const, label: 'Settings' },
-    { id: 'audit' as const, label: 'Audit Trail' },
+    { id: 'audit'    as const, label: 'Audit Trail' },
     { id: 'security' as const, label: 'Security Center' },
   ];
 
@@ -71,11 +65,7 @@ export class ProfileSettingsComponent implements OnInit {
       next: (user) => {
         this.form.patchValue({
           fullName: user.fullName ?? '',
-          username: user.username,
-          email: user.email,
-          phone: user.phone ?? '',
-          jobTitle: user.jobTitle ?? '',
-          department: user.department ?? '',
+          phone:    user.phone    ?? '',
         });
         this.authStore.updateUser(user);
       },

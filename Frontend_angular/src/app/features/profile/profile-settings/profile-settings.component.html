@@ -1,7 +1,6 @@
 <div style="background:#07090b; min-height:100vh; padding:1.5rem;">
   <app-breadcrumb />
 
-  <!-- Header -->
   <div style="margin-bottom:1.5rem; margin-top:1rem;">
     <h1 style="font-size:1.5rem; font-weight:700; color:#fff; margin:0;">
       Profile & Account
@@ -10,13 +9,12 @@
 
   <div style="display:flex; gap:1.5rem; align-items:flex-start;">
 
-    <!-- Left sidebar — avatar card -->
+    <!-- Sidebar -->
     <div style="width:240px; flex-shrink:0;">
       <div style="
         background:#0d1117; border:1px solid rgba(176,255,68,0.12);
         border-radius:12px; padding:1.5rem; text-align:center;">
 
-        <!-- Avatar -->
         <div style="
           width:72px; height:72px; border-radius:50%;
           background:rgba(176,255,68,0.15);
@@ -34,7 +32,6 @@
           {{ authStore.user()?.email }}
         </p>
 
-        <!-- Role badge -->
         @if (authStore.user()?.roles?.length) {
           <span style="
             background:rgba(176,255,68,0.1); border:1px solid rgba(176,255,68,0.25);
@@ -44,7 +41,6 @@
           </span>
         }
 
-        <!-- Stats -->
         <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid #21262d;">
           <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
             <span style="font-size:0.75rem; color:#8a9ab0;">Status</span>
@@ -70,20 +66,16 @@
       </div>
     </div>
 
-    <!-- Right content -->
+    <!-- Main content -->
     <div style="flex:1; min-width:0;">
 
       <!-- Tabs -->
-      <div style="
-        display:flex; gap:0; margin-bottom:1.25rem;
-        border-bottom:1px solid #21262d;">
+      <div style="display:flex; gap:0; margin-bottom:1.25rem; border-bottom:1px solid #21262d;">
         @for (tab of tabs; track tab.id) {
           <button type="button" (click)="setTab(tab.id)"
-            style="
-              padding:8px 16px; font-size:0.8rem; font-weight:600;
+            style="padding:8px 16px; font-size:0.8rem; font-weight:600;
               border:none; background:none; cursor:pointer;
-              border-bottom:2px solid transparent;
-              transition:all 0.2s;"
+              border-bottom:2px solid transparent; transition:all 0.2s;"
             [style.color]="activeTab() === tab.id ? '#b0ff44' : '#8a9ab0'"
             [style.border-bottom-color]="activeTab() === tab.id ? '#b0ff44' : 'transparent'">
             {{ tab.label }}
@@ -91,174 +83,143 @@
         }
       </div>
 
-      <!-- Tab content card -->
+      <!-- Tab card -->
       <div style="
         background:#0d1117; border:1px solid rgba(176,255,68,0.12);
         border-radius:12px; padding:1.75rem;"
         [formGroup]="form">
 
-        <!-- ── Profile tab ──────────────────────────────────────────── -->
+        <!-- ── My Profile tab (merged) ───────────────────────────────── -->
         @if (activeTab() === 'profile') {
-          <div style="display:flex; flex-direction:column; gap:1.25rem;">
+          <div style="display:flex; flex-direction:column; gap:1.5rem;">
+
+            <!-- Editable fields -->
             <div>
-              <label style="display:block; font-size:0.72rem; font-weight:600;
-                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                FULL NAME
-              </label>
-              <input formControlName="fullName" type="text"
-                placeholder="Your display name"
-                style="width:100%; background:#161b22;
-                  border:1px solid rgba(176,255,68,0.2);
-                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
-                  padding:9px 12px; outline:none; box-sizing:border-box;"/>
-            </div>
-            <div>
-              <label style="display:block; font-size:0.72rem; font-weight:600;
-                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                USERNAME
-              </label>
-              <p style="background:#161b22; border:1px solid #21262d;
-                border-radius:6px; color:#484f58; font-size:0.85rem;
-                padding:9px 12px; margin:0;">
-                {{ form.get('username')?.value }}
+              <p style="font-size:0.65rem; font-weight:700; color:#b0ff44;
+                letter-spacing:0.12em; margin:0 0 1rem; text-transform:uppercase;">
+                Editable Information
               </p>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div>
+                  <label style="display:block; font-size:0.72rem; font-weight:600;
+                    color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                    FULL NAME
+                  </label>
+                  <input formControlName="fullName" type="text"
+                    placeholder="Your display name"
+                    style="width:100%; background:#161b22;
+                      border:1px solid rgba(176,255,68,0.2);
+                      border-radius:6px; color:#e6edf3; font-size:0.85rem;
+                      padding:9px 12px; outline:none; box-sizing:border-box;"/>
+                </div>
+                <div>
+                  <label style="display:block; font-size:0.72rem; font-weight:600;
+                    color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                    PHONE
+                  </label>
+                  <input formControlName="phone" type="tel"
+                    placeholder="+1 234 567 8900"
+                    style="width:100%; background:#161b22;
+                      border:1px solid rgba(176,255,68,0.2);
+                      border-radius:6px; color:#e6edf3; font-size:0.85rem;
+                      padding:9px 12px; outline:none; box-sizing:border-box;"/>
+                </div>
+              </div>
+              <div style="margin-top:1rem;">
+                <button type="button" (click)="saveProfile()"
+                  [disabled]="isSavingProfile()"
+                  style="background:#b0ff44; color:#07090b; border:none;
+                    border-radius:8px; padding:9px 24px;
+                    font-size:0.85rem; font-weight:700; cursor:pointer;"
+                  [style.opacity]="isSavingProfile() ? '0.5' : '1'">
+                  {{ isSavingProfile() ? 'Saving…' : 'Save Changes' }}
+                </button>
+              </div>
             </div>
+
+            <div style="height:1px; background:#21262d;"></div>
+
+            <!-- Read-only fields -->
             <div>
-              <label style="display:block; font-size:0.72rem; font-weight:600;
-                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                EMAIL
-              </label>
-              <p style="background:#161b22; border:1px solid #21262d;
-                border-radius:6px; color:#484f58; font-size:0.85rem;
-                padding:9px 12px; margin:0;">
-                {{ form.get('email')?.value }}
+              <p style="font-size:0.65rem; font-weight:700; color:#484f58;
+                letter-spacing:0.12em; margin:0 0 1rem; text-transform:uppercase;">
+                Account Information (read only)
               </p>
-            </div>
-            <div>
-              <button type="button" (click)="saveProfile()" [disabled]="isSavingProfile()"
-                style="background:#b0ff44; color:#07090b; border:none;
-                  border-radius:8px; padding:9px 24px;
-                  font-size:0.85rem; font-weight:700; cursor:pointer;"
-                [style.opacity]="isSavingProfile() ? '0.5' : '1'">
-                {{ isSavingProfile() ? 'Saving…' : 'Save Profile' }}
-              </button>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div>
+                  <label style="display:block; font-size:0.72rem; font-weight:600;
+                    color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                    EMAIL
+                  </label>
+                  <p style="background:#161b22; border:1px solid #21262d;
+                    border-radius:6px; color:#484f58; font-size:0.85rem;
+                    padding:9px 12px; margin:0;">
+                    {{ authStore.user()?.email }}
+                  </p>
+                </div>
+                <div>
+                  <label style="display:block; font-size:0.72rem; font-weight:600;
+                    color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                    USERNAME
+                  </label>
+                  <p style="background:#161b22; border:1px solid #21262d;
+                    border-radius:6px; color:#484f58; font-size:0.85rem;
+                    padding:9px 12px; margin:0;">
+                    {{ authStore.user()?.username }}
+                  </p>
+                </div>
+                <div>
+                  <label style="display:block; font-size:0.72rem; font-weight:600;
+                    color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                    JOB TITLE
+                    <span style="color:#30363d; font-weight:400;">(set by admin)</span>
+                  </label>
+                  <p style="background:#161b22; border:1px solid #21262d;
+                    border-radius:6px; color:#484f58; font-size:0.85rem;
+                    padding:9px 12px; margin:0;">
+                    {{ authStore.user()?.jobTitle || '—' }}
+                  </p>
+                </div>
+                <div>
+                  <label style="display:block; font-size:0.72rem; font-weight:600;
+                    color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                    DEPARTMENT
+                    <span style="color:#30363d; font-weight:400;">(set by admin)</span>
+                  </label>
+                  <p style="background:#161b22; border:1px solid #21262d;
+                    border-radius:6px; color:#484f58; font-size:0.85rem;
+                    padding:9px 12px; margin:0;">
+                    {{ authStore.user()?.department || '—' }}
+                  </p>
+                </div>
+                <div>
+                  <label style="display:block; font-size:0.72rem; font-weight:600;
+                    color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                    ROLE
+                  </label>
+                  <p style="background:#161b22; border:1px solid #21262d;
+                    border-radius:6px; color:#484f58; font-size:0.85rem;
+                    padding:9px 12px; margin:0;">
+                    {{ primaryRole() }}
+                  </p>
+                </div>
+                <div>
+                  <label style="display:block; font-size:0.72rem; font-weight:600;
+                    color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                    MEMBER SINCE
+                  </label>
+                  <p style="background:#161b22; border:1px solid #21262d;
+                    border-radius:6px; color:#484f58; font-size:0.85rem;
+                    padding:9px 12px; margin:0;">
+                    {{ authStore.user()?.createdAt | date:'dd MMM yyyy' }}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         }
 
-        <!-- ── Personal tab ─────────────────────────────────────────── -->
-        @if (activeTab() === 'personal') {
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
-
-            <div>
-              <label style="display:block; font-size:0.72rem; font-weight:600;
-                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                FULL NAME
-              </label>
-              <input formControlName="fullName" type="text"
-                style="width:100%; background:#161b22;
-                  border:1px solid rgba(176,255,68,0.2);
-                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
-                  padding:9px 12px; outline:none; box-sizing:border-box;"/>
-            </div>
-
-            <div>
-              <label style="display:block; font-size:0.72rem; font-weight:600;
-                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                PHONE
-              </label>
-              <input formControlName="phone" type="tel"
-                placeholder="+1 234 567 8900"
-                style="width:100%; background:#161b22;
-                  border:1px solid rgba(176,255,68,0.2);
-                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
-                  padding:9px 12px; outline:none; box-sizing:border-box;"/>
-            </div>
-
-            <!-- Job Title — read only, set by admin -->
-            <div>
-              <label style="display:block; font-size:0.72rem; font-weight:600;
-                color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                JOB TITLE
-                <span style="color:#30363d; font-weight:400;">(set by admin)</span>
-              </label>
-              <p style="background:#161b22; border:1px solid #21262d;
-                border-radius:6px; color:#484f58; font-size:0.85rem;
-                padding:9px 12px; margin:0;">
-                {{ form.get('jobTitle')?.value || '—' }}
-              </p>
-            </div>
-
-            <!-- Department — read only, set by admin -->
-            <div>
-              <label style="display:block; font-size:0.72rem; font-weight:600;
-                color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                DEPARTMENT
-                <span style="color:#30363d; font-weight:400;">(set by admin)</span>
-              </label>
-              <p style="background:#161b22; border:1px solid #21262d;
-                border-radius:6px; color:#484f58; font-size:0.85rem;
-                padding:9px 12px; margin:0;">
-                {{ form.get('department')?.value || '—' }}
-              </p>
-            </div>
-
-            <div style="grid-column:span 2;">
-              <button type="button" (click)="saveProfile()" [disabled]="isSavingProfile()"
-                style="background:#b0ff44; color:#07090b; border:none;
-                  border-radius:8px; padding:9px 24px;
-                  font-size:0.85rem; font-weight:700; cursor:pointer;"
-                [style.opacity]="isSavingProfile() ? '0.5' : '1'">
-                {{ isSavingProfile() ? 'Saving…' : 'Save Changes' }}
-              </button>
-            </div>
-          </div>
-        }
-
-        <!-- ── Account tab ──────────────────────────────────────────── -->
-        @if (activeTab() === 'account') {
-          <div style="display:flex; flex-direction:column; gap:1.25rem;">
-            <div>
-              <label style="display:block; font-size:0.72rem; font-weight:600;
-                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                EMAIL
-              </label>
-              <p style="background:#161b22; border:1px solid #21262d;
-                border-radius:6px; color:#484f58; font-size:0.85rem;
-                padding:9px 12px; margin:0;">
-                {{ form.get('email')?.value }}
-              </p>
-            </div>
-            <div>
-              <label style="display:block; font-size:0.72rem; font-weight:600;
-                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                USERNAME
-              </label>
-              <p style="background:#161b22; border:1px solid #21262d;
-                border-radius:6px; color:#484f58; font-size:0.85rem;
-                padding:9px 12px; margin:0;">
-                {{ form.get('username')?.value }}
-              </p>
-            </div>
-            <div style="
-              background:#161b22; border:1px solid #21262d;
-              border-radius:8px; padding:1rem;">
-              <p style="font-size:0.82rem; color:#8a9ab0; margin:0 0 0.4rem;">
-                Account status:
-                @if (authStore.user()?.isActive) {
-                  <span style="color:#2ea043; font-weight:600;">● Active</span>
-                } @else {
-                  <span style="color:#ff4444; font-weight:600;">○ Inactive</span>
-                }
-              </p>
-              <p style="font-size:0.75rem; color:#484f58; margin:0;">
-                To change your role or permissions, contact your administrator.
-              </p>
-            </div>
-          </div>
-        }
-
-        <!-- ── Password tab ─────────────────────────────────────────── -->
+        <!-- ── Change Password tab ───────────────────────────────────── -->
         @if (activeTab() === 'password') {
           <div style="max-width:420px; display:flex; flex-direction:column; gap:1.25rem;">
             <div>
@@ -330,8 +291,10 @@
               </div>
               <label style="position:relative; display:inline-flex; cursor:pointer; align-items:center;">
                 <input type="checkbox" style="position:absolute; opacity:0; width:0; height:0;" checked />
-                <div style="width:44px; height:24px; background:#b0ff44; border-radius:12px; position:relative; transition:background 0.2s;">
-                  <div style="position:absolute; top:2px; left:22px; width:20px; height:20px; background:#07090b; border-radius:50%; transition:left 0.2s;"></div>
+                <div style="width:44px; height:24px; background:#b0ff44;
+                  border-radius:12px; position:relative;">
+                  <div style="position:absolute; top:2px; left:22px;
+                    width:20px; height:20px; background:#07090b; border-radius:50%;"></div>
                 </div>
               </label>
             </div>
