@@ -1,5 +1,9 @@
-<div class="rounded-lg border border-able-border bg-white p-6 shadow-able-card">
-  <h2 class="mb-4 text-lg font-semibold text-gray-900">Two-Factor Authentication (TOTP)</h2>
+<div style="
+  background:#0d1117; border:1px solid rgba(176,255,68,0.12);
+  border-radius:12px; padding:1.5rem;">
+  <h2 style="font-size:1rem; font-weight:700; color:#fff; margin:0 0 1rem;">
+    Two-Factor Authentication (TOTP)
+  </h2>
 
   @if (isEnrolled()) {
     <div style="display:flex; flex-direction:column; gap:1rem;">
@@ -68,15 +72,20 @@
       }
     </div>
   } @else {
-    <p class="mb-6 text-sm text-gray-600">
-      Add an extra layer of security by enabling TOTP (Time-based One-Time Password) using an app like Google Authenticator or Authy.
+    <p style="font-size:0.82rem; color:#8a9ab0; margin:0 0 1.25rem; line-height:1.6;">
+      Add an extra layer of security by enabling TOTP using an app like
+      Google Authenticator or Authy.
     </p>
 
     @if (secret()) {
       <div class="space-y-6">
         <div>
           <label class="mb-2 block text-sm font-medium text-gray-700">Scan QR Code</label>
-          <div class="flex h-48 w-48 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 overflow-hidden">
+          <div style="
+            width:192px; height:192px; display:flex;
+            align-items:center; justify-content:center;
+            border-radius:8px; border:2px dashed #30363d;
+            background:#161b22; overflow:hidden;">
             @if (qrCodeUrl()) {
               <img [src]="qrCodeUrl()" alt="QR Code" class="h-full w-full object-contain" />
             } @else {
@@ -86,8 +95,11 @@
               </span>
             }
           </div>
-          <p class="mt-2 text-xs text-gray-500">
-            Or enter this secret manually: <code class="rounded bg-gray-100 px-1">{{ secret() }}</code>
+          <p style="font-size:0.72rem; color:#8a9ab0; margin:0.5rem 0 0;">
+            Or enter manually:
+            <code style="background:#161b22; border:1px solid #30363d;
+              border-radius:4px; padding:2px 6px; color:#b0ff44;
+              font-family:monospace;">{{ secret() }}</code>
           </p>
         </div>
 
@@ -96,50 +108,50 @@
             <label for="mfa-code" class="mb-1 block text-sm font-medium text-gray-700">
               Enter 6-digit verification code
             </label>
-            <input
-              id="mfa-code"
-              type="text"
-              formControlName="code"
-              inputmode="numeric"
-              maxlength="6"
-              placeholder="000000"
-              class="w-full max-w-[200px] rounded-lg border px-3 py-2 text-center text-lg tracking-[0.5em] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              [class.border-red-500]="isCodeInvalid()"
-            />
+            <input id="mfa-code" type="text" formControlName="code"
+              inputmode="numeric" maxlength="6" placeholder="000000"
+              style="
+                width:200px; background:#161b22;
+                border:1px solid rgba(176,255,68,0.2);
+                border-radius:6px; color:#e6edf3;
+                font-size:1.1rem; padding:8px 12px;
+                text-align:center; letter-spacing:0.5em;
+                outline:none; box-sizing:border-box;"
+              [style.border-color]="isCodeInvalid() ? '#ff4444' : 'rgba(176,255,68,0.2)'"/>
             @if (isCodeInvalid()) {
-              <p class="mt-1 text-sm text-red-600">Please enter a valid 6-digit code</p>
+              <p style="font-size:0.7rem; color:#ff4444; margin:0.25rem 0 0;">
+                Please enter a valid 6-digit code
+              </p>
             }
           </div>
           <div class="flex gap-3">
-            <button
-              type="submit"
-              [disabled]="verificationForm.invalid"
-              class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
+            <button type="submit" [disabled]="verificationForm.invalid"
+              style="
+                background:#b0ff44; color:#07090b; border:none;
+                border-radius:8px; padding:8px 20px;
+                font-size:0.82rem; font-weight:700; cursor:pointer;"
+              [style.opacity]="verificationForm.invalid ? '0.5' : '1'">
               Verify and Enable
             </button>
-            <button
-              type="button"
-              (click)="cancelEnrollment()"
-              class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
+            <button type="button" (click)="cancelEnrollment()"
+              style="
+                background:transparent; border:1px solid #30363d;
+                color:#8a9ab0; border-radius:8px;
+                padding:8px 20px; font-size:0.82rem; cursor:pointer;">
               Cancel
             </button>
           </div>
         </form>
       </div>
     } @else {
-      <button
-        type="button"
-        (click)="startEnrollment()"
+      <button type="button" (click)="startEnrollment()"
         [disabled]="isEnrolling()"
-        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-      >
-        @if (isEnrolling()) {
-          Setting up...
-        } @else {
-          Enable MFA
-        }
+        style="
+          background:#b0ff44; color:#07090b; border:none;
+          border-radius:8px; padding:9px 22px;
+          font-size:0.85rem; font-weight:700; cursor:pointer;"
+        [style.opacity]="isEnrolling() ? '0.5' : '1'">
+        {{ isEnrolling() ? 'Setting up…' : 'Enable MFA' }}
       </button>
     }
   }
