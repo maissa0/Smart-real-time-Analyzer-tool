@@ -1,185 +1,383 @@
-<div class="profile-page space-y-6">
+<div style="background:#07090b; min-height:100vh; padding:1.5rem;">
   <app-breadcrumb />
-  <h1 class="text-2xl font-bold text-gray-900">Profile & Account</h1>
 
-  <div class="flex gap-6">
-    <div class="w-72 shrink-0">
-      <div class="rounded-lg border border-able-border bg-white p-6 shadow-able-card">
-        <div class="flex flex-col items-center">
-          <div class="relative">
-            <div class="h-24 w-24 overflow-hidden rounded-full bg-able-primary">
-              <span class="flex h-full w-full items-center justify-center text-2xl font-bold text-white">
-                {{ authStore.user()?.fullName?.charAt(0) ?? 'U' }}
-              </span>
-            </div>
-            @if (authStore.user()?.roles?.length) {
-              <span class="absolute -top-1 -right-1 rounded-full bg-able-primary px-2 py-0.5 text-xs font-medium text-white">
-                {{ primaryRole() }}
-              </span>
+  <!-- Header -->
+  <div style="margin-bottom:1.5rem; margin-top:1rem;">
+    <h1 style="font-size:1.5rem; font-weight:700; color:#fff; margin:0;">
+      Profile & Account
+    </h1>
+  </div>
+
+  <div style="display:flex; gap:1.5rem; align-items:flex-start;">
+
+    <!-- Left sidebar — avatar card -->
+    <div style="width:240px; flex-shrink:0;">
+      <div style="
+        background:#0d1117; border:1px solid rgba(176,255,68,0.12);
+        border-radius:12px; padding:1.5rem; text-align:center;">
+
+        <!-- Avatar -->
+        <div style="
+          width:72px; height:72px; border-radius:50%;
+          background:rgba(176,255,68,0.15);
+          border:2px solid rgba(176,255,68,0.3);
+          display:flex; align-items:center; justify-content:center;
+          font-size:1.8rem; font-weight:700; color:#b0ff44;
+          margin:0 auto 1rem;">
+          {{ authStore.user()?.fullName?.charAt(0)?.toUpperCase() ?? 'U' }}
+        </div>
+
+        <p style="font-weight:700; color:#e6edf3; font-size:0.95rem; margin:0 0 0.25rem;">
+          {{ authStore.user()?.fullName ?? 'User' }}
+        </p>
+        <p style="font-size:0.75rem; color:#8a9ab0; margin:0 0 1rem;">
+          {{ authStore.user()?.email }}
+        </p>
+
+        <!-- Role badge -->
+        @if (authStore.user()?.roles?.length) {
+          <span style="
+            background:rgba(176,255,68,0.1); border:1px solid rgba(176,255,68,0.25);
+            color:#b0ff44; border-radius:20px;
+            padding:3px 12px; font-size:0.7rem; font-weight:600;">
+            {{ primaryRole() }}
+          </span>
+        }
+
+        <!-- Stats -->
+        <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid #21262d;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+            <span style="font-size:0.75rem; color:#8a9ab0;">Status</span>
+            @if (authStore.user()?.isActive) {
+              <span style="font-size:0.75rem; color:#2ea043; font-weight:600;">● Active</span>
+            } @else {
+              <span style="font-size:0.75rem; color:#ff4444; font-weight:600;">○ Inactive</span>
             }
           </div>
-          <h2 class="mt-4 font-semibold text-gray-900">{{ authStore.user()?.fullName ?? 'User' }}</h2>
-          <p class="text-sm text-gray-500">{{ authStore.user()?.email }}</p>
-          <div class="mt-4 w-full space-y-2 border-t border-able-border pt-4">
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-500">Status</span>
-              @if (authStore.user()?.isActive) {
-                <span class="font-medium text-green-600">Active</span>
-              } @else {
-                <span class="font-medium text-gray-600">Inactive</span>
-              }
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-500">MFA</span>
-              <span class="font-medium">{{ authStore.user()?.mfaEnabled ? 'Enabled' : 'Disabled' }}</span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-500">Member since</span>
-              <span class="font-medium">{{ authStore.user()?.createdAt | date:'MMM yyyy' }}</span>
-            </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+            <span style="font-size:0.75rem; color:#8a9ab0;">MFA</span>
+            <span style="font-size:0.75rem; color:#e6edf3; font-weight:600;">
+              {{ authStore.user()?.mfaEnabled ? '✓ On' : '✗ Off' }}
+            </span>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="font-size:0.75rem; color:#8a9ab0;">Since</span>
+            <span style="font-size:0.75rem; color:#e6edf3; font-weight:600;">
+              {{ authStore.user()?.createdAt | date:'MMM yyyy' }}
+            </span>
           </div>
         </div>
       </div>
     </div>
-    <div class="flex-1">
-      <div class="mb-4 flex gap-1 border-b border-able-border">
+
+    <!-- Right content -->
+    <div style="flex:1; min-width:0;">
+
+      <!-- Tabs -->
+      <div style="
+        display:flex; gap:0; margin-bottom:1.25rem;
+        border-bottom:1px solid #21262d;">
         @for (tab of tabs; track tab.id) {
-          <button
-            type="button"
-            (click)="setTab(tab.id)"
-            [class]="activeTab() === tab.id
-              ? 'border-b-2 border-able-primary text-able-primary'
-              : 'text-gray-500 hover:text-gray-700'"
-            class="px-4 py-2 text-sm font-medium"
-          >
+          <button type="button" (click)="setTab(tab.id)"
+            style="
+              padding:8px 16px; font-size:0.8rem; font-weight:600;
+              border:none; background:none; cursor:pointer;
+              border-bottom:2px solid transparent;
+              transition:all 0.2s;"
+            [style.color]="activeTab() === tab.id ? '#b0ff44' : '#8a9ab0'"
+            [style.border-bottom-color]="activeTab() === tab.id ? '#b0ff44' : 'transparent'">
             {{ tab.label }}
           </button>
         }
       </div>
-      <div class="rounded-lg border border-able-border bg-white p-6 shadow-able-card" [formGroup]="form">
+
+      <!-- Tab content card -->
+      <div style="
+        background:#0d1117; border:1px solid rgba(176,255,68,0.12);
+        border-radius:12px; padding:1.75rem;"
+        [formGroup]="form">
+
+        <!-- ── Profile tab ──────────────────────────────────────────── -->
         @if (activeTab() === 'profile') {
-          <div class="space-y-4">
+          <div style="display:flex; flex-direction:column; gap:1.25rem;">
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Full Name</label>
-              <input formControlName="fullName" type="text" class="w-full rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary" placeholder="Your display name" />
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Username</label>
-              <p class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">{{ form.get('username')?.value }}</p>
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Email</label>
-              <p class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">{{ form.get('email')?.value }}</p>
-            </div>
-            <button type="button" (click)="saveProfile()" [disabled]="isSavingProfile()" class="rounded-lg bg-able-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60">
-              @if (isSavingProfile()) { Saving... } @else { Save Profile }
-            </button>
-          </div>
-        }
-        @if (activeTab() === 'personal') {
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Full Name</label>
-              <input formControlName="fullName" type="text" class="w-full rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary" />
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                FULL NAME
+              </label>
+              <input formControlName="fullName" type="text"
+                placeholder="Your display name"
+                style="width:100%; background:#161b22;
+                  border:1px solid rgba(176,255,68,0.2);
+                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
+                  padding:9px 12px; outline:none; box-sizing:border-box;"/>
             </div>
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Phone</label>
-              <input formControlName="phone" type="tel" class="w-full rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary" placeholder="+1 234 567 8900" />
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                USERNAME
+              </label>
+              <p style="background:#161b22; border:1px solid #21262d;
+                border-radius:6px; color:#484f58; font-size:0.85rem;
+                padding:9px 12px; margin:0;">
+                {{ form.get('username')?.value }}
+              </p>
             </div>
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Job Title</label>
-              <input formControlName="jobTitle" type="text" class="w-full rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary" placeholder="e.g. Developer, Admin" />
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                EMAIL
+              </label>
+              <p style="background:#161b22; border:1px solid #21262d;
+                border-radius:6px; color:#484f58; font-size:0.85rem;
+                padding:9px 12px; margin:0;">
+                {{ form.get('email')?.value }}
+              </p>
             </div>
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Department</label>
-              <input formControlName="department" type="text" class="w-full rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary" placeholder="e.g. Engineering, IT" />
-            </div>
-            <div class="sm:col-span-2">
-              <label class="mb-1 block text-sm font-medium text-gray-700">Timezone</label>
-              <input formControlName="timezone" type="text" class="w-full rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary" placeholder="e.g. UTC, America/New_York" />
-            </div>
-            <div class="sm:col-span-2">
-              <label class="mb-1 block text-sm font-medium text-gray-700">Bio</label>
-              <textarea formControlName="bio" rows="3" class="w-full rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary"></textarea>
-            </div>
-            <div class="sm:col-span-2">
-              <button type="button" (click)="saveProfile()" [disabled]="isSavingProfile()" class="rounded-lg bg-able-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60">
-                @if (isSavingProfile()) { Saving... } @else { Save Changes }
+              <button type="button" (click)="saveProfile()" [disabled]="isSavingProfile()"
+                style="background:#b0ff44; color:#07090b; border:none;
+                  border-radius:8px; padding:9px 24px;
+                  font-size:0.85rem; font-weight:700; cursor:pointer;"
+                [style.opacity]="isSavingProfile() ? '0.5' : '1'">
+                {{ isSavingProfile() ? 'Saving…' : 'Save Profile' }}
               </button>
             </div>
           </div>
         }
+
+        <!-- ── Personal tab ─────────────────────────────────────────── -->
+        @if (activeTab() === 'personal') {
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+
+            <div>
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                FULL NAME
+              </label>
+              <input formControlName="fullName" type="text"
+                style="width:100%; background:#161b22;
+                  border:1px solid rgba(176,255,68,0.2);
+                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
+                  padding:9px 12px; outline:none; box-sizing:border-box;"/>
+            </div>
+
+            <div>
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                PHONE
+              </label>
+              <input formControlName="phone" type="tel"
+                placeholder="+1 234 567 8900"
+                style="width:100%; background:#161b22;
+                  border:1px solid rgba(176,255,68,0.2);
+                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
+                  padding:9px 12px; outline:none; box-sizing:border-box;"/>
+            </div>
+
+            <!-- Job Title — read only, set by admin -->
+            <div>
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                JOB TITLE
+                <span style="color:#30363d; font-weight:400;">(set by admin)</span>
+              </label>
+              <p style="background:#161b22; border:1px solid #21262d;
+                border-radius:6px; color:#484f58; font-size:0.85rem;
+                padding:9px 12px; margin:0;">
+                {{ form.get('jobTitle')?.value || '—' }}
+              </p>
+            </div>
+
+            <!-- Department — read only, set by admin -->
+            <div>
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                DEPARTMENT
+                <span style="color:#30363d; font-weight:400;">(set by admin)</span>
+              </label>
+              <p style="background:#161b22; border:1px solid #21262d;
+                border-radius:6px; color:#484f58; font-size:0.85rem;
+                padding:9px 12px; margin:0;">
+                {{ form.get('department')?.value || '—' }}
+              </p>
+            </div>
+
+            <div style="grid-column:span 2;">
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                BIO
+              </label>
+              <textarea formControlName="bio" rows="3"
+                style="width:100%; background:#161b22;
+                  border:1px solid rgba(176,255,68,0.2);
+                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
+                  padding:9px 12px; outline:none; resize:vertical;
+                  box-sizing:border-box;">
+              </textarea>
+            </div>
+
+            <div style="grid-column:span 2;">
+              <button type="button" (click)="saveProfile()" [disabled]="isSavingProfile()"
+                style="background:#b0ff44; color:#07090b; border:none;
+                  border-radius:8px; padding:9px 24px;
+                  font-size:0.85rem; font-weight:700; cursor:pointer;"
+                [style.opacity]="isSavingProfile() ? '0.5' : '1'">
+                {{ isSavingProfile() ? 'Saving…' : 'Save Changes' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- ── Account tab ──────────────────────────────────────────── -->
         @if (activeTab() === 'account') {
-          <div class="space-y-4">
+          <div style="display:flex; flex-direction:column; gap:1.25rem;">
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Email (Primary)</label>
-              <input formControlName="email" type="email" class="w-full rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary" placeholder="Primary contact email" />
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                EMAIL
+              </label>
+              <p style="background:#161b22; border:1px solid #21262d;
+                border-radius:6px; color:#484f58; font-size:0.85rem;
+                padding:9px 12px; margin:0;">
+                {{ form.get('email')?.value }}
+              </p>
             </div>
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Username</label>
-              <input formControlName="username" type="text" class="w-full rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary" placeholder="Login username" />
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                USERNAME
+              </label>
+              <p style="background:#161b22; border:1px solid #21262d;
+                border-radius:6px; color:#484f58; font-size:0.85rem;
+                padding:9px 12px; margin:0;">
+                {{ form.get('username')?.value }}
+              </p>
             </div>
-            <div class="rounded-lg bg-gray-50 p-4">
-              <p class="text-sm text-gray-600">
+            <div style="
+              background:#161b22; border:1px solid #21262d;
+              border-radius:8px; padding:1rem;">
+              <p style="font-size:0.82rem; color:#8a9ab0; margin:0 0 0.4rem;">
                 Account status:
                 @if (authStore.user()?.isActive) {
-                  <span class="font-medium text-green-600">Active</span>
+                  <span style="color:#2ea043; font-weight:600;">● Active</span>
                 } @else {
-                  <span class="font-medium text-gray-600">Inactive</span>
+                  <span style="color:#ff4444; font-weight:600;">○ Inactive</span>
                 }
               </p>
-              <p class="mt-1 text-sm text-gray-500">To change roles or permissions, contact your administrator.</p>
+              <p style="font-size:0.75rem; color:#484f58; margin:0;">
+                To change your role or permissions, contact your administrator.
+              </p>
             </div>
           </div>
         }
+
+        <!-- ── Password tab ─────────────────────────────────────────── -->
         @if (activeTab() === 'password') {
-          <div class="max-w-md space-y-4">
+          <div style="max-width:420px; display:flex; flex-direction:column; gap:1.25rem;">
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Current Password</label>
-              <input formControlName="currentPassword" type="password" class="w-full rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary" placeholder="••••••••" />
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                CURRENT PASSWORD
+              </label>
+              <input formControlName="currentPassword" type="password"
+                placeholder="••••••••"
+                style="width:100%; background:#161b22;
+                  border:1px solid rgba(176,255,68,0.2);
+                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
+                  padding:9px 12px; outline:none; box-sizing:border-box;"/>
             </div>
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">New Password</label>
-              <input formControlName="newPassword" type="password" class="w-full rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary" placeholder="••••••••" />
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                NEW PASSWORD
+              </label>
+              <input formControlName="newPassword" type="password"
+                placeholder="••••••••"
+                style="width:100%; background:#161b22;
+                  border:1px solid rgba(176,255,68,0.2);
+                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
+                  padding:9px 12px; outline:none; box-sizing:border-box;"/>
             </div>
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">Confirm New Password</label>
-              <input formControlName="confirmPassword" type="password" class="w-full rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary" placeholder="••••••••" />
+              <label style="display:block; font-size:0.72rem; font-weight:600;
+                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
+                CONFIRM NEW PASSWORD
+              </label>
+              <input formControlName="confirmPassword" type="password"
+                placeholder="••••••••"
+                style="width:100%; background:#161b22;
+                  border:1px solid rgba(176,255,68,0.2);
+                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
+                  padding:9px 12px; outline:none; box-sizing:border-box;"/>
             </div>
-            <button type="button" (click)="changePassword()" [disabled]="form.get('currentPassword')?.invalid || form.get('newPassword')?.invalid || form.get('confirmPassword')?.invalid || isChangingPassword()" class="rounded-lg bg-able-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60">
-              @if (isChangingPassword()) { Updating... } @else { Update Password }
-            </button>
+            <div>
+              <button type="button" (click)="changePassword()"
+                [disabled]="!form.get('currentPassword')?.value ||
+                            !form.get('newPassword')?.value ||
+                            !form.get('confirmPassword')?.value ||
+                            isChangingPassword()"
+                style="background:#b0ff44; color:#07090b; border:none;
+                  border-radius:8px; padding:9px 24px;
+                  font-size:0.85rem; font-weight:700; cursor:pointer;"
+                [style.opacity]="isChangingPassword() ? '0.5' : '1'">
+                {{ isChangingPassword() ? 'Updating…' : 'Update Password' }}
+              </button>
+            </div>
           </div>
         }
+
+        <!-- ── Settings tab ─────────────────────────────────────────── -->
         @if (activeTab() === 'settings') {
-          <div class="space-y-4">
-            <div class="flex items-center justify-between rounded-lg border border-able-border p-4">
+          <div style="display:flex; flex-direction:column; gap:1rem;">
+            <div style="
+              display:flex; align-items:center; justify-content:space-between;
+              background:#161b22; border:1px solid #21262d;
+              border-radius:8px; padding:1rem;">
               <div>
-                <p class="font-medium text-gray-900">Email Notifications</p>
-                <p class="text-sm text-gray-500">Receive security alerts and account updates</p>
+                <p style="font-size:0.85rem; font-weight:600; color:#e6edf3; margin:0 0 0.2rem;">
+                  Email Notifications
+                </p>
+                <p style="font-size:0.72rem; color:#8a9ab0; margin:0;">
+                  Receive security alerts and account updates
+                </p>
               </div>
-              <label class="relative inline-flex cursor-pointer items-center">
-                <input type="checkbox" class="peer sr-only" checked />
-                <div class="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all peer-checked:bg-able-primary peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+              <label style="position:relative; display:inline-flex; cursor:pointer; align-items:center;">
+                <input type="checkbox" style="position:absolute; opacity:0; width:0; height:0;" checked />
+                <div style="width:44px; height:24px; background:#b0ff44; border-radius:12px; position:relative; transition:background 0.2s;">
+                  <div style="position:absolute; top:2px; left:22px; width:20px; height:20px; background:#07090b; border-radius:50%; transition:left 0.2s;"></div>
+                </div>
               </label>
             </div>
-            <div class="flex items-center justify-between rounded-lg border border-able-border p-4">
+            <div style="
+              display:flex; align-items:center; justify-content:space-between;
+              background:#161b22; border:1px solid #21262d;
+              border-radius:8px; padding:1rem;">
               <div>
-                <p class="font-medium text-gray-900">Language</p>
-                <p class="text-sm text-gray-500">Interface language</p>
+                <p style="font-size:0.85rem; font-weight:600; color:#e6edf3; margin:0 0 0.2rem;">
+                  Language
+                </p>
+                <p style="font-size:0.72rem; color:#8a9ab0; margin:0;">Interface language</p>
               </div>
-              <select class="rounded-lg border border-able-border px-3 py-2 text-sm focus:border-able-primary focus:outline-none focus:ring-1 focus:ring-able-primary">
+              <select style="background:#0d1117; border:1px solid rgba(176,255,68,0.2);
+                border-radius:6px; color:#e6edf3; font-size:0.82rem;
+                padding:6px 12px; outline:none; cursor:pointer;">
                 <option>English</option>
               </select>
             </div>
           </div>
         }
+
+        <!-- ── Audit tab ────────────────────────────────────────────── -->
         @if (activeTab() === 'audit') {
           <app-audit-log [embedded]="true" />
         }
+
+        <!-- ── Security tab ─────────────────────────────────────────── -->
         @if (activeTab() === 'security') {
           <app-security-center [embedded]="true" />
         }
+
       </div>
     </div>
   </div>

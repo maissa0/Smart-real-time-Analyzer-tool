@@ -88,9 +88,9 @@ export class ProfileSettingsComponent implements OnInit {
   }
 
   saveProfile(): void {
-    const { fullName, jobTitle, department, timezone, phone, bio } = this.form.getRawValue();
+    const { fullName, timezone, phone, bio } = this.form.getRawValue();
     this.isSavingProfile.set(true);
-    this.profileService.updateMe({ fullName, jobTitle, department, timezone, phone, bio }).subscribe({
+    this.profileService.updateMe({ fullName, timezone, phone, bio }).subscribe({
       next: (user) => {
         this.authStore.updateUser(user);
         this.isSavingProfile.set(false);

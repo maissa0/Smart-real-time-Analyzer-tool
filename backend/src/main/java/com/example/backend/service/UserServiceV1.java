@@ -129,12 +129,11 @@ public class UserServiceV1 {
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
 
-        if (request.fullName() != null) user.setFullName(request.fullName());
-        if (request.jobTitle() != null) user.setJobTitle(request.jobTitle());
-        if (request.department() != null) user.setDepartment(request.department());
-        if (request.timezone() != null) user.setTimezone(request.timezone());
-        if (request.phone() != null) user.setPhone(request.phone());
-        if (request.bio() != null) user.setBio(request.bio());
+        // jobTitle and department are admin-only — not updatable by user
+        if (request.fullName()  != null) user.setFullName(request.fullName());
+        if (request.timezone()  != null) user.setTimezone(request.timezone());
+        if (request.phone()     != null) user.setPhone(request.phone());
+        if (request.bio()       != null) user.setBio(request.bio());
 
         userRepository.save(user);
         return findById(id);
