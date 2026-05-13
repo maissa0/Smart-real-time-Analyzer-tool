@@ -105,6 +105,9 @@ public class AuthService {
         String accessToken = jwtService.generateAccessToken(user.getEmail(), user.getId(), session.getId());
         String refreshToken = jwtService.generateRefreshToken(user.getEmail(), user.getId());
         storeRefreshToken(user.getId(), refreshToken, session.getId(), httpRequest);
+        auditService.logSecurity("LOGIN_SUCCESS", "auth",
+                user.getId().toString(), user.getId(),
+                java.util.Map.of("email", user.getEmail()), httpRequest);
         return buildAuthResponse(user, accessToken, refreshToken);
     }
 
