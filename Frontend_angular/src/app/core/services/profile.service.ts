@@ -24,6 +24,14 @@ export class ProfileService {
     return this.http.put<User>(this.base, body);
   }
 
+  uploadAvatar(file: File): Observable<{ avatarUrl: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ avatarUrl: string }>(
+      `${this.base}/avatar`, formData
+    );
+  }
+
   changePassword(currentPassword: string, newPassword: string): Observable<void> {
     return this.http.patch<void>(`${this.base}/password`, { currentPassword, newPassword });
   }

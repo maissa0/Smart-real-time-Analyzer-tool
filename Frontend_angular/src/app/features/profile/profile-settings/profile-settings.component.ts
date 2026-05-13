@@ -40,6 +40,8 @@ export class ProfileSettingsComponent implements OnInit {
   });
 
   readonly isSavingProfile = signal(false);
+  readonly uploadingAvatar = signal(false);
+  readonly avatarPreview   = signal<string | null>(null);
   readonly isChangingPassword = signal(false);
 
   readonly tabs = [
@@ -84,6 +86,35 @@ export class ProfileSettingsComponent implements OnInit {
       },
       error: () => {
         this.isSavingProfile.set(false);
+      },
+    });
+  }
+
+  onAvatarSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file  = input.files?.[0];
+    if (!file) return;
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onload = (e) => this.avatarPreview.set(e.target?.result as string);
+    reader.readAsDataURL(file);
+
+    // Upload to backend
+    this.uploadingAvatar.set(true);
+    this.profileService.uploadAvatar(file).subscribe({
+      next: (res) => {
+        this.uploadingAvatar.set(false);
+        const user = this.authStore.user();
+        if (user) {
+          this.authStore.updateUser({ ...user, avatarUrl: res.avatarUrl });
+        }
+        this.toast.success('Profile picture updated.');
+      },
+      error: () => {
+        this.uploadingAvatar.set(false);
+        this.avatarPreview.set(null);
+        this.toast.error('Failed to upload image. Max size is 2MB.');
       },
     });
   }

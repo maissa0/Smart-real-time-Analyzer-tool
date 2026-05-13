@@ -15,14 +15,40 @@
         background:#0d1117; border:1px solid rgba(176,255,68,0.12);
         border-radius:12px; padding:1.5rem; text-align:center;">
 
-        <div style="
-          width:72px; height:72px; border-radius:50%;
-          background:rgba(176,255,68,0.15);
-          border:2px solid rgba(176,255,68,0.3);
-          display:flex; align-items:center; justify-content:center;
-          font-size:1.8rem; font-weight:700; color:#b0ff44;
-          margin:0 auto 1rem;">
-          {{ authStore.user()?.fullName?.charAt(0)?.toUpperCase() ?? 'U' }}
+        <div style="position:relative; width:72px; margin:0 auto 1rem;">
+          <div style="
+            width:72px; height:72px; border-radius:50%;
+            background:rgba(176,255,68,0.15);
+            border:2px solid rgba(176,255,68,0.3);
+            display:flex; align-items:center; justify-content:center;
+            font-size:1.8rem; font-weight:700; color:#b0ff44;
+            overflow:hidden;">
+            @if (avatarPreview() || authStore.user()?.avatarUrl) {
+              <img [src]="avatarPreview() ?? authStore.user()?.avatarUrl"
+                style="width:100%; height:100%; object-fit:cover;" alt="avatar"/>
+            } @else {
+              {{ authStore.user()?.fullName?.charAt(0)?.toUpperCase() ?? 'U' }}
+            }
+          </div>
+
+          <!-- Upload button overlay -->
+          <label style="
+            position:absolute; bottom:0; right:0;
+            width:22px; height:22px; border-radius:50%;
+            background:#b0ff44; border:2px solid #0d1117;
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer; transition:opacity 0.2s;"
+            [style.opacity]="uploadingAvatar() ? '0.5' : '1'"
+            title="Change profile picture">
+            <svg width="11" height="11" fill="none" stroke="#07090b"
+              stroke-width="2.5" viewBox="0 0 24 24">
+              <path d="M12 4v16m8-8H4"/>
+            </svg>
+            <input type="file" accept="image/*"
+              style="display:none;"
+              (change)="onAvatarSelected($event)"
+              [disabled]="uploadingAvatar()"/>
+          </label>
         </div>
 
         <p style="font-weight:700; color:#e6edf3; font-size:0.95rem; margin:0 0 0.25rem;">
