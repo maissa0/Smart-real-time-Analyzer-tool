@@ -12,7 +12,6 @@ export interface User {
   jobTitle: string | null;
   department: string | null;
   phone: string | null;
-  bio: string | null;
   avatarUrl: string | null;
   isActive: boolean;
   mfaEnabled: boolean;

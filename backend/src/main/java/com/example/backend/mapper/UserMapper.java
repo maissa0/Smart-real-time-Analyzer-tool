@@ -36,7 +36,6 @@ public class UserMapper {
                 .jobTitle(entity.getJobTitle())
                 .department(entity.getDepartment())
                 .phone(entity.getPhone())
-                .bio(entity.getBio())
                 .avatarUrl(entity.getAvatarUrl())
                 .isActive(entity.getIsActive())
                 .mfaEnabled(entity.getMfaEnabled())

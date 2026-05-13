@@ -111,7 +111,6 @@ public class UserServiceV1 {
                 user.getJobTitle(),
                 user.getDepartment(),
                 user.getPhone(),
-                user.getBio(),
                 user.getAvatarUrl(),
                 user.getIsActive(),
                 user.getMfaEnabled(),
@@ -131,7 +130,6 @@ public class UserServiceV1 {
         // jobTitle and department are admin-only — not updatable by user
         if (request.fullName()  != null) user.setFullName(request.fullName());
         if (request.phone()     != null) user.setPhone(request.phone());
-        if (request.bio()       != null) user.setBio(request.bio());
 
         userRepository.save(user);
         return findById(id);
@@ -208,7 +206,7 @@ public class UserServiceV1 {
      * Soft-delete + anonymize a user.
      *
      * Keeps fullName for audit reference ("Jane Doe invited X", "Jane Doe ran simulation").
-     * Erases all PII: email, phone, bio, avatar, password.
+     * Erases all PII: email, phone, avatar, password.
      * Sets status=REJECTED and isActive=false so they can never login.
      * The row is never hard-deleted — it becomes a tombstone for referential integrity.
      *
@@ -227,7 +225,6 @@ public class UserServiceV1 {
         user.setUsername("deleted-" + shortId);
         user.setPasswordHash(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
         user.setPhone(null);
-        user.setBio(null);
         user.setAvatarUrl(null);
         user.setMfaSecret(null);
         user.setMfaEnabled(false);

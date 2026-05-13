@@ -30,7 +30,7 @@ export class UserService {
     return this.http.get<User>(`${this.base}/${id}`);
   }
 
-  updateUser(id: string, body: { fullName?: string; jobTitle?: string; department?: string; phone?: string; bio?: string }): Observable<User> {
+  updateUser(id: string, body: { fullName?: string; jobTitle?: string; department?: string; phone?: string }): Observable<User> {
     return this.http.put<User>(`${this.base}/${id}`, body);
   }
 

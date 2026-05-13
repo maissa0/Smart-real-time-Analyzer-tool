@@ -9,7 +9,6 @@ export interface UserProfileUpdateRequest {
   jobTitle?: string;
   department?: string;
   phone?: string;
-  bio?: string;
 }
 
 @Injectable({ providedIn: 'root' })

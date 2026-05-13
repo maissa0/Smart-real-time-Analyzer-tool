@@ -18,7 +18,6 @@ public record UserDetailResponse(
         String jobTitle,
         String department,
         String phone,
-        String bio,
         String avatarUrl,
         Boolean isActive,
         Boolean mfaEnabled,

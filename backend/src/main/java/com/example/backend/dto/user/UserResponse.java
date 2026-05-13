@@ -22,7 +22,6 @@ public class UserResponse {
     private String jobTitle;
     private String department;
     private String phone;
-    private String bio;
     private String avatarUrl;
     private Boolean isActive;
     private Boolean mfaEnabled;
