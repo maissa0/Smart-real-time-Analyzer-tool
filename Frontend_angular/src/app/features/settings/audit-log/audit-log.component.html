@@ -1,61 +1,94 @@
-<div class="space-y-4">
+<div style="display:flex; flex-direction:column; gap:1rem;">
+
   @if (!embedded()) {
-    <div class="flex flex-col gap-2">
+    <div>
       <app-breadcrumb />
-      <h1 class="text-2xl font-bold text-gray-900">Audit Trail</h1>
-      <p class="text-sm text-gray-500">Security and audit logs (read-only)</p>
+      <h1 style="font-size:1.5rem; font-weight:700; color:#fff; margin:0.5rem 0 0.25rem;">
+        Audit Trail
+      </h1>
+      <p style="font-size:0.78rem; color:#8a9ab0; margin:0;">
+        Security and audit logs (read-only)
+      </p>
     </div>
   }
 
-  <div class="rounded-lg border border-able-border bg-white p-4 shadow-able-card">
+  <div style="
+    background:#0d1117; border:1px solid rgba(176,255,68,0.12);
+    border-radius:12px; overflow:hidden;">
+
     @if (isLoading()) {
-      <div class="flex justify-center py-12">
-        <div class="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
+      <div style="display:flex; justify-content:center; padding:3rem;">
+        <div style="
+          width:32px; height:32px; border-radius:50%;
+          border:2px solid #21262d; border-top-color:#b0ff44;
+          animation:spin 0.8s linear infinite;">
+        </div>
       </div>
     } @else {
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Date</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Action</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Resource</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Resource ID</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">User ID</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">IP</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Metadata</th>
+      <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.78rem;">
+          <thead>
+            <tr style="border-bottom:1px solid #21262d;">
+              <th style="padding:10px 16px; text-align:left; color:#484f58;
+                font-size:0.65rem; font-weight:700; letter-spacing:0.1em;
+                white-space:nowrap;">DATE</th>
+              <th style="padding:10px 16px; text-align:left; color:#484f58;
+                font-size:0.65rem; font-weight:700; letter-spacing:0.1em;">ACTION</th>
+              <th style="padding:10px 16px; text-align:left; color:#484f58;
+                font-size:0.65rem; font-weight:700; letter-spacing:0.1em;">RESOURCE</th>
+              <th style="padding:10px 16px; text-align:left; color:#484f58;
+                font-size:0.65rem; font-weight:700; letter-spacing:0.1em;">IP</th>
+              <th style="padding:10px 16px; text-align:left; color:#484f58;
+                font-size:0.65rem; font-weight:700; letter-spacing:0.1em;">DETAILS</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200 bg-white">
+          <tbody>
             @for (log of logs(); track log.id) {
-              <tr class="hover:bg-gray-50">
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">{{ log.createdAt | date:'medium' }}</td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm">
-                  <span class="inline-flex rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+              <tr style="border-bottom:1px solid #161b22; transition:background 0.15s;"
+                onmouseover="this.style.background='#161b22'"
+                onmouseout="this.style.background='transparent'">
+
+                <td style="padding:10px 16px; color:#8a9ab0; white-space:nowrap;">
+                  {{ log.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                </td>
+
+                <td style="padding:10px 16px;">
+                  <span style="
+                    display:inline-block;
+                    background:rgba(176,255,68,0.1);
+                    border:1px solid rgba(176,255,68,0.2);
+                    color:#b0ff44; border-radius:20px;
+                    padding:2px 10px; font-size:0.68rem; font-weight:600;
+                    font-family:monospace; white-space:nowrap;">
                     {{ log.action }}
                   </span>
                 </td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">{{ log.resource }}</td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{{ log.resourceId ?? '-' }}</td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">{{ log.userId ?? '-' }}</td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{{ log.ipAddress ?? '-' }}</td>
-                <td class="px-4 py-3 text-sm">
+
+                <td style="padding:10px 16px; color:#e6edf3;">
+                  {{ log.resource }}
+                </td>
+
+                <td style="padding:10px 16px; color:#484f58; font-family:monospace; font-size:0.72rem;">
+                  {{ log.ipAddress ?? '—' }}
+                </td>
+
+                <td style="padding:10px 16px;">
                   @if (log.metadata) {
-                    <button
-                      type="button"
-                      (click)="onViewMetadata(log)"
-                      class="text-blue-600 hover:underline"
-                    >
+                    <button type="button" (click)="onViewMetadata(log)"
+                      style="background:none; border:none; color:#58a6ff;
+                        font-size:0.72rem; cursor:pointer; padding:0;">
                       View JSON
                     </button>
                   } @else {
-                    <span class="text-gray-400">-</span>
+                    <span style="color:#30363d;">—</span>
                   }
                 </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="7" class="px-4 py-8 text-center text-gray-500">No audit logs found</td>
+                <td colspan="5" style="padding:3rem; text-align:center; color:#484f58; font-size:0.82rem;">
+                  No audit logs found
+                </td>
               </tr>
             }
           </tbody>
@@ -65,28 +98,38 @@
   </div>
 </div>
 
+<!-- Metadata modal -->
 @if (selectedLog(); as log) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" (click)="closeMetadataView()">
-    <div
-      class="max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-xl"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-        <h2 class="text-lg font-semibold text-gray-900">Metadata - {{ log.action }}</h2>
-        <button
-          type="button"
-          (click)="closeMetadataView()"
-          class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-          aria-label="Close"
-        >
-          <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-          </svg>
+  <div style="position:fixed; inset:0; z-index:50; display:flex;
+    align-items:center; justify-content:center;
+    background:rgba(0,0,0,0.7); padding:1rem;"
+    (click)="closeMetadataView()">
+    <div style="
+      width:100%; max-width:600px; max-height:80vh;
+      background:#0d1117; border:1px solid rgba(176,255,68,0.2);
+      border-radius:12px; overflow:hidden; display:flex; flex-direction:column;"
+      (click)="$event.stopPropagation()">
+      <div style="display:flex; align-items:center; justify-content:space-between;
+        padding:1rem 1.5rem; border-bottom:1px solid #21262d;">
+        <h2 style="font-size:0.9rem; font-weight:700; color:#fff; margin:0;">
+          Metadata — <span style="color:#b0ff44; font-family:monospace;">{{ log.action }}</span>
+        </h2>
+        <button type="button" (click)="closeMetadataView()"
+          style="background:none; border:none; color:#8a9ab0; cursor:pointer; font-size:1.1rem;">
+          ✕
         </button>
       </div>
-      <div class="overflow-auto p-6">
-        <pre class="rounded-lg bg-gray-900 p-4 text-sm text-gray-100 overflow-x-auto"><code>{{ getMetadataDisplay(log) }}</code></pre>
+      <div style="overflow:auto; padding:1.5rem;">
+        <pre style="
+          background:#161b22; border:1px solid #21262d;
+          border-radius:8px; padding:1rem;
+          font-size:0.78rem; color:#e6edf3;
+          overflow-x:auto; margin:0;"><code>{{ getMetadataDisplay(log) }}</code></pre>
       </div>
     </div>
   </div>
 }
+
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>

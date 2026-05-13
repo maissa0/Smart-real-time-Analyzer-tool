@@ -33,7 +33,13 @@ export class AuditLogComponent implements OnInit {
 
   loadLogs(): void {
     this.isLoading.set(true);
-    this.auditService.getAuditLogs(0, 20).subscribe({
+    // When embedded in profile page → fetch only current user's own logs
+    // When standalone (admin view) → fetch all logs
+    const request$ = this.embedded()
+      ? this.auditService.getMyAuditLogs(0, 20)
+      : this.auditService.getAuditLogs(0, 20);
+
+    request$.subscribe({
       next: (page) => {
         this.logs.set(page.content);
         this.isLoading.set(false);

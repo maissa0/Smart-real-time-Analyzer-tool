@@ -16,4 +16,10 @@ export class AuditService {
     if (userId) params = params.set('userId', userId);
     return this.http.get<PageResponse<AuditLog>>(this.base, { params });
   }
+
+  getMyAuditLogs(page = 0, size = 20): Observable<PageResponse<AuditLog>> {
+    return this.http.get<PageResponse<AuditLog>>(
+      `${this.base}/me?page=${page}&size=${size}`
+    );
+  }
 }

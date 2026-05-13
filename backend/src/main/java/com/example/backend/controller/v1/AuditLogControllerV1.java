@@ -34,4 +34,16 @@ public class AuditLogControllerV1 {
         PageResponse<AuditLogResponse> result = auditLogService.getAuditLogs(page, size, action, userId);
         return ResponseEntity.ok(result);
     }
+
+    @GetMapping("/me")
+    @Operation(summary = "List current user's own audit logs — no cross-user access")
+    public ResponseEntity<PageResponse<AuditLogResponse>> getMyAuditLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        UUID userId = currentUserService.getCurrentUserId()
+                .orElseThrow(() -> new IllegalArgumentException("Not authenticated"));
+        PageResponse<AuditLogResponse> result = auditLogService.getAuditLogs(page, size, null, userId);
+        return ResponseEntity.ok(result);
+    }
 }
