@@ -11,7 +11,6 @@ export interface User {
   fullName: string | null;
   jobTitle: string | null;
   department: string | null;
-  timezone: string | null;
   phone: string | null;
   bio: string | null;
   avatarUrl: string | null;

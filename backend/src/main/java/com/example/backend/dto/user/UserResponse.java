@@ -21,7 +21,6 @@ public class UserResponse {
     private String fullName;
     private String jobTitle;
     private String department;
-    private String timezone;
     private String phone;
     private String bio;
     private String avatarUrl;

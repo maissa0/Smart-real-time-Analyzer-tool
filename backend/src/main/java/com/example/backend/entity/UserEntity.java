@@ -45,9 +45,6 @@ public class UserEntity extends AbstractAuditingEntity {
     @Column(name = "department", length = 100)
     private String department;
 
-    @Column(name = "timezone", length = 50)
-    private String timezone;
-
     @Column(name = "phone", length = 50)
     private String phone;
 

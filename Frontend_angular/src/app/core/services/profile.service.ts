@@ -8,7 +8,6 @@ export interface UserProfileUpdateRequest {
   fullName?: string;
   jobTitle?: string;
   department?: string;
-  timezone?: string;
   phone?: string;
   bio?: string;
 }

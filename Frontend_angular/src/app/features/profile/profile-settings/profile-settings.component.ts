@@ -38,7 +38,6 @@ export class ProfileSettingsComponent implements OnInit {
     phone: [''],
     jobTitle: [''],
     department: [''],
-    timezone: [''],
     bio: [''],
     currentPassword: [''],
     newPassword: [''],
@@ -78,7 +77,6 @@ export class ProfileSettingsComponent implements OnInit {
           phone: user.phone ?? '',
           jobTitle: user.jobTitle ?? '',
           department: user.department ?? '',
-          timezone: user.timezone ?? '',
           bio: user.bio ?? '',
         });
         this.authStore.updateUser(user);
@@ -88,9 +86,9 @@ export class ProfileSettingsComponent implements OnInit {
   }
 
   saveProfile(): void {
-    const { fullName, timezone, phone, bio } = this.form.getRawValue();
+    const { fullName, phone, bio } = this.form.getRawValue();
     this.isSavingProfile.set(true);
-    this.profileService.updateMe({ fullName, timezone, phone, bio }).subscribe({
+    this.profileService.updateMe({ fullName, phone, bio }).subscribe({
       next: (user) => {
         this.authStore.updateUser(user);
         this.isSavingProfile.set(false);

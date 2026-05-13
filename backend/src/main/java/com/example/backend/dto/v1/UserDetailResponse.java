@@ -17,7 +17,6 @@ public record UserDetailResponse(
         String fullName,
         String jobTitle,
         String department,
-        String timezone,
         String phone,
         String bio,
         String avatarUrl,

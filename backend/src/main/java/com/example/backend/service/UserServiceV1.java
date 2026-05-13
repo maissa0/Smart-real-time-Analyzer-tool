@@ -110,7 +110,6 @@ public class UserServiceV1 {
                 user.getFullName(),
                 user.getJobTitle(),
                 user.getDepartment(),
-                user.getTimezone(),
                 user.getPhone(),
                 user.getBio(),
                 user.getAvatarUrl(),
@@ -131,7 +130,6 @@ public class UserServiceV1 {
 
         // jobTitle and department are admin-only — not updatable by user
         if (request.fullName()  != null) user.setFullName(request.fullName());
-        if (request.timezone()  != null) user.setTimezone(request.timezone());
         if (request.phone()     != null) user.setPhone(request.phone());
         if (request.bio()       != null) user.setBio(request.bio());
 
