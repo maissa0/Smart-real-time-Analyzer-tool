@@ -68,7 +68,8 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/ws-ecu-gateway/**",
             "/ws-ecu-gateway",
-            "/api/can/sessions/*/frames/export.csv"
+            "/api/can/sessions/*/frames/export.csv",
+            "/uploads/avatars/**"
     };
 
     @Bean

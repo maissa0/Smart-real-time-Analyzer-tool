@@ -20,6 +20,7 @@ const PUBLIC_AUTH_PATHS = [
   '/api/auth/reset-password',
   '/api/auth/set-password',
   '/api/auth/mfa/verify',
+  '/uploads/avatars/',
 ];
 
 /** Attach Bearer token to requests (skip public auth paths) */
