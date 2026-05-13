@@ -2,11 +2,70 @@
   <h2 class="mb-4 text-lg font-semibold text-gray-900">Two-Factor Authentication (TOTP)</h2>
 
   @if (isEnrolled()) {
-    <div class="flex items-center gap-3 rounded-lg bg-green-50 p-4 text-green-800">
-      <svg class="h-6 w-6 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-      </svg>
-      <p class="font-medium">MFA is enabled. Your account is protected with two-factor authentication.</p>
+    <div style="display:flex; flex-direction:column; gap:1rem;">
+      <div style="
+        display:flex; align-items:center; gap:0.75rem;
+        background:rgba(46,160,67,0.1); border:1px solid rgba(46,160,67,0.3);
+        border-radius:8px; padding:1rem;">
+        <svg style="width:20px; height:20px; color:#2ea043; flex-shrink:0;"
+          fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        <p style="font-size:0.85rem; font-weight:600; color:#2ea043; margin:0;">
+          MFA is enabled — your account is protected.
+        </p>
+      </div>
+
+      @if (!showDisableForm()) {
+        <button type="button" (click)="showDisableForm.set(true)"
+          style="
+            align-self:flex-start;
+            background:transparent; border:1px solid rgba(255,68,68,0.4);
+            color:#ff4444; border-radius:8px;
+            padding:8px 18px; font-size:0.82rem; font-weight:600;
+            cursor:pointer; transition:all 0.2s;"
+          onmouseover="this.style.background='rgba(255,68,68,0.1)'"
+          onmouseout="this.style.background='transparent'">
+          Disable MFA
+        </button>
+      } @else {
+        <div style="
+          background:#161b22; border:1px solid rgba(255,68,68,0.2);
+          border-radius:8px; padding:1.25rem;
+          display:flex; flex-direction:column; gap:0.75rem;"
+          [formGroup]="disableForm">
+          <p style="font-size:0.8rem; color:#8a9ab0; margin:0;">
+            Enter your current password to confirm disabling MFA.
+          </p>
+          <input formControlName="password" type="password"
+            placeholder="Your current password"
+            style="
+              background:#0d1117; border:1px solid rgba(176,255,68,0.2);
+              border-radius:6px; color:#e6edf3; font-size:0.85rem;
+              padding:8px 12px; outline:none; width:100%; box-sizing:border-box;"/>
+          @if (disableForm.get('password')?.invalid && disableForm.get('password')?.touched) {
+            <p style="font-size:0.7rem; color:#ff4444; margin:0;">Password is required</p>
+          }
+          <div style="display:flex; gap:0.75rem;">
+            <button type="button" (click)="disableMfa()"
+              [disabled]="isDisabling()"
+              style="
+                background:#ff4444; color:#fff; border:none;
+                border-radius:8px; padding:8px 18px;
+                font-size:0.82rem; font-weight:700; cursor:pointer;"
+              [style.opacity]="isDisabling() ? '0.5' : '1'">
+              {{ isDisabling() ? 'Disabling…' : 'Confirm Disable' }}
+            </button>
+            <button type="button" (click)="cancelDisable()"
+              style="
+                background:transparent; border:1px solid #30363d;
+                color:#8a9ab0; border-radius:8px;
+                padding:8px 18px; font-size:0.82rem; cursor:pointer;">
+              Cancel
+            </button>
+          </div>
+        </div>
+      }
     </div>
   } @else {
     <p class="mb-6 text-sm text-gray-600">

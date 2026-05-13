@@ -39,6 +39,13 @@ export class MfaEnrollmentComponent implements OnInit {
       (this.verificationForm.get('code')?.touched ?? false)
   );
 
+  readonly isDisabling   = signal(false);
+  readonly showDisableForm = signal(false);
+
+  readonly disableForm = this.fb.nonNullable.group({
+    password: ['', [Validators.required, Validators.minLength(6)]],
+  });
+
   ngOnInit(): void {
     this.isEnrolled.set(this.authStore.user()?.mfaEnabled ?? false);
   }
@@ -89,5 +96,36 @@ export class MfaEnrollmentComponent implements OnInit {
     this.secret.set('');
     this.qrCodeUrl.set('');
     this.verificationForm.reset();
+  }
+
+  disableMfa(): void {
+    if (this.disableForm.invalid) {
+      this.disableForm.markAllAsTouched();
+      return;
+    }
+    const { password } = this.disableForm.getRawValue();
+    this.isDisabling.set(true);
+    this.profileService.mfaDisable(password).subscribe({
+      next: () => {
+        this.isDisabling.set(false);
+        this.isEnrolled.set(false);
+        this.showDisableForm.set(false);
+        this.disableForm.reset();
+        const user = this.authStore.user();
+        if (user) {
+          this.authStore.updateUser({ ...user, mfaEnabled: false });
+        }
+        this.toast.success('MFA has been disabled.');
+      },
+      error: () => {
+        this.isDisabling.set(false);
+        this.toast.error('Incorrect password. MFA was not disabled.');
+      },
+    });
+  }
+
+  cancelDisable(): void {
+    this.showDisableForm.set(false);
+    this.disableForm.reset();
   }
 }
