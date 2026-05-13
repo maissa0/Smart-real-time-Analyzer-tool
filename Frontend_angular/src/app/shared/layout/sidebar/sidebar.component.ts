@@ -15,6 +15,11 @@ export class SidebarComponent {
   private readonly sidebarState = inject(SidebarStateService);
   readonly authStore = inject(AuthStore);
 
+  readonly isAdmin = () =>
+    this.authStore.user()?.roles?.some(
+      r => r.name === 'Admin'
+    ) ?? false;
+
   readonly isOpen = this.sidebarState.isOpen;
 
   close(): void {

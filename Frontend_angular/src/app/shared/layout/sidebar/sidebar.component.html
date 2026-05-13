@@ -52,7 +52,7 @@
       CAN Sniffer
     </a>
 
-    @if (authStore.permissionSlugs().includes('user:read')) {
+    @if (isAdmin()) {
       <a routerLink="/admin/users/list" routerLinkActive="kpit-nav-active"
          class="kpit-nav-item" (click)="close()">
         <svg class="kpit-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -63,5 +63,51 @@
         Users
       </a>
     }
+
+    <!-- Vehicles -->
+    <a routerLink="/admin/vehicles" routerLinkActive="kpit-nav-active"
+       class="kpit-nav-item" (click)="close()">
+      <svg class="kpit-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="1" y="11" width="22" height="9" rx="2" ry="2"/>
+        <path d="M1 11l4-7h14l4 7"/>
+        <circle cx="7" cy="20" r="1"/><circle cx="17" cy="20" r="1"/>
+      </svg>
+      Vehicles
+    </a>
+
+    <!-- Divider -->
+    <div style="margin: 0.5rem 1rem; border-top: 1px solid rgba(176,255,68,0.1);"></div>
+
+    <!-- Faults — placeholder -->
+    <a class="kpit-nav-item" style="opacity:0.45; cursor:not-allowed;">
+      <svg class="kpit-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      Faults
+      <span style="margin-left:auto; font-size:0.6rem; color:#b0ff44; opacity:0.7;">soon</span>
+    </a>
+
+    <!-- AI Anomaly — placeholder -->
+    <a class="kpit-nav-item" style="opacity:0.45; cursor:not-allowed;">
+      <svg class="kpit-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+      </svg>
+      AI Anomaly
+      <span style="margin-left:auto; font-size:0.6rem; color:#b0ff44; opacity:0.7;">soon</span>
+    </a>
+
+    <!-- Export — placeholder -->
+    <a class="kpit-nav-item" style="opacity:0.45; cursor:not-allowed;">
+      <svg class="kpit-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Export
+      <span style="margin-left:auto; font-size:0.6rem; color:#b0ff44; opacity:0.7;">soon</span>
+    </a>
+
   </div>
 </nav>
