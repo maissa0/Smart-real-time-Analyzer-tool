@@ -52,6 +52,13 @@ export const appRoutes: Routes = [
           ),
       },
       {
+        path: 'fleet',
+        loadComponent: () =>
+          import('./features/fleet/fleet-page.component').then(
+            (m) => m.FleetPageComponent
+          ),
+      },
+      {
         path: 'users',
         loadChildren: () =>
           import('./features/users/users.routes').then((m) => m.usersRoutes),
