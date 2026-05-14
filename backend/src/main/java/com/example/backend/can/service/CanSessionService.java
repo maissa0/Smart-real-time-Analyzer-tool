@@ -20,7 +20,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.Files;
@@ -66,29 +65,10 @@ public class CanSessionService {
         });
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public CanFrameEntity saveFrame(String json) throws JsonProcessingException {
         Map<String, Object> map = objectMapper.readValue(json, new TypeReference<>() {});
         String sessionId = stringVal(map.get("session_id"));
-
-        // Retry up to 20 times with 200ms delay (4 seconds total)
-        // REQUIRES_NEW propagation ensures each findBySessionId hits the DB fresh
-        CanSessionEntity session = null;
-        for (int attempt = 0; attempt < 20; attempt++) {
-            session = canSessionRepository.findBySessionId(sessionId).orElse(null);
-            if (session != null) break;
-            log.debug("Session not found, retrying {}/20 for: {}", attempt + 1, sessionId);
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException ie) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
-        if (session == null) {
-            log.warn("Session not found after 20 retries (4s) for frame: {}", sessionId);
-            return null;
-        }
 
         String rawBytesJson = objectMapper.writeValueAsString(map.get("raw_bytes"));
         String signalsJson = objectMapper.writeValueAsString(map.get("signals"));
