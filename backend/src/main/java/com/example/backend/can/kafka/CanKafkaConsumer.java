@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
@@ -71,38 +72,43 @@ public class CanKafkaConsumer {
     }
 
     @KafkaListener(topics = "session-meta", groupId = "kpit-backend")
-    public void consumeSessionMeta(String message) {
+    public void consumeSessionMeta(String message, Acknowledgment ack) {
         try {
             canSessionService.saveSession(message);
             log.info("Session meta saved");
             messagingTemplate.convertAndSend("/topic/sessions", message);
+            ack.acknowledge();
         } catch (Exception e) {
             log.error("Failed to process session-meta message", e);
+            // Do not acknowledge — message will be redelivered
         }
     }
 
     @KafkaListener(topics = "log-file-events", groupId = "kpit-backend")
-    public void consumeLogFileEvent(String message) {
+    public void consumeLogFileEvent(String message, Acknowledgment ack) {
         try {
             logFileService.saveLogFileEvent(message);
+            ack.acknowledge();
         } catch (Exception e) {
             log.error("Failed to process log-file-events message", e);
+            // Do not acknowledge — message will be redelivered
         }
     }
 
     @KafkaListener(topics = "decoded-signals", groupId = "kpit-backend")
-    public void consumeDecodedFrame(ConsumerRecord<String, String> record) {
+    public void consumeDecodedFrame(ConsumerRecord<String, String> record, Acknowledgment ack) {
         try {
             String enrichedJson = mergeSessionKeyIntoJson(record.value(), record.key());
             CanFrameEntity savedFrame = canSessionService.saveFrame(enrichedJson);
             if (savedFrame != null) {
                 influxWriteService.writeFrame(savedFrame);
                 integrityAnalyzerService.analyze(savedFrame);
-                // Emit to 60Hz batch sink instead of broadcasting directly
                 frameSink.tryEmitNext(savedFrame);
             }
+            ack.acknowledge();
         } catch (Exception e) {
             log.error("Failed to process decoded-signals message", e);
+            // Do not acknowledge — message will be redelivered
         }
     }
 
