@@ -22,6 +22,7 @@ import java.util.concurrent.Executors;
 import jakarta.annotation.PreDestroy;
 
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Service
@@ -205,9 +206,14 @@ public class PlaybackService {
         );
 
         try {
-            streamDone.await();
+            boolean completed = streamDone.await(5, TimeUnit.MINUTES);
+            if (!completed) {
+                log.error("Playback stream timed out after 5 minutes: id={}", playbackId);
+                throw new RuntimeException("Playback stream timed out after 5 minutes");
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            log.warn("Playback interrupted: id={}", playbackId);
         }
 
         Throwable fatal = streamError.get();
