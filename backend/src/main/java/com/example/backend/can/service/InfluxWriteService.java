@@ -3,7 +3,7 @@ package com.example.backend.can.service;
 import com.example.backend.can.entity.CanFrameEntity;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.influxdb.client.WriteApi;
+import com.influxdb.client.WriteApiBlocking;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,6 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import jakarta.annotation.PreDestroy;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +23,7 @@ import java.util.Map;
 @Slf4j
 public class InfluxWriteService {
 
-    private final WriteApi writeApi;
+    private final WriteApiBlocking writeApi;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
 
@@ -60,6 +59,9 @@ public class InfluxWriteService {
     /** Writes each decoded signal from the frame as a point in the configured InfluxDB bucket. */
     public void writeFrame(CanFrameEntity frame) {
         try {
+            log.info("InfluxDB writeFrame called: frameId={} sessionId={} signals={}",
+                    frame.getId(), frame.getSessionId(),
+                    frame.getSignals() != null ? frame.getSignals().substring(0, Math.min(100, frame.getSignals().length())) : "NULL");
             List<Map<String, Object>> signals = objectMapper.readValue(
                 frame.getSignals(),
                 new TypeReference<>() {}
@@ -96,7 +98,7 @@ public class InfluxWriteService {
                 writeApi.writePoint(bucket, influxOrg, point);
             }
         } catch (Exception e) {
-            log.error("Failed to write frame to InfluxDB: frameId={}", frame.getId(), e);
+            log.error("Failed to write frame to InfluxDB: frameId={} error={}", frame.getId(), e.getMessage(), e);
         }
     }
 
@@ -131,18 +133,6 @@ public class InfluxWriteService {
         } catch (Exception e) {
             log.error("Failed to delete InfluxDB data for session: {}", sessionId, e);
             throw new RuntimeException("InfluxDB delete failed for session: " + sessionId, e);
-        }
-    }
-
-    @PreDestroy
-    public void close() {
-        try {
-            writeApi.flush();
-            log.info("InfluxDB WriteApi flushed on shutdown");
-            writeApi.close();
-            log.info("InfluxDB WriteApi closed on shutdown");
-        } catch (Exception e) {
-            log.warn("Failed to flush/close InfluxDB WriteApi on shutdown", e);
         }
     }
 }

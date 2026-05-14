@@ -2,8 +2,7 @@ package com.example.backend.can.config;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
-import com.influxdb.client.WriteApi;
-import com.influxdb.client.WriteOptions;
+import com.influxdb.client.WriteApiBlocking;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,14 +28,7 @@ public class InfluxDbConfig {
     }
 
     @Bean
-    public WriteApi influxWriteApi(InfluxDBClient influxDBClient) {
-        WriteOptions writeOptions = WriteOptions.builder()
-                .batchSize(500)
-                .flushInterval(100)
-                .bufferLimit(10000)
-                .retryInterval(5000)
-                .maxRetries(3)
-                .build();
-        return influxDBClient.makeWriteApi(writeOptions);
+    public WriteApiBlocking influxWriteApi(InfluxDBClient influxDBClient) {
+        return influxDBClient.getWriteApiBlocking();
     }
 }
