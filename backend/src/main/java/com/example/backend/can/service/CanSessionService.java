@@ -68,10 +68,30 @@ public class CanSessionService {
     @Transactional
     public CanFrameEntity saveFrame(String json) throws JsonProcessingException {
         Map<String, Object> map = objectMapper.readValue(json, new TypeReference<>() {});
+        String sessionId = stringVal(map.get("session_id"));
+
+        // Retry up to 10 times with 100ms delay — handles race condition
+        // where decoded frames arrive before session-meta Kafka event
+        CanSessionEntity session = null;
+        for (int attempt = 0; attempt < 10; attempt++) {
+            session = canSessionRepository.findBySessionId(sessionId).orElse(null);
+            if (session != null) break;
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        if (session == null) {
+            log.warn("Session not found after 10 retries for frame: {}", sessionId);
+            return null;
+        }
+
         String rawBytesJson = objectMapper.writeValueAsString(map.get("raw_bytes"));
         String signalsJson = objectMapper.writeValueAsString(map.get("signals"));
         CanFrameEntity entity = CanFrameEntity.builder()
-                .sessionId(stringVal(map.get("session_id")))
+                .sessionId(sessionId)
                 .timestamp(toDouble(map.get("timestamp")))
                 .channel(toInteger(map.get("channel")))
                 .channelName(stringVal(map.get("channel_name")))
