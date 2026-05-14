@@ -48,6 +48,16 @@ public class LogUploadService {
         file.transferTo(filePath.toFile());
         log.info("Saved log file: {}", filePath);
 
+        // Create LogFileEntity immediately so status endpoint returns data
+        // before file_worker.py sends the metadata Kafka event
+        LogFileEntity logFile = LogFileEntity.builder()
+                .sessionId(sessionId)
+                .filename(originalName)
+                .fileSize(file.getSize())
+                .status("PROCESSING")
+                .build();
+        logFileRepository.save(logFile);
+
         publishProcessingJob(sessionId, filePath, originalName);
         return sessionId;
     }
