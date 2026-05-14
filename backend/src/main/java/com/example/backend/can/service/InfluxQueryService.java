@@ -90,7 +90,7 @@ public class InfluxQueryService {
         }
     }
 
-    /** Returns distinct signal names present in Influx for the given session (last 30 days). */
+    /** Returns distinct signal names present in Influx for the given session (all time). */
     public List<String> queryAvailableSignals(String sessionId) {
         // Validate before interpolating into the Flux query
         validateFluxParam(sessionId, "sessionId");
@@ -99,7 +99,7 @@ public class InfluxQueryService {
 
             String flux = String.format("""
                 from(bucket: "%s")
-                  |> range(start: -30d)
+                  |> range(start: -10y)
                   |> filter(fn: (r) => r["_measurement"] == "can_signals")
                   |> filter(fn: (r) => r["session_id"] == "%s")
                   |> keep(columns: ["signal_name"])
