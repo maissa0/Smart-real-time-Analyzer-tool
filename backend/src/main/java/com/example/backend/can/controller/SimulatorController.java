@@ -30,7 +30,7 @@ import java.time.LocalDateTime;
 @Slf4j
 public class SimulatorController {
 
-    @Value("${pipeline.python.executable}")
+    @Value("${pipeline.python.executable:C:/tools/Kpit_c/python_parser/.venv/Scripts/python.exe}")
     private String pythonExecutable;
 
     @Value("${pipeline.python.script:}")
