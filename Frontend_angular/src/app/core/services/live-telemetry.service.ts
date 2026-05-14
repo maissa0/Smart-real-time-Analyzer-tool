@@ -8,6 +8,9 @@ import {
   filter,
   map,
   mergeMap,
+  retry,
+  catchError,
+  EMPTY,
 } from 'rxjs';
 import { RxStomp, RxStompState } from '@stomp/rx-stomp';
 import SockJS from 'sockjs-client';
@@ -173,7 +176,15 @@ export class LiveTelemetryService {
 
     this.playbackSubscription = this.rxStomp
       .watch(`/topic/playback/${sessionId}`)
-      .pipe(map(message => JSON.parse(message.body)))
+      .pipe(
+        map(message => JSON.parse(message.body)),
+        retry({ count: 3, delay: 2000 }),
+        catchError(err => {
+          console.error('Playback WebSocket error after 3 retries:', err);
+          this.playbackSubject.next({ type: 'error', message: 'Connection lost. Please restart playback.' });
+          return EMPTY;
+        }),
+      )
       .subscribe(point => this.playbackSubject.next(point));
   }
 
