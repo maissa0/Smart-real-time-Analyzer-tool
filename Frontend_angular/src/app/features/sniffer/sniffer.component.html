@@ -213,6 +213,19 @@
             } @else {
               <span class="kpit-replaying-text">▶ Replaying...</span>
             }
+            <!-- Progress bar -->
+            <div style="
+              width:100%; height:4px; border-radius:2px;
+              background:rgba(176,255,68,0.15); margin-top:6px; overflow:hidden;">
+              <div style="
+                height:100%; border-radius:2px;
+                background:#b0ff44; transition:width 0.3s ease;"
+                [style.width]="playbackProgress + '%'">
+              </div>
+            </div>
+            <span style="font-size:0.65rem; color:#8a9ab0; margin-top:2px; display:block;">
+              {{ playbackProgress }}% — {{ playbackPointIndex }} / {{ playbackPoints.length }} points
+            </span>
           }
         </div>
       </div>

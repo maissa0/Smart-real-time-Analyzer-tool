@@ -126,7 +126,15 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
   private playbackStartLogTime = 0;
   private playbackSpeed = 1;
   private playbackTimer: ReturnType<typeof setInterval> | null = null;
-  private playbackPointIndex = 0;
+  playbackPointIndex = 0;
+
+  get playbackProgress(): number {
+    if (this.playbackPoints.length === 0) return 0;
+    return Math.min(100, Math.round(
+      (this.playbackPointIndex / this.playbackPoints.length) * 100
+    ));
+  }
+
   private influxPlaybackSub: Subscription | null = null;
   /** Server playback start (matches REST/Influx); avoids client session.startTs float mismatch */
   private playbackSessionStartTs = 0;
