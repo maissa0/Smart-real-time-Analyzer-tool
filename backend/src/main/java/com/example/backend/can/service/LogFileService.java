@@ -1,6 +1,7 @@
 package com.example.backend.can.service;
 
 import com.example.backend.can.entity.LogFileEntity;
+import com.example.backend.can.repository.CanSessionRepository;
 import com.example.backend.can.repository.LogFileRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +18,7 @@ import java.util.Map;
 public class LogFileService {
 
     private final LogFileRepository logFileRepository;
+    private final CanSessionRepository canSessionRepository;
     private final ObjectMapper objectMapper;
 
     public void saveLogFileEvent(String json) {
@@ -60,6 +62,15 @@ public class LogFileService {
                     logFileRepository.save(entity);
                     log.info("Log file processing complete: session={}", sessionId);
                 });
+                // Also mark the CAN session as COMPLETE
+                canSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
+                    session.setStatus("COMPLETE");
+                    if (data.containsKey("frame_count")) {
+                        session.setFrameCount(toInteger(data.get("frame_count")));
+                    }
+                    canSessionRepository.save(session);
+                    log.info("CAN session marked COMPLETE: session={}", sessionId);
+                });
 
             } else if ("error".equals(event)) {
                 logFileRepository.findBySessionId(sessionId).ifPresent(entity -> {
@@ -69,6 +80,12 @@ public class LogFileService {
                     logFileRepository.save(entity);
                     log.error("Log file processing error: session={} error={}",
                             sessionId, entity.getErrorMessage());
+                });
+                // Also mark the CAN session as ERROR
+                canSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
+                    session.setStatus("ERROR");
+                    canSessionRepository.save(session);
+                    log.error("CAN session marked ERROR: session={}", sessionId);
                 });
             }
 
