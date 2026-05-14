@@ -69,7 +69,8 @@ public class SecurityConfig {
             "/ws-ecu-gateway/**",
             "/ws-ecu-gateway",
             "/api/can/sessions/*/frames/export.csv",
-            "/uploads/avatars/**"
+            "/uploads/avatars/**",
+            "/actuator/health"
     };
 
     @Bean
