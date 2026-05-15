@@ -22,209 +22,195 @@ import { FaultDonutChartComponent, FaultEntry } from './fault-donut-chart/fault-
   imports: [CommonModule, DecimalPipe, HttpClientModule, KpiCardComponent, MessageFrequencyChartComponent, FaultDonutChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="p-6 space-y-6">
+  <div style="background:#07090b; min-height:100vh; padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem;">
 
-      <!-- ── Header ────────────────────────────────────────────────────── -->
-      <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <div class="flex items-center gap-3 text-sm text-gray-500">
-          <span class="flex items-center gap-1.5">
-            <span class="inline-block h-2 w-2 rounded-full"
-              [class.bg-green-500]="liveTelemetry.connected()"
-              [class.animate-pulse]="liveTelemetry.connected()"
-              [class.bg-red-400]="!liveTelemetry.connected()">
-            </span>
-            WebSocket {{ liveTelemetry.connected() ? 'Connected' : 'Disconnected' }}
+    <!-- Header -->
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <h1 style="font-size:1.5rem; font-weight:700; color:#fff; margin:0;">Dashboard</h1>
+      <div style="display:flex; align-items:center; gap:0.75rem; font-size:0.78rem; color:#8a9ab0;">
+        <span style="display:flex; align-items:center; gap:0.4rem;">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%;"
+            [style.background]="liveTelemetry.connected() ? '#2ea043' : '#ff4444'">
           </span>
-          <span class="text-xs text-gray-400 border-l pl-3">
-            Auto-refresh every 30s
-          </span>
+          WebSocket {{ liveTelemetry.connected() ? 'Connected' : 'Disconnected' }}
+        </span>
+        <span style="border-left:1px solid #21262d; padding-left:0.75rem; font-size:0.72rem; color:#484f58;">
+          Auto-refresh every 30s
+        </span>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    @if (store.isLoading() && !store.stats()) {
+      <div style="display:flex; align-items:center; justify-content:center; padding:5rem 0; color:#484f58;">
+        <svg style="width:24px; height:24px; margin-right:0.5rem; animation:spin 1s linear infinite;"
+          fill="none" viewBox="0 0 24 24">
+          <circle style="opacity:0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path style="opacity:0.75;" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+        Loading dashboard data...
+      </div>
+    }
+
+    <!-- Error -->
+    @if (store.error()) {
+      <div style="background:rgba(255,68,68,0.1); border:1px solid rgba(255,68,68,0.3);
+        border-radius:8px; padding:1rem; color:#ff4444; font-size:0.82rem;">
+        ⚠️ {{ store.error() }}
+      </div>
+    }
+
+    @if (store.stats(); as stats) {
+
+      <!-- KPI Cards -->
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:1rem;">
+        <app-kpi-card label="Sessions"      [value]="stats.sessionCount"  [sub]="stats.activeSessions + ' live'"  [isLive]="stats.activeSessions > 0" />
+        <app-kpi-card label="Total Frames"  [value]="stats.totalFrames"   sub="CAN frames in DB"                  [isLive]="liveTelemetry.connected()" />
+        <app-kpi-card label="Integrity Faults" [value]="stats.totalFaults" sub="across all sessions"             [isLive]="false" />
+        <app-kpi-card label="Vehicles"      [value]="stats.totalCars"     sub="registered in fleet"               [isLive]="false" />
+      </div>
+
+      <!-- Charts row -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+        <div style="background:#0d1117; border:1px solid rgba(176,255,68,0.12); border-radius:12px; padding:1.25rem;">
+          <h2 style="font-size:0.78rem; font-weight:700; color:#8a9ab0; letter-spacing:0.08em; margin:0 0 1rem; text-transform:uppercase;">
+            Top Message IDs
+          </h2>
+          @if (stats.topMessageIds.length > 0) {
+            <app-message-frequency-chart [data]="stats.topMessageIds" />
+          } @else {
+            <p style="font-size:0.75rem; color:#484f58; text-align:center; padding:2rem 0;">No frames yet</p>
+          }
+        </div>
+        <div style="background:#0d1117; border:1px solid rgba(176,255,68,0.12); border-radius:12px; padding:1.25rem;">
+          <h2 style="font-size:0.78rem; font-weight:700; color:#8a9ab0; letter-spacing:0.08em; margin:0 0 1rem; text-transform:uppercase;">
+            Fault Distribution
+          </h2>
+          <app-fault-donut-chart [data]="toFaultEntries(stats.faultsByType)" />
         </div>
       </div>
 
-      <!-- ── Loading ───────────────────────────────────────────────────── -->
-      @if (store.isLoading() && !store.stats()) {
-        <div class="flex items-center justify-center py-20 text-gray-400">
-          <svg class="animate-spin h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10"
-              stroke="currentColor" stroke-width="4"/>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-          </svg>
-          Loading dashboard data...
+      <!-- Recent Sessions -->
+      <div style="background:#0d1117; border:1px solid rgba(176,255,68,0.12); border-radius:12px; padding:1.25rem;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+          <h2 style="font-size:0.78rem; font-weight:700; color:#8a9ab0; letter-spacing:0.08em; margin:0; text-transform:uppercase;">
+            Recent Sessions
+          </h2>
+          <button style="font-size:0.72rem; color:#b0ff44; background:none; border:none; cursor:pointer;"
+            (click)="goTo('/admin/sniffer')">View All →</button>
         </div>
-      }
-
-      <!-- ── Error ─────────────────────────────────────────────────────── -->
-      @if (store.error()) {
-        <div class="rounded-lg bg-red-50 border border-red-200 p-4
-                    text-red-700 text-sm">
-          ⚠️ {{ store.error() }}
-        </div>
-      }
-
-      @if (store.stats(); as stats) {
-
-        <!-- ── KPI Cards ────────────────────────────────────────────────── -->
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <app-kpi-card
-            label="Sessions"
-            [value]="stats.sessionCount"
-            [sub]="stats.activeSessions + ' live'"
-            [isLive]="stats.activeSessions > 0" />
-
-          <app-kpi-card
-            label="Total Frames"
-            [value]="stats.totalFrames"
-            sub="CAN frames in DB"
-            [isLive]="liveTelemetry.connected()" />
-
-          <app-kpi-card
-            label="Integrity Faults"
-            [value]="stats.totalFaults"
-            sub="across all sessions"
-            [isLive]="false" />
-
-          <app-kpi-card
-            label="Vehicles"
-            [value]="stats.totalCars"
-            sub="registered in fleet"
-            [isLive]="false" />
-        </div>
-
-        <!-- ── Middle row: Top Messages + Fault Donut ──────────────────── -->
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-
-          <!-- Top Message IDs — Chart.js bar chart -->
-          <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-5">
-            <h2 class="text-sm font-semibold text-gray-700 mb-4">
-              Top Message IDs
-            </h2>
-            @if (stats.topMessageIds.length > 0) {
-              <app-message-frequency-chart
-                [data]="stats.topMessageIds" />
-            } @else {
-              <p class="text-xs text-gray-400 py-8 text-center">
-                No frames yet
-              </p>
-            }
-          </div>
-
-          <!-- Fault Distribution — FaultDonutChartComponent -->
-          <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-5">
-            <h2 class="text-sm font-semibold text-gray-700 mb-4">
-              Fault Distribution
-            </h2>
-            <app-fault-donut-chart
-              [data]="toFaultEntries(stats.faultsByType)" />
-          </div>
-
-        </div>
-
-        <!-- ── Recent Sessions ──────────────────────────────────────────── -->
-        <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-5">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-sm font-semibold text-gray-700">Recent Sessions</h2>
-            <button
-              class="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-              (click)="goTo('/admin/sniffer')">
-              View All →
-            </button>
-          </div>
-          <div class="divide-y divide-gray-50">
-            @for (s of store.recentSessions(); track s.sessionId) {
-              <div
-                class="flex items-center justify-between py-3 cursor-pointer
-                       hover:bg-gray-50 rounded-lg px-2 -mx-2 transition-colors"
-                (click)="openSession(s.sessionId)">
-                <div class="min-w-0">
-                  <p class="font-mono text-xs text-gray-600 truncate">
-                    {{ s.sessionId }}
-                  </p>
-                  @if (s.sourceFilename) {
-                    <p class="text-xs text-gray-400 mt-0.5">
-                      {{ s.sourceFilename }}
-                    </p>
-                  }
-                </div>
-                <div class="text-right shrink-0 ml-4">
-                  <p class="text-xs font-medium text-gray-700">
-                    {{ s.frameCount | number }} frames
-                  </p>
-                  @if (s.createdAt) {
-                    <p class="text-xs text-gray-400">
-                      {{ formatDate(s.createdAt) }}
-                    </p>
-                  }
-                </div>
+        <div style="display:flex; flex-direction:column; gap:0.25rem;">
+          @for (s of store.recentSessions(); track s.sessionId) {
+            <div style="
+              display:flex; align-items:center; justify-content:space-between;
+              padding:0.75rem; border-radius:8px; cursor:pointer;
+              border:1px solid transparent; transition:all 0.15s;"
+              (click)="openSession(s.sessionId)"
+              onmouseover="this.style.background='#161b22'; this.style.borderColor='rgba(176,255,68,0.1)'"
+              onmouseout="this.style.background='transparent'; this.style.borderColor='transparent'">
+              <div style="min-width:0;">
+                <p style="font-family:monospace; font-size:0.72rem; color:#8a9ab0; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                  {{ s.sessionId }}
+                </p>
+                @if (s.sourceFilename) {
+                  <p style="font-size:0.68rem; color:#484f58; margin:0.15rem 0 0;">{{ s.sourceFilename }}</p>
+                }
               </div>
-            }
-            @if (store.recentSessions().length === 0) {
-              <p class="text-xs text-gray-400 py-4 text-center">
-                No sessions yet
-              </p>
-            }
-          </div>
+              <div style="text-align:right; flex-shrink:0; margin-left:1rem;">
+                <p style="font-size:0.75rem; font-weight:600; color:#e6edf3; margin:0;">
+                  {{ s.frameCount | number }} frames
+                </p>
+                @if (s.createdAt) {
+                  <p style="font-size:0.68rem; color:#484f58; margin:0.15rem 0 0;">
+                    {{ formatDate(s.createdAt) }}
+                  </p>
+                }
+              </div>
+            </div>
+          }
+          @if (store.recentSessions().length === 0) {
+            <p style="font-size:0.75rem; color:#484f58; text-align:center; padding:1.5rem 0;">No sessions yet</p>
+          }
         </div>
+      </div>
 
-        <!-- ── Quick Actions ────────────────────────────────────────────── -->
-        <div class="rounded-xl bg-white border border-gray-100 shadow-sm p-5">
-          <h2 class="text-sm font-semibold text-gray-700 mb-4">Quick Actions</h2>
-          <div class="flex flex-wrap gap-3">
-            <button
-              class="flex items-center gap-2 px-4 py-2 rounded-lg
-                     bg-[#b0ff44] text-gray-900 text-sm font-medium
-                     hover:brightness-110 transition-all"
-              (click)="goTo('/admin/simulator')">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                   viewBox="0 0 24 24" stroke-width="2">
-                <polygon points="5 3 19 12 5 21 5 3"/>
-              </svg>
-              Start Simulator
-            </button>
-            <button
-              class="flex items-center gap-2 px-4 py-2 rounded-lg
-                     border border-gray-200 text-gray-700 text-sm
-                     hover:bg-gray-50 transition-all"
-              (click)="goTo('/admin/upload')">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                   viewBox="0 0 24 24" stroke-width="2">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              Upload Log
-            </button>
-            <button
-              class="flex items-center gap-2 px-4 py-2 rounded-lg
-                     border border-gray-200 text-gray-700 text-sm
-                     hover:bg-gray-50 transition-all"
-              (click)="goTo('/admin/monitor')">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                   viewBox="0 0 24 24" stroke-width="2">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-              </svg>
-              Live Monitor
-            </button>
-            <button
-              class="flex items-center gap-2 px-4 py-2 rounded-lg
-                     border border-gray-200 text-gray-700 text-sm
-                     hover:bg-gray-50 transition-all"
-              (click)="goTo('/admin/vehicles')">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                   viewBox="0 0 24 24" stroke-width="2">
-                <rect x="1" y="11" width="22" height="9" rx="2" ry="2"/>
-                <path d="M1 11l4-7h14l4 7"/>
-                <circle cx="7" cy="20" r="1"/>
-                <circle cx="17" cy="20" r="1"/>
-              </svg>
-              Vehicles
-            </button>
-          </div>
+      <!-- Quick Actions -->
+      <div style="background:#0d1117; border:1px solid rgba(176,255,68,0.12); border-radius:12px; padding:1.25rem;">
+        <h2 style="font-size:0.78rem; font-weight:700; color:#8a9ab0; letter-spacing:0.08em; margin:0 0 1rem; text-transform:uppercase;">
+          Quick Actions
+        </h2>
+        <div style="display:flex; flex-wrap:wrap; gap:0.75rem;">
+          <button style="
+            display:inline-flex; align-items:center; gap:0.5rem;
+            background:#b0ff44; color:#07090b;
+            border:none; border-radius:8px;
+            padding:8px 18px; font-size:0.82rem; font-weight:700;
+            cursor:pointer; transition:opacity 0.2s;"
+            onmouseover="this.style.opacity='0.85'"
+            onmouseout="this.style.opacity='1'"
+            (click)="goTo('/admin/simulator')">
+            <svg style="width:15px; height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Start Simulator
+          </button>
+          <button style="
+            display:inline-flex; align-items:center; gap:0.5rem;
+            background:transparent; color:#8a9ab0;
+            border:1px solid #30363d; border-radius:8px;
+            padding:8px 18px; font-size:0.82rem;
+            cursor:pointer; transition:all 0.2s;"
+            onmouseover="this.style.borderColor='rgba(176,255,68,0.3)'; this.style.color='#b0ff44'"
+            onmouseout="this.style.borderColor='#30363d'; this.style.color='#8a9ab0'"
+            (click)="goTo('/admin/upload')">
+            <svg style="width:15px; height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Upload Log
+          </button>
+          <button style="
+            display:inline-flex; align-items:center; gap:0.5rem;
+            background:transparent; color:#8a9ab0;
+            border:1px solid #30363d; border-radius:8px;
+            padding:8px 18px; font-size:0.82rem;
+            cursor:pointer; transition:all 0.2s;"
+            onmouseover="this.style.borderColor='rgba(176,255,68,0.3)'; this.style.color='#b0ff44'"
+            onmouseout="this.style.borderColor='#30363d'; this.style.color='#8a9ab0'"
+            (click)="goTo('/admin/monitor')">
+            <svg style="width:15px; height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            Live Monitor
+          </button>
+          <button style="
+            display:inline-flex; align-items:center; gap:0.5rem;
+            background:transparent; color:#8a9ab0;
+            border:1px solid #30363d; border-radius:8px;
+            padding:8px 18px; font-size:0.82rem;
+            cursor:pointer; transition:all 0.2s;"
+            onmouseover="this.style.borderColor='rgba(176,255,68,0.3)'; this.style.color='#b0ff44'"
+            onmouseout="this.style.borderColor='#30363d'; this.style.color='#8a9ab0'"
+            (click)="goTo('/admin/fleet')">
+            <svg style="width:15px; height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <rect x="1" y="11" width="22" height="9" rx="2" ry="2"/>
+              <path d="M1 11l4-7h14l4 7"/>
+              <circle cx="7" cy="20" r="1"/>
+              <circle cx="17" cy="20" r="1"/>
+            </svg>
+            Vehicles
+          </button>
         </div>
+      </div>
 
-      }
-    </div>
-  `,
+    }
+
+    <style>
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  </div>
+`,
 })
 export class DashboardComponent implements OnInit {
   readonly liveTelemetry = inject(LiveTelemetryService);
