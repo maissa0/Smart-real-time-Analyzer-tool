@@ -97,7 +97,7 @@ import { FaultDonutChartComponent, FaultEntry } from './fault-donut-chart/fault-
             Recent Sessions
           </h2>
           <button style="font-size:0.72rem; color:#b0ff44; background:none; border:none; cursor:pointer;"
-            (click)="goTo('/admin/sniffer')">View All →</button>
+            (click)="goTo('/admin/workspace')">View All →</button>
         </div>
         <div style="display:flex; flex-direction:column; gap:0.25rem;">
           @for (s of store.recentSessions(); track s.sessionId) {
