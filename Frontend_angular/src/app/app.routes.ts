@@ -24,13 +24,6 @@ export const appRoutes: Routes = [
           ),
       },
       {
-        path: 'monitor',
-        loadComponent: () =>
-          import('./features/monitor/monitor-page.component').then(
-            (m) => m.MonitorPageComponent
-          ),
-      },
-      {
         path: 'upload',
         loadComponent: () =>
           import('./features/upload/upload-page.component').then(
@@ -42,6 +35,13 @@ export const appRoutes: Routes = [
         loadChildren: () =>
           import('./features/sniffer/sniffer.routes').then(
             (m) => m.SNIFFER_ROUTES
+          ),
+      },
+      {
+        path: 'workspace',
+        loadComponent: () =>
+          import('./features/analyser/can-workspace.component').then(
+            (m) => m.CanWorkspaceComponent
           ),
       },
       {

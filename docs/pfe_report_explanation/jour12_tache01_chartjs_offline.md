@@ -62,3 +62,9 @@ Sortie attendue : **vide** (aucune ligne).
 ## Mots clés pour la soutenance
 
 **Chart.js v4**, **treeshaking**, **`Chart.register`**, **bundle npm**, **offline-first**, **suppression CDN**, **`LineController`** / **`DoughnutController`**, **`window.Chart`**, **KPIT CAN Sniffer**, **`chartJsLoaded`**, **Angular lazy routes**.
+
+
+The adaptation was correct. The original loadChartJs() was void not Promise<void> — using Promise.resolve() would have caused a TypeScript error. Setting chartJsLoaded.set(true) directly is the right approach since Chart.js is now synchronously available via the import.
+What you can tell the jury:
+
+"Audit finding — Chart.js était chargé depuis un CDN externe (cdn.jsdelivr.net) via injection dynamique de script. Si le réseau de la salle de soutenance est restreint, les graphiques du Sniffer n'auraient pas rendu du tout. La correction est simple : chart.js est déjà dans node_modules depuis l'installation pour le dashboard. Il suffit d'importer directement depuis le module local et d'enregistrer les composants nécessaires — LineController, LineElement, PointElement, LinearScale. Zéro dépendance réseau pour les graphiques."

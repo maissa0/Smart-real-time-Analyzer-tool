@@ -212,3 +212,92 @@ premier chargement (ou en développement local) :
 - ✅ Fonts — système (`font-family: monospace` pour les IDs CAN)
 - ⚠️ Backend API — requiert MySQL + Spring Boot en local
   (standard pour déploiement atelier automobile)
+
+---
+
+## 6.3 Live Monitor — Surveillance temps réel
+
+### 6.3.1 Vue d'ensemble
+
+La page Live Monitor (`/admin/monitor`) combine trois zones fonctionnelles :
+
+1. **Sélecteur de véhicule** — filtre les sessions par véhicule via
+   `GET /api/cars/{carUid}/sessions`. Quand "All Vehicles" est sélectionné,
+   toutes les sessions apparaissent triées : sessions live en premier,
+   puis par date décroissante.
+
+2. **Cartes de session** — chaque session affiche son UUID (8 premiers
+   caractères), le fichier source, le nombre de trames, et son statut
+   (● Live / ✓ Done). La carte sélectionnée a une bordure `#b0ff44`.
+
+3. **Live Frame Stream** — table de trames en temps réel avec :
+   - **Pause/Resume** : les trames sont bufférisées (max 200) pendant
+     la pause et injectées d'un coup à la reprise
+   - **Filtre msg_id** : dropdown auto-populé depuis les IDs observés
+   - **Auto-scroll** : `scrollTop = scrollHeight` après chaque trame
+   - **Flash animation** : `@keyframes row-flash` sur chaque nouvelle ligne
+
+### 6.3.2 Graphiques de signaux temps réel
+
+**Figure 6.3 — Graphique de signaux CAN mis à jour en temps réel**
+
+![Graphique temps réel — simulation CAN active](screenshots/monitor_live_chart.gif)
+
+*Graphique de signaux CAN mis à jour à 60Hz pendant une session de
+simulation active. Les courbes représentent les valeurs décodées des
+signaux ECU (Engine_RPM_High, Vehicle_Speed, etc.) extraites en temps
+réel depuis le bus CAN simulé.*
+
+> "Figure 6.3 — Real-time signal chart updating at 60Hz during an active
+> CAN simulation session."
+
+**Technique d'implémentation :**
+
+```typescript
+// LiveTelemetryService — WebSocket STOMP subscription
+this.rxStomp.watch('/topic/frames').subscribe(msg => {
+  const frame = JSON.parse(msg.body);
+  this.frameSubject.next(frame);  // pushed to frames$ Observable
+});
+
+// SignalChartComponent — Chart.js update sans animation
+mc.chart.data.datasets[0].data.push(point);
+mc.chart.update('none');  // 'none' = pas d'animation, maximum FPS
+```
+
+La fréquence de 60Hz est atteinte grâce à :
+- `animation: false` sur tous les graphiques Chart.js
+- `chart.update('none')` — mise à jour sans transition
+- `parsing: false` — Chart.js utilise les données directement sans
+  re-parser les objets JavaScript
+- Batch broadcaster côté backend : `CanKafkaConsumer` émet les frames
+  groupées à 60Hz vers le topic WebSocket `/topic/frames`
+
+### 6.3.3 Thème KPIT des graphiques
+
+Les graphiques du Monitor utilisent un thème sombre cohérent avec
+l'identité visuelle KPIT :
+
+| Élément | Valeur |
+|---|---|
+| Fond des graphiques | `#0d1117` |
+| Bordure | `1px solid #1e2430` |
+| Première série de chaque groupe | `#b0ff44` (vert KPIT) |
+| Axes et grilles | `#1f2937` / `#374151` |
+| Animation de pulse | `rgba(176,255,68,0.4)` sur réception de trame |
+
+L'input `[kpitMonitorChartTheme]="true"` sur `<app-sniffer>` active
+ce thème sans modifier le composant Sniffer pour les autres pages.
+
+### 6.3.4 Filtrage par véhicule — implémentation
+
+```typescript
+// Sélection "All Vehicles" → GET /api/can/sessions
+// Sélection véhicule → GET /api/cars/{carUid}/sessions
+private loadSessions(carUid: string): void {
+  const url = carUid
+    ? `${API_BASE_URL}/api/cars/${carUid}/sessions`
+    : `${API_BASE_URL}/api/can/sessions`;
+  // Sessions triées : live en premier, puis createdAt DESC
+}
+```

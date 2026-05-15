@@ -36,3 +36,28 @@ Pas d’erreur bloquante sur la chaîne prévue pour ce changement ; attention t
 ## Mots clés pour la soutenance
 
 Kafka, offset, **`enable.auto.commit`**, **`consumer.commit(message)`**, at-least-once, rejouabilité, **raw-can-frames**, **file-processing-jobs**, résilience crash, livraisons dupliquées vs perte silencieuse.
+
+
+Day 18 fully complete — all 3 tasks:
+TaskCommitWhatTask 15b003e2bUpload page — drag-and-drop, progress, historyTask 209e48a75log_parser streaming — O(1) memoryTask 3d713aa2fKafka manual commit — no data loss on crash
+
+Day 18 Python quality improvements summary for the report:
+
+"Trois améliorations de robustesse ont été apportées à la couche Python en jour 18 : le parseur de logs streame maintenant ligne par ligne au lieu de charger tout le fichier en RAM ; les deux consommateurs Kafka utilisent le commit manuel pour garantir at-least-once delivery ; et le simulateur est devenu interruptible pendant les timing gaps grâce au flag temporel non-bloquant. Ces trois fixes transforment le pipeline d'un prototype en un système robuste pour la démonstration."
+
+Why takeWhile with inclusive: true:
+The true second argument means the terminal value (COMPLETED or FAILED) is emitted once through tap — so the UI updates — then the Observable completes automatically. Without true, takeWhile would unsubscribe before the final status is processed and the UI would never reach the complete state.
+What you can tell the jury:
+
+"Le polling utilise interval(2s).pipe(switchMap(...), tap(...), takeWhile(..., true)). switchMap annule la requête HTTP précédente si l'intervalle suivant arrive avant la réponse — pas de requêtes concurrentes. takeWhile avec inclusive: true complète l'Observable automatiquement dès que le statut atteint COMPLETED ou FAILED — aucun unsubscribe() manuel, aucun risque d'oubli de nettoyage."
+
+
+Full upload pipeline now works end-to-end:
+User drops file → POST /api/logs/upload → { sessionId, status: "PROCESSING" }
+    ↓ step = 'uploading' → progress bar fills
+    ↓ step = 'processing' → polling starts
+GET /api/logs/status/{id} every 2s → { status: "PROCESSING" } → continue
+GET /api/logs/status/{id} → { status: "COMPLETED", frameCount: 89200 }
+    ↓ tap() → step = 'complete', frameCount set, history reloaded
+    ↓ takeWhile(inclusive) → Observable completes automatically
+    ↓ No manual unsubscribe needed

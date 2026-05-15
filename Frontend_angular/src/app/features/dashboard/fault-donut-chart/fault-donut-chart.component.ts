@@ -9,7 +9,7 @@ import {
   effect,
   input,
 } from '@angular/core';
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ArcElement,
   Chart,
@@ -44,7 +44,7 @@ export interface FaultEntry {
 @Component({
   selector: 'app-fault-donut-chart',
   standalone: true,
-  imports: [CommonModule, DecimalPipe],
+  imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     :host { display: block; width: 100%; }

@@ -19,11 +19,10 @@ import { DecimalPipe } from '@angular/common';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .kpi-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
+      background: #0d1117;
+      border: 1px solid rgba(176,255,68,0.12);
       border-radius: 12px;
       padding: 1.25rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
       transition: border-color 0.3s;
     }
     .kpi-card.live {
@@ -39,18 +38,18 @@ import { DecimalPipe } from '@angular/common';
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #6b7280;
+      color: #484f58;
     }
     .kpi-value {
       font-size: 2rem;
       font-weight: 700;
-      color: #111827;
+      color: #e6edf3;
       margin-top: 0.4rem;
       line-height: 1;
     }
     .kpi-sub {
       font-size: 0.72rem;
-      color: #9ca3af;
+      color: #8a9ab0;
       margin-top: 0.35rem;
     }
     .kpi-live-dot {

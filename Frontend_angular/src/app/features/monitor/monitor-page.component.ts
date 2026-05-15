@@ -41,6 +41,7 @@ const MAX_FRAMES = 500;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, HttpClientModule, SnifferComponent],
+  styleUrls: ['./monitor-page.component.scss'],
   template: `
     <div class="kpit-page">
 
@@ -220,11 +221,16 @@ const MAX_FRAMES = 500;
           <span class="kpit-section-dot"></span>
           SIGNAL CHARTS
         </div>
-        <app-sniffer
-          [hideUpload]="true"
-          [hideSimulator]="true"
-          [liveOnly]="true">
-        </app-sniffer>
+        <div
+          class="kpit-monitor-signal-charts"
+          [class.kpit-monitor-signal-charts--pulse]="signalChartsPulse()">
+          <app-sniffer
+            [hideUpload]="true"
+            [hideSimulator]="true"
+            [liveOnly]="true"
+            [kpitMonitorChartTheme]="true">
+          </app-sniffer>
+        </div>
       </div>
 
     </div>
@@ -415,6 +421,11 @@ export class MonitorPageComponent implements OnInit {
 
   readonly displayedFrames = signal<(CanFrame & { _isNew?: boolean })[]>([]);
 
+  /** Toggles CSS flash on embedded signal chart cards when new live frames arrive */
+  readonly signalChartsPulse = signal(false);
+  private signalChartsPulseTimer: ReturnType<typeof setTimeout> | null = null;
+  private signalChartsPulseCooldownUntil = 0;
+
   ngOnInit(): void {
     this.loadCars();
     this.loadSessions('');
@@ -427,6 +438,8 @@ export class MonitorPageComponent implements OnInit {
     const carUid = (event.target as HTMLSelectElement).value;
     this.selectedCarUid.set(carUid);
     this.loadSessions(carUid);
+    // Clear selected session when vehicle changes
+    this.selectedSessionId.set(null);
   }
 
   selectSession(sessionId: string): void {
@@ -444,6 +457,7 @@ export class MonitorPageComponent implements OnInit {
       if (buffered.length > 0) {
         this.appendFrames(buffered);
         this.bufferedFrames.set([]);
+        this.scheduleSignalChartsBorderPulse();
       }
       this.isPaused.set(false);
     } else {
@@ -491,8 +505,31 @@ export class MonitorPageComponent implements OnInit {
           });
         } else {
           this.appendFrames([frame]);
+          this.scheduleSignalChartsBorderPulse();
         }
       });
+  }
+
+  private scheduleSignalChartsBorderPulse(): void {
+    const now = Date.now();
+    if (now < this.signalChartsPulseCooldownUntil) {
+      return;
+    }
+    this.signalChartsPulseCooldownUntil = now + 280;
+
+    if (this.signalChartsPulseTimer !== null) {
+      clearTimeout(this.signalChartsPulseTimer);
+      this.signalChartsPulseTimer = null;
+    }
+
+    this.signalChartsPulse.set(false);
+    requestAnimationFrame(() => {
+      this.signalChartsPulse.set(true);
+      this.signalChartsPulseTimer = setTimeout(() => {
+        this.signalChartsPulse.set(false);
+        this.signalChartsPulseTimer = null;
+      }, 420);
+    });
   }
 
   private appendFrames(frames: CanFrame[]): void {
@@ -547,8 +584,16 @@ export class MonitorPageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (sessions) => {
-          this.allSessions.set(sessions);
-          this.filteredSessions.set(sessions);
+          // Sort: live sessions first, then by createdAt descending
+          const sorted = [...sessions].sort((a, b) => {
+            if (a.status === 'live' && b.status !== 'live') return -1;
+            if (a.status !== 'live' && b.status === 'live') return 1;
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+          });
+          this.allSessions.set(sorted);
+          this.filteredSessions.set(sorted);
         },
         error: (err) => console.error('[MonitorPage] sessions error:', err),
       });

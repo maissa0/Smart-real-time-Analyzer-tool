@@ -65,3 +65,6 @@ Manuellement :
 ## Mots clés pour la soutenance
 
 **Angular standalone**, **`@ngrx/signals`**, **`signalStore`**, **`DashboardStore`**, **`API_BASE_URL`**, **`/api/dashboard/stats`**, **polling 30 s**, **KPI**, **`ng build`**, **Application bundle generation complete**
+
+
+"Voici le tableau de bord en production avec des données réelles — 88 sessions CAN, 369 344 trames, 153 failles d'intégrité détectées automatiquement. Les 5 identifiants de messages les plus fréquents montrent une distribution uniforme typique des données de simulation. Le panneau 'Fault Breakdown' distingue les types de défauts : 151 violations de plage de signal et 2 gaps de timing. Tout cela se rafraîchit automatiquement toutes les 30 secondes sans rechargement de page."

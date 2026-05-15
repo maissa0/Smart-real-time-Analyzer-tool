@@ -12,6 +12,15 @@
 - **Partage de contexte** : l’URL **`?sessionId=…`** permet de revenir au même journal (**bookmark**, lien dans un rapport, bouton retour navigateur mieux défini).
 - **Productivité** : pilotage lecture sans quitter le clavier pour un usage « analyse sur le banc ».
 
+Le deep linking par URL permet aux analystes de partager des vues exactes
+avec leurs collègues — une exigence courante dans les workflows de
+diagnostic collaboratif. Un analyste qui identifie une anomalie sur la
+page 3 de la session 108 peut partager le lien
+`/admin/sniffer?sessionId=ses-108&page=3` : le destinataire arrive
+directement sur la même vue, sans navigation manuelle. Cette
+fonctionnalité transforme l'outil d'un analyseur personnel en un outil
+d'équipe.
+
 ## Comment — explication technique
 
 - **`queryParams` + `merge`** : préserve les autres paramètres de requête éventuels tout en fixant **`sessionId`**.
@@ -26,6 +35,11 @@
 ## Explication sans background informatique
 
 Quand vous choisissez une session, **l’adresse web se met à jour** pour « se souvenir » de laquelle vous regardez. Vous pouvez **copier ce lien** et le rouvrir plus tard. Vous pouvez aussi utiliser **la barre d’espace** pour mettre en pause comme une vidéo, et les **flèches** pour avancer ou reculer d’environ une seconde dans le temps du replay — **sauf** quand vous tapez du texte dans un champ.
+
+C'est comme partager un lien vers une page spécifique d'un document
+Google Docs — au lieu d'envoyer "ouvre le fichier et va à la page 47",
+tu envoies directement le lien qui ouvre la bonne page. Ici, l'URL
+encode la session et la page exacte que tu regardes.
 
 ## Comment tester manuellement
 

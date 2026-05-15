@@ -1,0 +1,52 @@
+/* Live Monitor — KPIT theme for embedded sniffer signal charts (scoped via wrapper) */
+
+:host {
+  display: block;
+}
+
+/* 2-column chart grid under the frame stream; sniffer default uses auto-fill + 420px min */
+:host ::ng-deep .kpit-monitor-signal-charts .kpit-charts-area .kpit-charts-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.875rem;
+  align-items: start;
+}
+
+:host ::ng-deep .kpit-monitor-signal-charts .kpit-charts-area .kpit-charts-grid.kpit-charts-combined {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+/* Chart card chrome */
+:host ::ng-deep .kpit-monitor-signal-charts app-signal-chart > div {
+  background: #0d1117 !important;
+  border: 1px solid #1e2430 !important;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+/* Brief border highlight on new live data (parent class toggled by MonitorPageComponent) */
+:host ::ng-deep .kpit-monitor-signal-charts.kpit-monitor-signal-charts--pulse app-signal-chart > div {
+  animation: kpit-signal-chart-border-flash 0.42s ease-out;
+}
+
+@keyframes kpit-signal-chart-border-flash {
+  0%,
+  100% {
+    border-color: #1e2430;
+    box-shadow: none;
+  }
+  40% {
+    border-color: rgba(176, 255, 68, 0.4);
+    box-shadow: 0 0 0 1px rgba(176, 255, 68, 0.22);
+  }
+}
+
+/* Chart labels — KPIT grey */
+:host ::ng-deep .kpit-monitor-signal-charts app-signal-chart .text-gray-400,
+:host ::ng-deep .kpit-monitor-signal-charts app-signal-chart .text-gray-500 {
+  color: #8b949e !important;
+}
+
+:host ::ng-deep .kpit-monitor-signal-charts app-signal-chart .bg-gray-800 {
+  background: rgba(30, 36, 48, 0.85) !important;
+}

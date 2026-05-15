@@ -36,3 +36,26 @@ Une signature **`ResponseEntity<Map<String, Long>>`** avec **`sessionId`** (cha�
 ## Mots clés pour la soutenance
 
 Pagination, **`Pageable`**, **`Page<CanFrameResponse>`**, **`PageRequest`**, **`Sort`** chronologique, rétrocompatibilité (**`page` absent** = liste complète), **`frame-count`**, Spring Data dérivation de requêtes par nom de méthode, éviter le transfert mémoire monolithique.
+
+
+Test the endpoint now — start IntelliJ (Stop → Rebuild → Run), then in browser:
+GET http://localhost:8080/api/can/sessions/{any-session-uuid}/frames?page=0&size=10
+Expected Spring Page response:
+json{
+  "content": [ ... 10 frames ... ],
+  "totalElements": 371854,
+  "totalPages": 37186,
+  "size": 10,
+  "number": 0,
+  "first": true,
+  "last": false
+}
+Also test:
+GET http://localhost:8080/api/can/sessions/{uuid}/frame-count
+→ { "sessionId": "...", "count": 371854 }
+
+GET http://localhost:8080/api/can/sessions/{uuid}/frames?page=0&size=500
+→ 500 frames, totalPages: 744
+
+GET http://localhost:8080/api/can/sessions/{uuid}/frames  (no page param)
+→ backward compat: full List<CanFrameResponse> as before

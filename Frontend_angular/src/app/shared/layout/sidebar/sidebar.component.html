@@ -1,14 +1,13 @@
 @if (isOpen()) {
   <div class="kpit-overlay" (click)="close()" role="presentation"></div>
 }
-
 <nav class="kpit-sidebar" [class.open]="isOpen()">
   <div class="kpit-sidebar-header">
     <span class="kpit-sidebar-brand">KPIT <span>ANALYSER</span></span>
     <button type="button" class="kpit-sidebar-close" (click)="close()" aria-label="Close sidebar">✕</button>
   </div>
-
   <div class="kpit-nav-links">
+
     <a routerLink="/admin" routerLinkActive="kpit-nav-active"
        [routerLinkActiveOptions]="{ exact: true }"
        class="kpit-nav-item" (click)="close()">
@@ -19,12 +18,12 @@
       Dashboard
     </a>
 
-    <a routerLink="/admin/sniffer" routerLinkActive="kpit-nav-active"
+    <a routerLink="/admin/workspace" routerLinkActive="kpit-nav-active"
        class="kpit-nav-item" (click)="close()">
       <svg class="kpit-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
       </svg>
-      Analyser
+      CAN Workspace
     </a>
 
     <a routerLink="/admin/upload" routerLinkActive="kpit-nav-active"
@@ -36,12 +35,14 @@
       Log Upload
     </a>
 
-    <a routerLink="/admin/sniffer" routerLinkActive="kpit-nav-active"
+    <a routerLink="/admin/fleet" routerLinkActive="kpit-nav-active"
        class="kpit-nav-item" (click)="close()">
       <svg class="kpit-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        <rect x="1" y="11" width="22" height="9" rx="2" ry="2"/>
+        <path d="M1 11l4-7h14l4 7"/>
+        <circle cx="7" cy="20" r="1"/><circle cx="17" cy="20" r="1"/>
       </svg>
-      CAN Sniffer
+      Fleet
     </a>
 
     @if (isAdmin()) {
@@ -56,48 +57,25 @@
       </a>
     }
 
-<a routerLink="/admin/fleet" routerLinkActive="kpit-nav-active"
-   class="kpit-nav-item" (click)="close()">
-  <svg class="kpit-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <rect x="1" y="11" width="22" height="9" rx="2" ry="2"/>
-    <path d="M1 11l4-7h14l4 7"/>
-    <circle cx="7" cy="20" r="1"/><circle cx="17" cy="20" r="1"/>
-  </svg>
-  Fleet
-</a>
+    <div style="margin:0.5rem 1rem; border-top:1px solid rgba(176,255,68,0.1);"></div>
 
-    <!-- Divider -->
-    <div style="margin: 0.5rem 1rem; border-top: 1px solid rgba(176,255,68,0.1);"></div>
-
-    <!-- Faults — placeholder -->
-    <a class="kpit-nav-item" style="opacity:0.45; cursor:not-allowed;">
-      <svg class="kpit-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-      </svg>
-      Faults
-      <span style="margin-left:auto; font-size:0.6rem; color:#b0ff44; opacity:0.7;">soon</span>
-    </a>
-
-    <!-- AI Anomaly — placeholder -->
-    <a class="kpit-nav-item" style="opacity:0.45; cursor:not-allowed;">
+    <a routerLink="/admin/settings" routerLinkActive="kpit-nav-active"
+       class="kpit-nav-item" (click)="close()">
       <svg class="kpit-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="3"/>
-        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83
+          2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33
+          1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4
+          a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06
+          A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09
+          A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06
+          a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51
+          V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33
+          l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9
+          a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09
+          a1.65 1.65 0 00-1.51 1z"/>
       </svg>
-      AI Anomaly
-      <span style="margin-left:auto; font-size:0.6rem; color:#b0ff44; opacity:0.7;">soon</span>
-    </a>
-
-    <!-- Export — placeholder -->
-    <a class="kpit-nav-item" style="opacity:0.45; cursor:not-allowed;">
-      <svg class="kpit-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-        <polyline points="17 8 12 3 7 8"/>
-        <line x1="12" y1="3" x2="12" y2="15"/>
-      </svg>
-      Export
-      <span style="margin-left:auto; font-size:0.6rem; color:#b0ff44; opacity:0.7;">soon</span>
+      Settings
     </a>
 
   </div>

@@ -56,3 +56,16 @@ Navigation : **`/admin`** avec données réelles ou fictives :
 ## Mots clés pour la soutenance
 
 **FaultDonutChartComponent**, **doughnut Chart.js**, **`FaultEntry`**, **`hasData`**, **`computed`**, **`effect()`**, **labels HTML**, **`cutout: '68%'`**, **`chart.update('none')`**, **refonte dashboard**, **séparation des responsabilités**.
+
+MetricValueVerdictmain.js (initial load)12.4 KB✅ Exceptional — under 1 second on any connectionTotal JS2.59 MBThis is ALL chunks combined — not initial loadLargest chunk (1079 KB)Lazy-loaded routeNever loaded until that route is visited
+
+
+What this means:
+The 2.59 MB total is misleading — Angular lazy-loads every route as a separate chunk. The browser only downloads main.js (12.4 KB) on first visit. The chart chunks only download when the user navigates to the dashboard.
+The 1079 KB chunk is almost certainly the sniffer page (it has Chart.js line charts, WebSocket handling, and signal processing). The dashboard charts are in a separate smaller chunk.
+@defer would add complexity with no measurable benefit — main.js at 12.4 KB is already near-instant even on 3G.
+
+What you can tell the jury:
+
+"Le bundle initial de l'application Angular est de 12.4 KB — grâce au lazy loading des routes, le navigateur ne télécharge que ce fichier au premier chargement. Les 2.59 MB restants sont répartis en chunks chargés à la demande quand l'utilisateur navigue vers chaque fonctionnalité. Chart.js (~200 KB) est inclus uniquement dans les chunks du dashboard et du sniffer, pas dans le bundle initial."
+

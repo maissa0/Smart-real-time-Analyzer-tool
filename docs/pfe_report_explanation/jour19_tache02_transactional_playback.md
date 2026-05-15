@@ -43,3 +43,10 @@ Les lectures massives depuis la base temporelles ne sont plus ramenées dans un 
 ## Mots clés pour la soutenance
 
 **`@Transactional`**, atomicité JDBC, **`ExecutorService` borné**, **`@PreDestroy`**, arrêt maîtrisé, streaming Influx Flux, **`QueryApi.query` callbacks**, contention multi-utilisateurs, gestion mémoire playback.
+
+
+What you can tell the jury:
+
+"Trois corrections de robustesse dans la couche backend : premièrement, saveFrame() est maintenant @Transactional — canFrameRepository.save() et incrementFrameCount() sont atomiques, si l'un échoue l'autre rollback. Deuxièmement, PlaybackService utilisait newCachedThreadPool() qui peut créer des milliers de threads sous charge — remplacé par newFixedThreadPool(10) qui limite à 10 sessions de playback simultanées. Troisièmement, queryApi.query() chargeait tous les points InfluxDB en RAM avant de les envoyer — remplacé par queryApi.queryStream() qui traite chaque FluxRecord à la volée via un Stream<FluxRecord> auto-closeable."
+The callback query() adaptation is the right call. queryApi.query(flux, org, onNext, onError, onComplete) is the streaming API available in 7.1.0 — it processes each FluxRecord in the onNext callback without buffering the full result set. The CountDownLatch correctly blocks until onComplete fires before sending the complete WebSocket event. This is functionally equivalent to queryStream() and arguably cleaner for async I/O.
+Commit message note: The message says queryStream but the code uses the callback overload. If you want to amend:

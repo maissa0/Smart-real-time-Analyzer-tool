@@ -36,3 +36,8 @@ La consigne STEP 2 (« ne pas modifier si `publish_session` est appelée �
 ## Mots clés pour la soutenance
 
 Code mort, factorisation, **`confluent_kafka Producer`**, **`ET.parse`**, **`ParseError`**, **`SAXException`**, dégradation gracieuse, catalogues XML, **`DocumentBuilder`**, charge partielle des bus.
+
+
+What you can tell the jury about this refactoring:
+
+"L'audit de dépendances avant suppression est essentiel — kafka_producer.py semblait mort mais publish_session était encore appelée dans pipeline.py. J'ai déplacé les fonctions utiles dans leurs consommateurs directs et supprimé le fichier source. C'est le pattern Extract and Inline — on ne supprime pas une dépendance sans d'abord auditer tous ses importateurs. Pour xml_decoder.py, un seul fichier XML malformé faisait crasher tout le chargement du catalogue au démarrage — maintenant chaque fichier est parsé indépendamment avec try/except, les erreurs sont loguées et le chargement continue."
