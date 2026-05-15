@@ -1,4 +1,28 @@
 <div class="kpit-sniffer-layout">
+  <!-- Vehicle filter bar -->
+  @if (cars().length > 0) {
+    <div style="
+      padding:0.6rem 1rem;
+      background:#161b22;
+      border-bottom:1px solid rgba(176,255,68,0.08);
+      display:flex; align-items:center; gap:0.75rem;
+      font-size:0.75rem;">
+      <span style="color:#484f58; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; font-size:0.65rem;">Vehicle</span>
+      <select style="
+        background:#0d1117; border:1px solid rgba(176,255,68,0.2);
+        border-radius:6px; color:#e6edf3; font-size:0.78rem;
+        padding:4px 10px; outline:none; cursor:pointer;"
+        (change)="onVehicleFilterChange($any($event.target).value)">
+        <option value="">All Vehicles</option>
+        @for (car of cars(); track car.carUid) {
+          <option [value]="car.carUid">
+            {{ car.make }} {{ car.model }} {{ car.year }}{{ car.isVirtual ? ' (virtual)' : '' }}
+          </option>
+        }
+      </select>
+      <span style="font-size:0.68rem; color:#484f58;">{{ sessions().length }} sessions</span>
+    </div>
+  }
 
   <!-- ═══ LEFT PANEL ═══ -->
   <aside class="kpit-left-panel">

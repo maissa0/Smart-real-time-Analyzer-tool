@@ -18,7 +18,9 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
+import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { API_BASE_URL } from '../../core/config/api.config';
 import { CanService } from '../../core/services/can.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TelemetryService } from '../../core/services/telemetry.service';
@@ -37,7 +39,7 @@ import { FrameTableComponent } from './frame-table/frame-table.component';
   selector: 'app-sniffer',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, SignalChartComponent, LogUploadComponent, SimulatorControlComponent, SessionListComponent, FrameTableComponent],
+  imports: [CommonModule, HttpClientModule, FormsModule, SignalChartComponent, LogUploadComponent, SimulatorControlComponent, SessionListComponent, FrameTableComponent],
   templateUrl: './sniffer.component.html',
   styleUrl: './sniffer.component.scss',
 })
@@ -73,7 +75,10 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
   private toastService = inject(ToastService);
   readonly telemetry = inject(TelemetryService);
   readonly liveTelemetry = inject(LiveTelemetryService);
+  readonly cars = signal<{ carUid: string; make: string; model: string; year: number; isVirtual: boolean }[]>([]);
+  readonly selectedCarUid = signal<string>('');
   private destroyRef = inject(DestroyRef);
+  private readonly http = inject(HttpClient);
 
   private simRefreshInterval: ReturnType<typeof setInterval> | null = null;
   private liveTickInterval: ReturnType<typeof setInterval> | null = null;
@@ -489,6 +494,21 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       this.lastRealFrameTime = Date.now();
     });
     this.loadSessions();
+    this.loadCars();
+  }
+
+  loadCars(): void {
+    const token = localStorage.getItem('access_token');
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
+    this.http
+      .get<any[]>(`${API_BASE_URL}/api/cars`, { headers })
+      .subscribe({ next: (cars) => this.cars.set(cars), error: () => {} });
+  }
+
+  onVehicleFilterChange(carUid: string): void {
+    this.selectedCarUid.set(carUid);
+    // Filter sessions by vehicle — reload session list
+    this.loadSessions();
   }
 
   ngOnDestroy(): void {
@@ -545,13 +565,37 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     this.loadingSessions.set(true);
     this.currentPage.set(0);
     this.hasMore.set(true);
+
+    const carUid = this.selectedCarUid();
+    const token = localStorage.getItem('access_token');
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
+
+    if (carUid) {
+      this.http
+        .get<CanSession[]>(`${API_BASE_URL}/api/cars/${encodeURIComponent(carUid)}/sessions`, { headers })
+        .subscribe({
+          next: (items) => {
+            this.sessions.set(items);
+            this.hasMore.set(false);
+            this.loadingSessions.set(false);
+            if (autoSelectSessionId) {
+              const found = items.find((s) => s.sessionId === autoSelectSessionId);
+              if (found) this.selectSession(found);
+            }
+            onLoaded?.();
+          },
+          error: () => this.loadingSessions.set(false),
+        });
+      return;
+    }
+
     this.canService.getSessionsPaged(0, this.pageSize).subscribe({
       next: (result) => {
         this.sessions.set(result.content);
         this.hasMore.set(result.hasMore);
         this.loadingSessions.set(false);
         if (autoSelectSessionId) {
-          const found = result.content.find(s => s.sessionId === autoSelectSessionId);
+          const found = result.content.find((s) => s.sessionId === autoSelectSessionId);
           if (found) this.selectSession(found);
         }
         onLoaded?.();

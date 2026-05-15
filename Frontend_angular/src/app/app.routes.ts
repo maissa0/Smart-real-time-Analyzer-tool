@@ -31,13 +31,6 @@ export const appRoutes: Routes = [
           ),
       },
       {
-        path: 'simulator',
-        loadComponent: () =>
-          import('./features/simulator/simulator-page.component').then(
-            (m) => m.SimulatorPageComponent
-          ),
-      },
-      {
         path: 'upload',
         loadComponent: () =>
           import('./features/upload/upload-page.component').then(
