@@ -99,7 +99,7 @@ public class InfluxQueryService {
 
             String flux = String.format("""
                 from(bucket: "%s")
-                  |> range(start: -10y)
+                  |> range(start: 0)
                   |> filter(fn: (r) => r["_measurement"] == "can_signals")
                   |> filter(fn: (r) => r["session_id"] == "%s")
                   |> keep(columns: ["signal_name"])

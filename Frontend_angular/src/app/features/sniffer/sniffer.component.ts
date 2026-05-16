@@ -321,75 +321,47 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     return s ? (s.endTs - s.startTs).toFixed(2) : '0';
   });
 
-  // Built when session / full frame list changes — stable group/color structure
+  // Built dynamically from actual session frame data.
+  // Groups frames by msg_id — one chart group per CAN message.
+  // Works for ANY session regardless of catalog or signal names.
   allSignalGroups = computed(() => {
     const frames = this.allFrames();
     const session = this.selectedSession();
     if (!frames.length || !session) return [];
 
-    const groups = [
-      {
-        groupTitle: 'Door Latch & Lock State',
-        msgName: 'Car_Status',
-        signalKeys: ['0x2FC__door_latche_status', '0x2FC__selective_unlock_statuss'],
-      },
-      {
-        groupTitle: 'Door Open/Close Status',
-        msgName: 'Car_Status',
-        signalKeys: ['0x2FC__Drd_Status', '0x2FC__PSD_Status', '0x2FC__DRDR_Status', '0x2FC__Psdr_Status'],
-      },
-      {
-        groupTitle: 'Bootlid & Rocker Switch',
-        msgName: 'Car_Status',
-        signalKeys: ['0x2FC__Bootlid_Status', '0x2FC__Rocker_switch_Status'],
-      },
-      {
-        groupTitle: 'Key Button Presses',
-        msgName: 'Key_Button_Status',
-        signalKeys: ['0x23A__Unlock_Button_status', '0x23A__lock_Button_status', '0x23A__3rd_Button_status'],
-      },
-      {
-        groupTitle: 'Contact Status — Doors',
-        msgName: 'Contact_Status',
-        signalKeys: ['0x2CA__Drd_Status_Cont', '0x2CA__PSD_Status_Cont', '0x2CA__DRDR_Status_Cont', '0x2CA__Psdr_Status_Cont'],
-      },
-      {
-        groupTitle: 'Contact Status — Bootlid',
-        msgName: 'Contact_Status',
-        signalKeys: ['0x2CA__Bootlid_Status_Cont'],
-      },
-      {
-        groupTitle: 'Latch Secure Actions',
-        msgName: 'Latch_Action',
-        signalKeys: ['0x2AF__Drd_Secure_latch_action', '0x2AF__Drdr_Secure_latch_action', '0x2AF__Psd_Secure_latch_action', '0x2AF__Psdr_Secure_latch_action'],
-      },
-      {
-        groupTitle: 'Latch Lock Actions',
-        msgName: 'Latch_Action',
-        signalKeys: ['0x2AF__Drd_Lock_latch_action', '0x2AF__Drdr_Lock_latch_action', '0x2AF__Psd_Lock_latch_action', '0x2AF__Psdr_Lock_latch_action'],
-      },
-      {
-        groupTitle: 'Latch Unlock Actions',
-        msgName: 'Latch_Action',
-        signalKeys: ['0x2AF__Drd_Unlock_latch_action', '0x2AF__Drdr_Unlock_latch_action', '0x2AF__Psd_Unlock_latch_action', '0x2AF__Psdr_Unlock_latch_action'],
-      },
-      {
-        groupTitle: 'Key Position & Button',
-        msgName: 'key_comm',
-        signalKeys: ['0x723__KEY_Pos', '0x723__KEY_Butt'],
-      },
+    const palette = [
+      '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
+      '#8b5cf6', '#06b6d4', '#f97316', '#84cc16',
+      '#ec4899', '#14b8a6', '#a855f7', '#eab308',
     ];
 
-    const palette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
+    // Build a map: msgId → { msgName, signals: Map<signalName, points[]> }
+    const msgMap = new Map<string, {
+      msgId: string;
+      msgName: string;
+      signals: Map<string, {
+        allPoints: { x: number; y: number; label: string; frameIndex: number }[];
+      }>;
+    }>();
 
-    const pointMap = new Map<string, { allPoints: { x: number; y: number; label: string; frameIndex: number }[] }>();
     frames.forEach((frame, frameIndex) => {
       const relTime = parseFloat((frame.timestamp - session.startTs).toFixed(3));
       const sigs = this.getSignals(frame);
+      if (sigs.length === 0) return;
+
+      if (!msgMap.has(frame.msgId)) {
+        msgMap.set(frame.msgId, {
+          msgId: frame.msgId,
+          msgName: frame.msgName || frame.msgId,
+          signals: new Map(),
+        });
+      }
+      const group = msgMap.get(frame.msgId)!;
       for (const sig of sigs) {
-        const key = `${frame.msgId}__${sig.signal_name}`;
-        if (!pointMap.has(key)) pointMap.set(key, { allPoints: [] });
-        pointMap.get(key)!.allPoints.push({
+        if (!group.signals.has(sig.signal_name)) {
+          group.signals.set(sig.signal_name, { allPoints: [] });
+        }
+        group.signals.get(sig.signal_name)!.allPoints.push({
           x: relTime,
           y: sig.raw_value,
           label: sig.label,
@@ -398,22 +370,17 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       }
     });
 
-    return groups
-      .map((group) => ({
-        groupTitle: group.groupTitle,
-        msgName: group.msgName,
-        signalDefs: group.signalKeys
-          .map((key, i) => ({
-            signalName: key.split('__')[1],
-            color: palette[i % palette.length],
-            allPoints: pointMap.get(key)?.allPoints ?? [],
-          }))
-          .filter((d) => d.allPoints.length > 0)
-          .map((d, idx) => ({
-            ...d,
-            color:
-              this.kpitMonitorChartTheme && idx === 0 ? '#b0ff44' : d.color,
-          })),
+    // Convert map to array of groups sorted by msgId
+    return [...msgMap.values()]
+      .sort((a, b) => a.msgId.localeCompare(b.msgId))
+      .map((g, groupIndex) => ({
+        groupTitle: `${g.msgName} (${g.msgId})`,
+        msgName: g.msgName,
+        signalDefs: [...g.signals.entries()].map(([signalName, data], i) => ({
+          signalName,
+          color: palette[(groupIndex * 4 + i) % palette.length],
+          allPoints: data.allPoints,
+        })),
       }))
       .filter((g) => g.signalDefs.length > 0);
   });
