@@ -1132,7 +1132,9 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     this.pendingChartPoints = [];
     this.chartComponents?.toArray().forEach((chart) => chart.clear());
 
-    const baseTs = this.playbackSessionStartTs || session.startTs;
+    const baseTs = this.playbackPoints.length > 0
+      ? this.playbackPoints[0].time
+      : (this.playbackSessionStartTs || session.startTs);
     for (const pt of this.playbackPoints) {
       if (pt.signalName) {
         const relTime = Math.max(0, parseFloat((pt.time - baseTs).toFixed(3)));
@@ -1156,7 +1158,9 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       const session = this.selectedSession();
       if (!session) return;
 
-      const baseTs = this.playbackSessionStartTs || session.startTs;
+      const baseTs = this.playbackPoints.length > 0
+        ? this.playbackPoints[0].time
+        : (this.playbackSessionStartTs || session.startTs);
 
       const wallElapsed = (Date.now() - this.playbackStartWallTime) / 1000;
       const logElapsed = wallElapsed * this.playbackSpeed;
