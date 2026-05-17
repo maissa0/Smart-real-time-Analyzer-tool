@@ -21,6 +21,10 @@ public interface CanSessionRepository extends JpaRepository<CanSessionEntity, Lo
 
     Optional<CanSessionEntity> findBySessionId(String sessionId);
 
+    /** Find the most recent session by source filename — used to mark live sessions COMPLETE. */
+    java.util.Optional<com.example.backend.can.entity.CanSessionEntity>
+        findTopBySourceFilenameOrderByCreatedAtDesc(String sourceFilename);
+
     List<CanSessionEntity> findAllByOrderByCreatedAtDesc();
 
     Page<CanSessionEntity> findAllByOrderByCreatedAtDesc(Pageable pageable);

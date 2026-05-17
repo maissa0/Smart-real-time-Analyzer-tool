@@ -1,10 +1,13 @@
 package com.example.backend.can.controller;
 
 import com.example.backend.audit.AuditLog;
+import com.example.backend.can.repository.CanSessionRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -47,11 +51,25 @@ public class SimulatorController {
     @Value("${simulator.logs.dir:${pipeline.uploads.dir}}")
     private String allowedLogsDir;
 
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final CanSessionRepository canSessionRepository;
+    private final ObjectMapper objectMapper;
+
+    public SimulatorController(
+            KafkaTemplate<String, String> kafkaTemplate,
+            CanSessionRepository canSessionRepository,
+            ObjectMapper objectMapper) {
+        this.kafkaTemplate = kafkaTemplate;
+        this.canSessionRepository = canSessionRepository;
+        this.objectMapper = objectMapper;
+    }
+
     /** Holds runtime metadata for a running simulator process. */
     private record SimulatorEntry(
             Process process,
             LocalDateTime startedAt,
-            String mode
+            String mode,
+            String sessionId
     ) {}
 
     private static final Map<String, SimulatorEntry> runningSimulators = new ConcurrentHashMap<>();
@@ -135,11 +153,15 @@ public class SimulatorController {
             }
 
             String simId = UUID.randomUUID().toString();
+            // Extract sessionId from Python args — it's passed as --car-uid context
+            // The Python simulator generates its own session UUID; we track it via
+            // the session-meta Kafka message. Store a placeholder here.
+            String sessionIdForEntry = simId; // will be updated when session-meta arrives
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.redirectErrorStream(true);
             Process process = pb.start();
             String modeStr = String.valueOf(config.getOrDefault("mode", "random"));
-            runningSimulators.put(simId, new SimulatorEntry(process, LocalDateTime.now(), modeStr));
+            runningSimulators.put(simId, new SimulatorEntry(process, LocalDateTime.now(), modeStr, sessionIdForEntry));
 
             String shortId = simId.substring(0, Math.min(8, simId.length()));
             Thread logThread = new Thread(() -> {
@@ -178,6 +200,17 @@ public class SimulatorController {
         }
         entry.process().destroyForcibly();
         log.info("Simulator stopped: id={}", simId);
+        // Find the most recent live_simulation session and mark it COMPLETE
+        try {
+            canSessionRepository.findTopBySourceFilenameOrderByCreatedAtDesc("live_simulation")
+                .ifPresent(session -> {
+                    session.setStatus("COMPLETE");
+                    canSessionRepository.save(session);
+                    log.info("Marked live_simulation session COMPLETE: {}", session.getSessionId());
+                });
+        } catch (Exception e) {
+            log.warn("Could not mark session complete: {}", e.getMessage());
+        }
         return ResponseEntity.ok(Map.of("simId", simId, "status", "stopped"));
     }
 
