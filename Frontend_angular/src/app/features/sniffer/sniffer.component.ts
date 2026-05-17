@@ -35,13 +35,14 @@ import { SimulatorControlComponent } from './simulator/simulator-control.compone
 import { SessionListComponent } from './session-list/session-list.component';
 import { FrameTableComponent } from './frame-table/frame-table.component';
 import { ReplayBarComponent } from './replay-bar/replay-bar.component';
+import { LivePipelineComponent } from './live-pipeline/live-pipeline.component';
 import { ReplayEngineService } from '../../core/services/replay-engine.service';
 
 @Component({
   selector: 'app-sniffer',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, HttpClientModule, FormsModule, SignalChartComponent, LogUploadComponent, SimulatorControlComponent, SessionListComponent, FrameTableComponent, ReplayBarComponent],
+  imports: [CommonModule, HttpClientModule, FormsModule, SignalChartComponent, LogUploadComponent, SimulatorControlComponent, SessionListComponent, FrameTableComponent, ReplayBarComponent, LivePipelineComponent],
   templateUrl: './sniffer.component.html',
   styleUrl: './sniffer.component.scss',
 })
@@ -656,8 +657,11 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     this.liveChartGroups.set(null);
     this.replayEngine.reset();
 
-    const isLive = (session.sourceFilename === 'live_simulation' || session.frameCount === 0)
-      && session.status !== 'COMPLETE';
+    // Re-check from sessions list to get latest status
+    const freshSession = this.sessions().find(s => s.sessionId === session.sessionId) ?? session;
+    const isLive = freshSession.sourceFilename === 'live_simulation'
+      && (freshSession.frameCount === 0 || freshSession.frameCount === null)
+      && freshSession.status !== 'COMPLETE';
     this.isLiveSession.set(isLive);
 
     this.loadFrames(session.sessionId);
@@ -669,6 +673,8 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       this.lastRealFrameTime = 0;
       this.startLiveTicker();
       this.startChartRaf();
+      // Auto-switch to CHARTS tab for live sessions
+      setTimeout(() => this.setTab('charts'), 300);
     } else {
       this.liveTelemetry.disconnect();
       this.stopLiveTicker();

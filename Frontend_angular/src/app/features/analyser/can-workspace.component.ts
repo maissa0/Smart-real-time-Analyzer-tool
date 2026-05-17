@@ -289,7 +289,7 @@ interface Session {
             </div>
 
             <!-- New session -->
-            <div class="lp-block">
+            <div class="lp-block" style="overflow-y:auto; max-height:calc(100vh - 320px);">
               <p class="block-label">New Session</p>
 
               <label class="action-btn action-btn-upload">
@@ -426,15 +426,24 @@ export class CanWorkspaceComponent implements OnInit {
   }
 
   onSimulatorStarted(): void {
-    // Wait for session meta to be saved then refresh session list
+    this.simOpen.set(false); // collapse simulator panel
+    // After 3s — session should be in MySQL, auto-select it
     setTimeout(() => {
       this.loadSessions(this.selectedVehicleUid());
+      setTimeout(() => {
+        // Find the newest live_simulation session and auto-select it
+        const liveSession = this.sessions().find(
+          s => s.sourceFilename === 'live_simulation' && s.status !== 'COMPLETE'
+        );
+        if (liveSession) {
+          this.openSession(liveSession.sessionId);
+        }
+      }, 500);
     }, 3000);
     // Keep refreshing every 5s while simulator runs
     const interval = setInterval(() => {
       this.loadSessions(this.selectedVehicleUid());
     }, 5000);
-    // Store interval ref so we can clear it
     (this as any)._simInterval = interval;
   }
 
@@ -443,9 +452,10 @@ export class CanWorkspaceComponent implements OnInit {
       clearInterval((this as any)._simInterval);
       (this as any)._simInterval = null;
     }
-    setTimeout(() => {
-      this.loadSessions(this.selectedVehicleUid());
-    }, 2000);
+    // Refresh session list multiple times to catch status=COMPLETE update
+    setTimeout(() => this.loadSessions(this.selectedVehicleUid()), 1000);
+    setTimeout(() => this.loadSessions(this.selectedVehicleUid()), 3000);
+    setTimeout(() => this.loadSessions(this.selectedVehicleUid()), 6000);
   }
 
   private h(): HttpHeaders {
