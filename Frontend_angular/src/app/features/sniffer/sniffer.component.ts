@@ -34,12 +34,14 @@ import { LogUploadComponent } from './upload/log-upload.component';
 import { SimulatorControlComponent } from './simulator/simulator-control.component';
 import { SessionListComponent } from './session-list/session-list.component';
 import { FrameTableComponent } from './frame-table/frame-table.component';
+import { ReplayBarComponent } from './replay-bar/replay-bar.component';
+import { ReplayEngineService } from '../../core/services/replay-engine.service';
 
 @Component({
   selector: 'app-sniffer',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, HttpClientModule, FormsModule, SignalChartComponent, LogUploadComponent, SimulatorControlComponent, SessionListComponent, FrameTableComponent],
+  imports: [CommonModule, HttpClientModule, FormsModule, SignalChartComponent, LogUploadComponent, SimulatorControlComponent, SessionListComponent, FrameTableComponent, ReplayBarComponent],
   templateUrl: './sniffer.component.html',
   styleUrl: './sniffer.component.scss',
 })
@@ -79,6 +81,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
   readonly selectedCarUid = signal<string>('');
   private destroyRef = inject(DestroyRef);
   private readonly http = inject(HttpClient);
+  readonly replayEngine = inject(ReplayEngineService);
 
   private simRefreshInterval: ReturnType<typeof setInterval> | null = null;
   private liveTickInterval: ReturnType<typeof setInterval> | null = null;
@@ -316,9 +319,34 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     return frames;
   });
 
+  /** Timestamp of the very first frame — used as relative time base (0.000s). */
+  sessionFirstTs = computed(() => {
+    const frames = this.allFrames();
+    if (frames.length === 0) return this.selectedSession()?.startTs ?? 0;
+    return frames[0].timestamp;
+  });
+
+  /** Timestamp of the very last frame — used for duration calculation. */
+  sessionLastTs = computed(() => {
+    const frames = this.allFrames();
+    if (frames.length === 0) return this.selectedSession()?.endTs ?? 0;
+    return frames[frames.length - 1].timestamp;
+  });
+
   durationSeconds = computed(() => {
-    const s = this.selectedSession();
-    return s ? (s.endTs - s.startTs).toFixed(2) : '0';
+    const frames = this.allFrames();
+    if (frames.length === 0) return '0';
+    return (frames[frames.length - 1].timestamp - frames[0].timestamp).toFixed(2);
+  });
+
+  /** Recording date derived from first frame's absolute timestamp. */
+  recordingDate = computed(() => {
+    const frames = this.allFrames();
+    if (frames.length === 0) return '—';
+    const firstTs = frames[0].timestamp;
+    // Convert Unix seconds to date string
+    const date = new Date(firstTs * 1000);
+    return date.toISOString().slice(0, 10);
   });
 
   // Built dynamically from actual session frame data.
@@ -344,8 +372,9 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       }>;
     }>();
 
+    const firstTs = this.sessionFirstTs();
     frames.forEach((frame, frameIndex) => {
-      const relTime = parseFloat((frame.timestamp - session.startTs).toFixed(3));
+      const relTime = parseFloat((frame.timestamp - firstTs).toFixed(3));
       const sigs = this.getSignals(frame);
       if (sigs.length === 0) return;
 
@@ -442,7 +471,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       });
       this.telemetry.appendLiveFrame(frame);
 
-      const relTime = parseFloat((frame.timestamp - session.startTs).toFixed(3));
+      const relTime = parseFloat((frame.timestamp - this.sessionFirstTs()).toFixed(3));
       const signals = this.getSignals(frame);
 
       for (const sig of signals) {
@@ -625,8 +654,10 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     this.liveFrames.set([]);
     this._frameBuffer = [];
     this.liveChartGroups.set(null);
+    this.replayEngine.reset();
 
-    const isLive = session.sourceFilename === 'live_simulation' || session.frameCount === 0;
+    const isLive = (session.sourceFilename === 'live_simulation' || session.frameCount === 0)
+      && session.status !== 'COMPLETE';
     this.isLiveSession.set(isLive);
 
     this.loadFrames(session.sessionId);
@@ -672,7 +703,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       if (this.lastSignalValues.size === 0) return;
 
       const relTime = parseFloat(
-        (Date.now() / 1000 - session.startTs).toFixed(3),
+        (Date.now() / 1000 - this.sessionFirstTs()).toFixed(3),
       );
       if (relTime < 0) return;
 
@@ -706,7 +737,9 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       }
 
       if (this.pendingChartPoints.length > 0) {
-        const batch = this.pendingChartPoints.splice(0);
+        // Limit to 150 points per frame to avoid rendering lag
+        // Remaining points are processed in subsequent frames
+        const batch = this.pendingChartPoints.splice(0, 150);
         for (const { signalName, point } of batch) {
           this.chartComponents?.forEach((chart) => {
             if (chart.datasets.some((d) => d.signalName === signalName)) {
@@ -993,7 +1026,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
 
   relativeTime(frame: CanFrame): string {
     return (
-      (frame.timestamp - (this.selectedSession()?.startTs ?? 0)).toFixed(3) +
+      (frame.timestamp - this.sessionFirstTs()).toFixed(3) +
       's'
     );
   }
@@ -1011,23 +1044,12 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     const session = this.selectedSession();
     if (!session || this.playbackActive()) return; // prevent multiple starts
 
-    // If full data already displayed (Show All or completed) — start fresh
-    // If stopped mid-way — continue from where we left off
-    const freshStart = this.playbackComplete() || this.playbackPoints.length === 0;
-    if (freshStart) {
-      this.pendingChartPoints = [];
-      this.chartComponents?.toArray().forEach((chart) => chart.clear());
-      this.playbackPoints = [];
-      this.playbackPointIndex = 0;
-      this.playbackComplete.set(false);
-    } else {
-      // Resume from stopped point — don't clear charts or points
-      // playbackPointIndex already set to where we stopped
-      if (this.playbackPointIndex < this.playbackPoints.length) {
-        this.playbackStartLogTime = this.playbackPoints[this.playbackPointIndex].time;
-        this.playbackStartWallTime = Date.now();
-      }
-    }
+    // Always start fresh — clear all chart data before replay
+    this.pendingChartPoints = [];
+    this.chartComponents?.toArray().forEach((chart) => chart.clear());
+    this.playbackPoints = [];
+    this.playbackPointIndex = 0;
+    this.playbackComplete.set(false);
 
     // Set active immediately to prevent multiple clicks before WS confirms
     this.playbackActive.set(true);
@@ -1036,10 +1058,9 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     this.influxPlaybackSub?.unsubscribe();
     this.influxPlaybackSub = null;
 
-    if (freshStart) {
-      this.liveTelemetry.subscribeToPlayback(session.sessionId);
+    this.liveTelemetry.subscribeToPlayback(session.sessionId);
 
-      this.influxPlaybackSub = this.liveTelemetry.playback$.subscribe((point) => {
+    this.influxPlaybackSub = this.liveTelemetry.playback$.subscribe((point) => {
         if (point.type === 'start') {
           this.playbackId.set(point.playbackId);
           this.playbackSpeed = this.telemetry.speed();
@@ -1055,12 +1076,16 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
           };
           const isFirstPoint = this.playbackPoints.length === 0;
           this.playbackPoints.push(pt);
+          this.replayEngine.pointsLoaded.set(this.playbackPoints.length);
           if (isFirstPoint && this.playbackPointIndex === 0) {
             this.playbackStartLogTime = pt.time;
             this.playbackStartWallTime = Date.now();
             this.playbackLoading.set(false);
             this.startChartRaf();
             this.startPlaybackClock();
+            // Start unified engine clock from 0
+            this.replayEngine.play(0);
+            this.replayEngine.pointsLoaded.set(0);
           } else if (isFirstPoint && this.playbackPointIndex > 0) {
             this.playbackLoading.set(false);
           }
@@ -1088,22 +1113,17 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
         }
       });
 
-      this.canService
-        .startPlayback({
-          sessionId: session.sessionId,
-          startTs: session.startTs,
-          endTs: session.endTs,
-          speed: this.telemetry.speed(),
-        })
-        .subscribe({
-          next: () => {},
-          error: (err) => console.error('[playback] start failed:', err),
-        });
-    } else {
-      this.playbackLoading.set(false);
-      this.startChartRaf();
-      this.startPlaybackClock();
-    }
+    this.canService
+      .startPlayback({
+        sessionId: session.sessionId,
+        startTs: session.startTs,
+        endTs: session.endTs,
+        speed: this.telemetry.speed(),
+      })
+      .subscribe({
+        next: () => {},
+        error: (err) => console.error('[playback] start failed:', err),
+      });
   }
 
   stopInfluxPlayback(): void {
@@ -1119,10 +1139,100 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     this.playbackLoading.set(false);
     this.playbackId.set(null);
     this.playbackActive.set(false);
+    // Restore static MySQL charts after replay stops
+    // Force charts tab to re-render from MySQL data
+    const session = this.selectedSession();
+    if (session) {
+      this.activeTab.set('table');
+      setTimeout(() => {
+        this.activeTab.set('charts');
+        this.loadChartJs();
+      }, 50);
+    }
     this.playbackComplete.set(false);
     this.influxPlaybackSub?.unsubscribe();
     this.influxPlaybackSub = null;
     this.liveTelemetry.stopPlaybackSubscription();
+  }
+
+  onReplayPlay(): void {
+    const session = this.selectedSession();
+    if (!session) return;
+
+    // Set duration from actual frame data
+    this.replayEngine.setDuration(parseFloat(this.durationSeconds()));
+    this.replayEngine.setLoading();
+
+    // Clear charts before starting
+    this.pendingChartPoints = [];
+    this.chartComponents?.toArray().forEach((chart) => chart.clear());
+    this.playbackPoints = [];
+    this.playbackPointIndex = 0;
+
+    // Register tick — syncs frame table scroll to current replay time
+    this.replayEngine.onTick((currentTime) => {
+      const frames = this.allFrames();
+      const firstTs = this.sessionFirstTs();
+      const targetTs = firstTs + currentTime;
+      let idx = frames.length - 1;
+      for (let i = 0; i < frames.length; i++) {
+        if (frames[i].timestamp > targetTs) {
+          idx = Math.max(0, i - 1);
+          break;
+        }
+      }
+      this.telemetry.seekTo(idx);
+      this.replayEngine.pointsRendered.set(this.playbackPointIndex);
+    });
+
+    // Register seek — redraws charts from buffer up to seek position
+    this.replayEngine.onSeek((targetSeconds) => {
+      if (this.playbackPoints.length === 0) return;
+      const baseTs = this.playbackPoints[0].time;
+      const targetLogTime = baseTs + targetSeconds;
+      const idx = this.playbackPoints.findIndex(p => p.time >= targetLogTime);
+      this.playbackPointIndex = Math.max(0, idx === -1 ? this.playbackPoints.length : idx);
+      this.pendingChartPoints = [];
+      this.chartComponents?.toArray().forEach((chart) => chart.clear());
+      const batchMap = new Map<string, {
+        signalName: string; relTime: number; y: number; label: string;
+      }>();
+      for (let i = 0; i < this.playbackPointIndex; i++) {
+        const pt = this.playbackPoints[i];
+        const relTime = Math.max(0, parseFloat((pt.time - baseTs).toFixed(3)));
+        batchMap.set(`${pt.signalName}__${relTime}`, {
+          signalName: pt.signalName, relTime, y: pt.value, label: pt.label,
+        });
+      }
+      batchMap.forEach((entry) => {
+        this.pendingChartPoints.push({
+          signalName: entry.signalName,
+          point: { x: entry.relTime, y: entry.y, label: entry.label },
+        });
+      });
+      this.startChartRaf();
+    });
+
+    // Start InfluxDB stream
+    this.startInfluxPlayback();
+  }
+
+  onReplayStop(): void {
+    this.stopInfluxPlayback();
+    this.replayEngine.stop();
+    // Restore MySQL static charts
+    const session = this.selectedSession();
+    if (session) {
+      this.activeTab.set('table');
+      setTimeout(() => {
+        this.activeTab.set('charts');
+        this.loadChartJs();
+      }, 50);
+    }
+  }
+
+  onReplaySeek(targetSeconds: number): void {
+    this.replayEngine.seek(targetSeconds);
   }
 
   showAllPlaybackPoints(): void {
@@ -1134,7 +1244,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
 
     const baseTs = this.playbackPoints.length > 0
       ? this.playbackPoints[0].time
-      : (this.playbackSessionStartTs || session.startTs);
+      : this.sessionFirstTs();
     for (const pt of this.playbackPoints) {
       if (pt.signalName) {
         const relTime = Math.max(0, parseFloat((pt.time - baseTs).toFixed(3)));
@@ -1160,12 +1270,15 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
 
       const baseTs = this.playbackPoints.length > 0
         ? this.playbackPoints[0].time
-        : (this.playbackSessionStartTs || session.startTs);
+        : this.sessionFirstTs();
 
       const wallElapsed = (Date.now() - this.playbackStartWallTime) / 1000;
       const logElapsed = wallElapsed * this.playbackSpeed;
       const targetLogTime = this.playbackStartLogTime + logElapsed;
 
+      // Collect points up to targetLogTime
+      // Deduplicate: same signal at same relative time → keep last value only
+      const batchMap = new Map<string, { signalName: string; relTime: number; y: number; label: string }>();
       while (
         this.playbackPointIndex < this.playbackPoints.length &&
         this.playbackPoints[this.playbackPointIndex].time <= targetLogTime
@@ -1173,23 +1286,19 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
         const pt = this.playbackPoints[this.playbackPointIndex];
         if (pt.signalName) {
           const relTime = Math.max(0, parseFloat((pt.time - baseTs).toFixed(3)));
-          this.pendingChartPoints.push({
+          batchMap.set(`${pt.signalName}__${relTime}`, {
             signalName: pt.signalName,
-            point: { x: relTime, y: pt.value, label: pt.label },
+            relTime,
+            y: pt.value,
+            label: pt.label,
           });
         }
         this.playbackPointIndex++;
       }
-
-      // Extend all active signal lines to current playback time
-      const currentRelTime = Math.max(
-        0,
-        parseFloat((targetLogTime - (this.playbackSessionStartTs || session.startTs)).toFixed(3)),
-      );
-      const activeSignals = new Set(this.playbackPoints.map((p) => p.signalName));
-      this.chartComponents?.toArray().forEach((chart) => {
-        activeSignals.forEach((signalName) => {
-          chart.extendToTime(signalName, currentRelTime);
+      batchMap.forEach((entry) => {
+        this.pendingChartPoints.push({
+          signalName: entry.signalName,
+          point: { x: entry.relTime, y: entry.y, label: entry.label },
         });
       });
 

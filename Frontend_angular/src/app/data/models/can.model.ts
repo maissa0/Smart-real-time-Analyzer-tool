@@ -6,6 +6,7 @@ export interface CanSession {
   endTs: number;
   frameCount: number;
   createdAt: string;
+  status?: string | null;
 }
 
 export interface DecodedSignal {
