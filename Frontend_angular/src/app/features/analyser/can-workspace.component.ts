@@ -8,6 +8,7 @@ import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http'
 import { Router, ActivatedRoute } from '@angular/router';
 import { API_BASE_URL } from '../../core/config/api.config';
 import { SnifferComponent } from '../sniffer/sniffer.component';
+import { SimulatorControlComponent } from '../sniffer/simulator/simulator-control.component';
 
 interface Car {
   carUid: string; make: string; model: string;
@@ -23,7 +24,7 @@ interface Session {
   selector: 'app-can-workspace',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, HttpClientModule, SnifferComponent],
+  imports: [CommonModule, FormsModule, HttpClientModule, SnifferComponent, SimulatorControlComponent],
   styles: [`
     :host { display:block; height:100vh; overflow:hidden; }
 
@@ -314,12 +315,10 @@ interface Session {
 
               @if (simOpen()) {
                 <div class="sim-expanded">
-                  <app-sniffer
-                    [hideUpload]="true"
-                    [hideSimulator]="false"
-                    [liveOnly]="true"
-                    style="display:block;">
-                  </app-sniffer>
+                  <app-simulator-control
+                    (simulatorStarted)="onSimulatorStarted()"
+                    (simulatorStopped)="onSimulatorStopped()">
+                  </app-simulator-control>
                 </div>
               }
             </div>
@@ -424,6 +423,29 @@ export class CanWorkspaceComponent implements OnInit {
 
   uploadFile(e: Event): void {
     this.router.navigate(['/admin/upload']);
+  }
+
+  onSimulatorStarted(): void {
+    // Wait for session meta to be saved then refresh session list
+    setTimeout(() => {
+      this.loadSessions(this.selectedVehicleUid());
+    }, 3000);
+    // Keep refreshing every 5s while simulator runs
+    const interval = setInterval(() => {
+      this.loadSessions(this.selectedVehicleUid());
+    }, 5000);
+    // Store interval ref so we can clear it
+    (this as any)._simInterval = interval;
+  }
+
+  onSimulatorStopped(): void {
+    if ((this as any)._simInterval) {
+      clearInterval((this as any)._simInterval);
+      (this as any)._simInterval = null;
+    }
+    setTimeout(() => {
+      this.loadSessions(this.selectedVehicleUid());
+    }, 2000);
   }
 
   private h(): HttpHeaders {
