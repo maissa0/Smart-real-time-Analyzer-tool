@@ -143,18 +143,16 @@ public class PlaybackService {
                                 .orElse("")
                 );
 
-        String startRfc = Instant.ofEpochSecond((long) startTs).toString();
-        String stopRfc = Instant.ofEpochSecond((long) endTs + 1).toString();
-
         String flux = String.format("""
                 from(bucket: "%s")
-                  |> range(start: %s, stop: %s)
+                  |> range(start: 0)
                   |> filter(fn: (r) => r["_measurement"] == "can_signals")
                   |> filter(fn: (r) => r["session_id"] == "%s")
                   |> filter(fn: (r) => r["_field"] == "value")
                   %s
+                  |> group(columns: ["session_id", "signal_name", "msg_id", "msg_name", "channel_name"])
                   |> sort(columns: ["_time"])
-                """, bucket, startRfc, stopRfc, sessionId, signalFilter);
+                """, bucket, sessionId, signalFilter);
 
         log.info("Playback query started: id={} signals={}", playbackId, signals);
 
