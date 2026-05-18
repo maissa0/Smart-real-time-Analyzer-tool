@@ -473,11 +473,18 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       });
       this.telemetry.appendLiveFrame(frame);
 
+      console.log('[live] frame received:', {
+        sessionId: frame.sessionId,
+        timestamp: frame.timestamp,
+        isLive: this.isLiveSession(),
+        bufferSize: this._frameBuffer.length,
+        liveGroupsCount: this.liveChartGroups()?.length ?? 0,
+        activeTab: this.activeTab(),
+      });
       const relTime = parseFloat((frame.timestamp - this.sessionFirstTs()).toFixed(3));
       const signals = this.getSignals(frame);
 
       for (const sig of signals) {
-        // Buffer chart points instead of updating immediately
         this.pendingChartPoints.push({
           signalName: sig.signal_name,
           point: { x: relTime, y: sig.raw_value, label: sig.label },
@@ -487,6 +494,18 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
           label: sig.label,
           sessionStartTs: session.startTs,
         });
+      }
+      // Rebuild chart groups if not yet initialized
+      if ((this.liveChartGroups() === null || this.liveChartGroups()!.length === 0)
+          && this._frameBuffer.length > 2) {
+        const groups = this.buildLiveChartGroupBindings();
+        if (groups.length > 0) {
+          this.liveChartGroups.set(groups);
+          // Switch to charts tab on first data
+          if (this.activeTab() !== 'charts') {
+            setTimeout(() => this.setTab('charts'), 200);
+          }
+        }
       }
 
       this.lastRealFrameTime = Date.now();
@@ -669,6 +688,14 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       && freshSession.status !== 'COMPLETE';
     this.isLiveSession.set(isLive);
 
+    console.log('[selectSession]', {
+      sessionId: session.sessionId,
+      sourceFilename: session.sourceFilename,
+      frameCount: session.frameCount,
+      status: (session as any).status,
+      isLive,
+    });
+
     this.loadFrames(session.sessionId);
     this.loadIntegrity(session.sessionId);
 
@@ -795,6 +822,9 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
   }> {
     const groups = this.allSignalGroups();
     if (groups.length === 0) return [];
+
+    console.log('[live] buildLiveChartGroupBindings — groups:', groups.length,
+      'allFrames:', this.allFrames().length);
     return groups.map((g) => ({
       groupTitle: g.groupTitle,
       msgName: g.msgName,

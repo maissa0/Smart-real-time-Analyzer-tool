@@ -60,15 +60,31 @@
     </div>
 
     <!-- Live pipeline status — shown only during live sessions -->
-    @if (selectedSession() && isLiveSession()) {
+    @if (isLiveSession()) {
       <app-live-pipeline
-        [sessionId]="selectedSession()!.sessionId"
-        [sessionFrameCount]="selectedSession()!.frameCount ?? 0">
+        [sessionId]="selectedSession()!.sessionId">
       </app-live-pipeline>
     }
 
-    <!-- Unified Replay Bar — shown only for completed sessions -->
-    @if (selectedSession() && !isLiveSession()) {
+    <!-- Session complete message — only for completed live_simulation sessions -->
+    @if (selectedSession() && !isLiveSession() &&
+         selectedSession()!.sourceFilename === 'live_simulation' &&
+         selectedSession()!.status === 'COMPLETE') {
+      <div style="
+        padding: 0.5rem 1rem;
+        background: rgba(176,255,68,0.06);
+        border-bottom: 1px solid rgba(176,255,68,0.12);
+        display: flex; align-items: center; gap: 0.75rem;
+        font-size: 0.72rem; flex-shrink: 0;">
+        <span style="color:#b0ff44; font-weight:600;">✓ Session complete</span>
+        <span style="color:#484f58;">—</span>
+        <span style="color:#8a9ab0;">Click Play to replay signal charts</span>
+      </div>
+    }
+    <!-- Unified Replay Bar — shown only for non-live completed sessions -->
+    @if (selectedSession() && !isLiveSession() &&
+         !(selectedSession()!.sourceFilename === 'live_simulation' &&
+           selectedSession()!.status !== 'COMPLETE')) {
       <app-replay-bar
         (playRequested)="onReplayPlay()"
         (stopRequested)="onReplayStop()"
