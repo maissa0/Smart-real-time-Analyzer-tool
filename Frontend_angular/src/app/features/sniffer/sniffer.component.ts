@@ -683,9 +683,16 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
 
     // Re-check from sessions list to get latest status
     const freshSession = this.sessions().find(s => s.sessionId === session.sessionId) ?? session;
+    // A live_simulation session is "live" if:
+    // 1. It has no status yet (status is null/undefined = still running)
+    // 2. AND it's not explicitly marked COMPLETE
+    // Note: frameCount may already be > 0 when auto-selected, so we don't check frameCount
     const isLive = freshSession.sourceFilename === 'live_simulation'
-      && (freshSession.frameCount === 0 || freshSession.frameCount === null)
-      && freshSession.status !== 'COMPLETE';
+      && freshSession.status !== 'COMPLETE'
+      && (freshSession.status === null
+          || freshSession.status === undefined
+          || freshSession.status === ''
+          || freshSession.status === 'LIVE');
     this.isLiveSession.set(isLive);
 
     console.log('[selectSession]', {

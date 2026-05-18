@@ -48,6 +48,29 @@ public class CanSessionService {
     public CanSessionEntity saveSession(String json) throws JsonProcessingException {
         Map<String, Object> map = objectMapper.readValue(json, new TypeReference<>() {});
         String sessionId = stringVal(map.get("session_id"));
+        String status = stringVal(map.get("status"));
+
+        // If status update message — update existing session status only
+        if (status != null && !status.isBlank()) {
+            return canSessionRepository.findBySessionId(sessionId).map(existing -> {
+                existing.setStatus(status);
+                log.info("Session status updated: id={} status={}", sessionId, status);
+                return canSessionRepository.save(existing);
+            }).orElseGet(() -> {
+                // Session not found — create it with status
+                CanSessionEntity entity = CanSessionEntity.builder()
+                        .sessionId(sessionId)
+                        .sourceFilename(stringVal(map.get("source_filename")))
+                        .startTs(toDouble(map.get("start_ts")))
+                        .endTs(toDouble(map.get("end_ts")))
+                        .frameCount(toInteger(map.get("frame_count")))
+                        .status(status)
+                        .build();
+                return canSessionRepository.save(entity);
+            });
+        }
+
+        // Normal session creation — only create if not exists
         return canSessionRepository.findBySessionId(sessionId).orElseGet(() -> {
             CanSessionEntity.CanSessionEntityBuilder builder = CanSessionEntity.builder()
                     .sessionId(sessionId)
@@ -55,7 +78,6 @@ public class CanSessionService {
                     .startTs(toDouble(map.get("start_ts")))
                     .endTs(toDouble(map.get("end_ts")))
                     .frameCount(toInteger(map.get("frame_count")));
-            // Link to vehicle if car_uid is present in the message
             String carUid = (String) map.get("car_uid");
             if (carUid != null && !carUid.isBlank()) {
                 carRepository.findByCarUid(carUid)
@@ -245,7 +267,8 @@ public class CanSessionService {
                 e.getStartTs(),
                 e.getEndTs(),
                 e.getFrameCount(),
-                e.getCreatedAt()
+                e.getCreatedAt(),
+                e.getStatus()
         );
     }
 

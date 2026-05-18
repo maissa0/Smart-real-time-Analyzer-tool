@@ -9,5 +9,6 @@ public record CanSessionResponse(
         Double startTs,
         Double endTs,
         Integer frameCount,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String status
 ) {}
