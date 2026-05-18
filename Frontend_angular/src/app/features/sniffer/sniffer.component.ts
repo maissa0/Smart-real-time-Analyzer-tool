@@ -1174,27 +1174,33 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
             value: Number(point.value),
             label: String(point.label ?? ''),
           };
+          const isFirstPoint = this.playbackPoints.length === 0;
           this.playbackPoints.push(pt);
           this.replayEngine.pointsLoaded.set(this.playbackPoints.length);
+          if (isFirstPoint && this.playbackPointIndex === 0) {
+            this.playbackStartLogTime = pt.time;
+            this.playbackStartWallTime = Date.now();
+            this.playbackLoading.set(false);
+            this.startChartRaf();
+            this.startPlaybackClock();
+            // Start unified engine clock from 0
+            this.replayEngine.play(0);
+            this.replayEngine.pointsLoaded.set(0);
+          } else if (isFirstPoint && this.playbackPointIndex > 0) {
+            this.playbackLoading.set(false);
+          }
         } else if (point.type === 'complete') {
           this.playbackLoading.set(false);
           this.influxPlaybackSub?.unsubscribe();
           this.influxPlaybackSub = null;
           this.liveTelemetry.stopPlaybackSubscription();
+          // Sort once after all points received — fixes interleaved 
+          // multi-table ordering from InfluxDB streaming
+          this.playbackPoints.sort((a, b) => a.time - b.time);
           if (this.playbackPoints.length === 0) {
             this.playbackActive.set(false);
             this.playbackId.set(null);
             this.playbackComplete.set(false);
-          } else {
-            // Sort full buffer by time after Influx streaming completes, then start replay
-            this.playbackPoints.sort((a, b) => a.time - b.time);
-            this.playbackStartLogTime = this.playbackPoints[0].time;
-            this.playbackStartWallTime = Date.now();
-            this.playbackPointIndex = 0;
-            this.startChartRaf();
-            this.startPlaybackClock();
-            this.replayEngine.play(0);
-            this.replayEngine.pointsLoaded.set(0);
           }
         } else if (point.type === 'error') {
           this.stopPlaybackClock();
