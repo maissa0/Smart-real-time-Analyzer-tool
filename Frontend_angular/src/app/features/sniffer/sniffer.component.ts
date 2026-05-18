@@ -155,6 +155,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
   }> = [];
   private rafId: number | null = null;
   private rafRunning = false;
+  private _lastChartUpdate = 0;
 
   /**
    * Stable chart groups for live mode (refreshed on loadFrames only).
@@ -489,6 +490,10 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       }
 
       this.lastRealFrameTime = Date.now();
+      // Switch to charts tab when first live frames arrive
+      if (this._frameBuffer.length === 1 && this.activeTab() !== 'charts') {
+        setTimeout(() => this.setTab('charts'), 100);
+      }
     });
     this.loadSessions();
     this.loadCars();
@@ -740,22 +745,34 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       // Update allFrames signal once per RAF — not once per Kafka message
       if (this._frameBuffer.length > 0 && this.isLiveSession()) {
         this.allFrames.set([...this._frameBuffer]);
+        // Rebuild live chart groups when first frames arrive
+        // This ensures SignalChartComponents exist before appendPoint is called
+        if (this.liveChartGroups() === null || this.liveChartGroups()!.length === 0) {
+          this.liveChartGroups.set(this.buildLiveChartGroupBindings());
+        }
       }
 
       if (this.pendingChartPoints.length > 0) {
-        // Limit to 150 points per frame to avoid rendering lag
-        // Remaining points are processed in subsequent frames
-        const batch = this.pendingChartPoints.splice(0, 150);
-        for (const { signalName, point } of batch) {
-          this.chartComponents?.forEach((chart) => {
-            if (chart.datasets.some((d) => d.signalName === signalName)) {
-              chart.appendPoint(signalName, point);
-            }
-          });
+        const now = performance.now();
+        // For live sessions: throttle chart updates to max 10 per second
+        // This prevents burst rendering and makes lines smooth
+        const throttleMs = this.isLiveSession() ? 100 : 0;
+        if (now - this._lastChartUpdate >= throttleMs) {
+          this._lastChartUpdate = now;
+          // Limit to 150 points per frame to avoid rendering lag
+          const batch = this.pendingChartPoints.splice(0, 150);
+          for (const { signalName, point } of batch) {
+            this.chartComponents?.forEach((chart) => {
+              if (chart.datasets.some((d) => d.signalName === signalName)) {
+                chart.appendPoint(signalName, point);
+              }
+            });
+          }
+          // Flush all charts once after processing entire batch
+          this.chartComponents?.forEach((chart) => chart.flushUpdate());
         }
-        // Flush all charts once after processing entire batch
-        this.chartComponents?.forEach((chart) => chart.flushUpdate());
       }
+
       if (this.rafRunning) {
         this.rafId = requestAnimationFrame(loop);
       }
@@ -776,13 +793,15 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     msgName: string;
     datasets: ChartDataset[];
   }> {
-    return this.allSignalGroups().map((g) => ({
+    const groups = this.allSignalGroups();
+    if (groups.length === 0) return [];
+    return groups.map((g) => ({
       groupTitle: g.groupTitle,
       msgName: g.msgName,
       datasets: g.signalDefs.map((d) => ({
         signalName: d.signalName,
         color: d.color,
-        points: d.allPoints.map((p) => ({ x: p.x, y: p.y, label: p.label })),
+        points: [], // Start empty — points added via appendPoint() in real-time
       })) as ChartDataset[],
     }));
   }
@@ -996,7 +1015,10 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     if (tab === 'charts') {
       this.loadChartJs();
       if (this.isLiveSession()) {
-        this.liveChartGroups.set(this.buildLiveChartGroupBindings());
+        // Rebuild chart groups with current frame data
+        const groups = this.buildLiveChartGroupBindings();
+        this.liveChartGroups.set(groups.length > 0 ? groups : null);
+        // If no groups yet (no frames), retry after frames arrive via RAF
       }
     }
     if (tab === 'integrity' && this.selectedSession()) {
