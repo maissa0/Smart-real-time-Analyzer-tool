@@ -786,15 +786,14 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
         (Date.now() / 1000 - this.sessionFirstTs()).toFixed(3),
       );
       if (relTime < 0) return;
-
+      // Route through pendingChartPoints so RAF handles rendering
+      // This prevents two competing update paths fighting each other
       this.lastSignalValues.forEach((sigState, signalName) => {
-        const point = { x: relTime, y: sigState.value, label: sigState.label };
-        this.chartComponents?.forEach((chart) => {
-          const ds = chart.datasets.find((d) => d.signalName === signalName);
-          if (ds) chart.appendPoint(signalName, point);
+        this.pendingChartPoints.push({
+          signalName,
+          point: { x: relTime, y: sigState.value, label: sigState.label },
         });
       });
-      this.chartComponents?.forEach((chart) => chart.flushUpdate());
     }, 200);
   }
 
@@ -825,7 +824,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
         const now = performance.now();
         // For live sessions: throttle chart updates to max 10 per second
         // This prevents burst rendering and makes lines smooth
-        const throttleMs = this.isLiveSession() ? 100 : 0;
+        const throttleMs = this.isLiveSession() ? 50 : 0;
         if (now - this._lastChartUpdate >= throttleMs) {
           this._lastChartUpdate = now;
           // Limit to 150 points per frame to avoid rendering lag

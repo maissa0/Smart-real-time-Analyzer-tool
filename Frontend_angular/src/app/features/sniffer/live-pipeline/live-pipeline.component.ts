@@ -177,7 +177,8 @@ export class LivePipelineComponent implements OnInit, OnDestroy {
 
   readonly sessionId = input<string>('');
 
-  readonly wsFrames = computed(() => this.liveTelemetry.frameCount());
+  private readonly _wsFramesTarget = computed(() => this.liveTelemetry.frameCount());
+  readonly wsFrames = signal<number>(0);
   readonly mysqlFrames = signal<number>(0);
   readonly elapsedSeconds = signal<number>(0);
   readonly avgSignals = signal<number>(5);
@@ -217,6 +218,7 @@ export class LivePipelineComponent implements OnInit, OnDestroy {
 
   private _pollTimer: ReturnType<typeof setInterval> | null = null;
   private _clockTimer: ReturnType<typeof setInterval> | null = null;
+  private _animTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     // Poll MySQL frame count every 2s
@@ -248,10 +250,26 @@ export class LivePipelineComponent implements OnInit, OnDestroy {
     this._clockTimer = setInterval(() => {
       this.elapsedSeconds.update(n => n + 1);
     }, 1000);
+
+    // Animate counters smoothly toward their real values
+    this._animTimer = setInterval(() => {
+      const wsTarget = this._wsFramesTarget();
+      const wsCurrent = this.wsFrames();
+      if (wsCurrent < wsTarget) {
+        // Step toward target — move at most 3 per tick (60ms interval)
+        // so visually it increments fast but smoothly
+        const step = Math.ceil((wsTarget - wsCurrent) / 4);
+        this.wsFrames.set(Math.min(wsTarget, wsCurrent + step));
+      }
+      const mysqlTarget = this.mysqlFrames();
+      // mysqlFrames is already polled — no animation needed,
+      // it updates every 2s which is acceptable
+    }, 60);
   }
 
   ngOnDestroy(): void {
     if (this._pollTimer) clearInterval(this._pollTimer);
     if (this._clockTimer) clearInterval(this._clockTimer);
+    if (this._animTimer) clearInterval(this._animTimer);
   }
 }
