@@ -1,6 +1,6 @@
 import {
   ChangeDetectionStrategy, Component, inject,
-  signal, computed, OnInit, OnDestroy, input
+  signal, computed, OnInit, OnDestroy, input, DestroyRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
@@ -14,127 +14,185 @@ import { API_BASE_URL } from '../../../core/config/api.config';
   imports: [CommonModule, HttpClientModule],
   styles: [`
     .pipeline {
+      padding: 0.6rem 1rem;
       background: #0d1117;
-      border: 1px solid rgba(176,255,68,0.12);
-      border-radius: 10px;
-      padding: 0.75rem 1rem;
-      margin-bottom: 0.5rem;
-      font-size: 0.72rem;
+      border-bottom: 1px solid rgba(176,255,68,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
     }
-    .pipeline-title {
-      font-size: 0.62rem; font-weight: 700;
-      letter-spacing: 0.15em; color: #b0ff44;
-      text-transform: uppercase; margin: 0 0 0.6rem;
-      display: flex; align-items: center; gap: 0.5rem;
+    .pipeline-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.2rem;
     }
     .live-dot {
-      width: 7px; height: 7px; border-radius: 50%;
+      width: 7px; height: 7px;
+      border-radius: 50%;
       background: #b0ff44;
       animation: pulse 1.4s ease-in-out infinite;
       flex-shrink: 0;
     }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .pipeline-row {
-      display: flex; align-items: center;
-      gap: 0.5rem; margin-bottom: 0.4rem;
-    }
-    .pipeline-label {
-      font-size: 0.65rem; color: #484f58;
-      width: 110px; flex-shrink: 0;
-    }
-    .pipeline-bar-wrap {
-      flex: 1; height: 6px; background: #161b22;
-      border-radius: 3px; overflow: hidden;
-    }
-    .pipeline-bar {
-      height: 100%; border-radius: 3px;
-      transition: width 0.3s ease;
-    }
-    .pipeline-count {
-      font-size: 0.68rem; color: #e6edf3;
-      font-weight: 600; min-width: 60px;
-      text-align: right; font-family: monospace;
-    }
-    .pipeline-lag {
-      font-size: 0.62rem; color: #f0a500;
-      margin-top: 0.25rem; text-align: right;
+    .pipeline-title {
+      font-size: 0.62rem; font-weight: 700;
+      letter-spacing: 0.15em; color: #b0ff44;
+      text-transform: uppercase;
     }
     .timer {
-      font-family: monospace; font-size: 0.72rem;
-      color: #e6edf3; margin-left: auto;
+      font-family: monospace; font-size: 0.68rem;
+      color: #484f58; margin-left: auto;
+    }
+    .pipeline-rows {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+    .pipeline-stage {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 6px;
+      padding: 0.4rem 0.6rem;
+    }
+    .stage-header {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
     }
     .stage-icon { font-size: 0.7rem; }
+    .stage-label {
+      font-size: 0.6rem;
+      color: #484f58;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .stage-count {
+      font-size: 0.82rem;
+      font-weight: 700;
+      font-family: monospace;
+      color: #e6edf3;
+    }
+    .stage-bar-wrap {
+      height: 3px;
+      background: #21262d;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .stage-bar {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    .stage-rate {
+      font-size: 0.58rem;
+      color: #484f58;
+    }
   `],
   template: `
     <div class="pipeline">
-      <div class="pipeline-title">
+      <div class="pipeline-header">
         <span class="live-dot"></span>
-        Live Pipeline
+        <span class="pipeline-title">Live Pipeline</span>
         <span class="timer">{{ elapsedTime() }}</span>
       </div>
 
-      <!-- WebSocket received (most real-time) -->
-      <div class="pipeline-row">
-        <span class="stage-icon">📡</span>
-        <span class="pipeline-label">WS Received</span>
-        <div class="pipeline-bar-wrap">
-          <div class="pipeline-bar"
-            style="background:#b0ff44"
-            [style.width]="wsPercent() + '%'">
-          </div>
-        </div>
-        <span class="pipeline-count">{{ wsFrames() | number }}</span>
-      </div>
+      <div class="pipeline-rows">
 
-      <!-- MySQL saved (polled every 2s) -->
-      <div class="pipeline-row">
-        <span class="stage-icon">🗄️</span>
-        <span class="pipeline-label">MySQL Saved</span>
-        <div class="pipeline-bar-wrap">
-          <div class="pipeline-bar"
-            style="background:#3b82f6"
-            [style.width]="mysqlPercent() + '%'">
+        <!-- Simulator generated -->
+        <div class="pipeline-stage">
+          <div class="stage-header">
+            <span class="stage-icon">🎯</span>
+            <span class="stage-label">Simulator</span>
           </div>
-        </div>
-        <span class="pipeline-count">{{ mysqlFrames() | number }}</span>
-      </div>
-
-      <!-- InfluxDB (same as MySQL for now — signals written per frame) -->
-      <div class="pipeline-row">
-        <span class="stage-icon">📈</span>
-        <span class="pipeline-label">InfluxDB Pts</span>
-        <div class="pipeline-bar-wrap">
-          <div class="pipeline-bar"
-            style="background:#8b5cf6"
-            [style.width]="influxPercent() + '%'">
+          <span class="stage-count">{{ wsFrames() | number }}</span>
+          <div class="stage-bar-wrap">
+            <div class="stage-bar"
+              style="background:#b0ff44"
+              [style.width]="'100%'">
+            </div>
           </div>
+          <span class="stage-rate">{{ fps() }} fps</span>
         </div>
-        <span class="pipeline-count">~{{ influxEstimate() | number }}</span>
-      </div>
 
-      @if (lag() > 5) {
-        <div class="pipeline-lag">
-          ⚠ Pipeline lag: {{ lag() }} frames behind
+        <!-- WebSocket received -->
+        <div class="pipeline-stage">
+          <div class="stage-header">
+            <span class="stage-icon">📡</span>
+            <span class="stage-label">WS Received</span>
+          </div>
+          <span class="stage-count">{{ wsFrames() | number }}</span>
+          <div class="stage-bar-wrap">
+            <div class="stage-bar"
+              style="background:#3b82f6"
+              [style.width]="wsPercent() + '%'">
+            </div>
+          </div>
+          <span class="stage-rate">real-time</span>
         </div>
-      }
+
+        <!-- MySQL saved -->
+        <div class="pipeline-stage">
+          <div class="stage-header">
+            <span class="stage-icon">🗄️</span>
+            <span class="stage-label">MySQL Saved</span>
+          </div>
+          <span class="stage-count">{{ mysqlFrames() | number }}</span>
+          <div class="stage-bar-wrap">
+            <div class="stage-bar"
+              style="background:#10b981"
+              [style.width]="mysqlPercent() + '%'">
+            </div>
+          </div>
+          <span class="stage-rate">~2s delay</span>
+        </div>
+
+        <!-- InfluxDB signals -->
+        <div class="pipeline-stage">
+          <div class="stage-header">
+            <span class="stage-icon">📈</span>
+            <span class="stage-label">InfluxDB Pts</span>
+          </div>
+          <span class="stage-count">{{ influxEstimate() | number }}</span>
+          <div class="stage-bar-wrap">
+            <div class="stage-bar"
+              style="background:#8b5cf6"
+              [style.width]="influxPercent() + '%'">
+            </div>
+          </div>
+          <span class="stage-rate">~{{ avgSignals() }} sig/frame</span>
+        </div>
+
+      </div>
     </div>
   `,
 })
 export class LivePipelineComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
   readonly liveTelemetry = inject(LiveTelemetryService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly sessionId = input<string>('');
-  readonly sessionFrameCount = input<number>(0);
 
   readonly wsFrames = computed(() => this.liveTelemetry.frameCount());
   readonly mysqlFrames = signal<number>(0);
   readonly elapsedSeconds = signal<number>(0);
+  readonly avgSignals = signal<number>(5);
+
   readonly elapsedTime = computed(() => {
-    const elapsed = this.elapsedSeconds();
-    const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
-    const s = (elapsed % 60).toString().padStart(2, '0');
+    const e = this.elapsedSeconds();
+    const m = Math.floor(e / 60).toString().padStart(2, '0');
+    const s = (e % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
+  });
+
+  readonly fps = computed(() => {
+    const e = this.elapsedSeconds();
+    if (e === 0) return 0;
+    return Math.round(this.wsFrames() / e);
   });
 
   readonly maxFrames = computed(() =>
@@ -149,20 +207,14 @@ export class LivePipelineComponent implements OnInit, OnDestroy {
     Math.min(100, Math.round((this.mysqlFrames() / this.maxFrames()) * 100))
   );
 
-  // Estimate InfluxDB points — average ~3 signals per frame
   readonly influxEstimate = computed(() =>
-    Math.round(this.mysqlFrames() * 3)
+    Math.round(this.mysqlFrames() * this.avgSignals())
   );
 
   readonly influxPercent = computed(() =>
-    Math.min(100, Math.round((this.influxEstimate() / (this.maxFrames() * 3)) * 100))
+    this.mysqlPercent()
   );
 
-  readonly lag = computed(() =>
-    Math.max(0, this.wsFrames() - this.mysqlFrames())
-  );
-
-  private _timer: ReturnType<typeof setInterval> | null = null;
   private _pollTimer: ReturnType<typeof setInterval> | null = null;
   private _clockTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -176,14 +228,23 @@ export class LivePipelineComponent implements OnInit, OnDestroy {
         ? new HttpHeaders({ Authorization: `Bearer ${token}` })
         : new HttpHeaders();
       this.http.get<any>(
-        `${API_BASE_URL}/api/can/sessions/${sid}`,
+        `${API_BASE_URL}/api/can/sessions/${sid}/frame-count`,
         { headers }
       ).subscribe({
-        next: s => this.mysqlFrames.set(s.frameCount ?? 0),
+        next: s => {
+          const count = s.count ?? 0;
+          this.mysqlFrames.set(count);
+          // Estimate avg signals per frame from InfluxDB
+          // Each CAN message typically has 3-8 signals
+          if (count > 0) {
+            this.avgSignals.set(5); // reasonable default
+          }
+        },
         error: () => {}
       });
     }, 2000);
-    // Update elapsed time every second
+
+    // Increment elapsed time every second
     this._clockTimer = setInterval(() => {
       this.elapsedSeconds.update(n => n + 1);
     }, 1000);
@@ -192,6 +253,5 @@ export class LivePipelineComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this._pollTimer) clearInterval(this._pollTimer);
     if (this._clockTimer) clearInterval(this._clockTimer);
-    if (this._timer) clearInterval(this._timer);
   }
 }

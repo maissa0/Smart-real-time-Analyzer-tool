@@ -54,11 +54,14 @@ public class CanKafkaConsumer {
                     batch.stream()
                             .collect(Collectors.groupingBy(CanFrameEntity::getSessionId))
                             .forEach((sessionId, frames) -> {
+                                log.info("[WS] broadcasting {} frames to /topic/frames/{}",
+                                    frames.size(), sessionId.substring(0, 8));
                                 messagingTemplate.convertAndSend(
                                         "/topic/frames/" + sessionId, frames);
                             });
                     // Global broadcast — full batch to live-telemetry
                     messagingTemplate.convertAndSend("/topic/live-telemetry", batch);
+                    log.info("[WS] batch broadcast complete: {} total frames", batch.size());
                 });
         log.info("60Hz batch broadcaster started");
     }
@@ -75,7 +78,7 @@ public class CanKafkaConsumer {
     public void consumeSessionMeta(String message, Acknowledgment ack) {
         try {
             canSessionService.saveSession(message);
-            log.info("Session meta saved");
+            log.info("[BACKEND] Session meta saved: {}", message);
             messagingTemplate.convertAndSend("/topic/sessions", message);
             ack.acknowledge();
         } catch (Exception e) {
@@ -101,9 +104,15 @@ public class CanKafkaConsumer {
             String enrichedJson = mergeSessionKeyIntoJson(record.value(), record.key());
             CanFrameEntity savedFrame = canSessionService.saveFrame(enrichedJson);
             if (savedFrame != null) {
+                log.info("[BACKEND] frame saved: id={} session={} msg={} ts={}",
+                    savedFrame.getId(),
+                    savedFrame.getSessionId() != null ? savedFrame.getSessionId().substring(0, 8) : "null",
+                    savedFrame.getMsgId(),
+                    savedFrame.getTimestamp());
                 influxWriteService.writeFrame(savedFrame);
                 integrityAnalyzerService.analyze(savedFrame);
                 frameSink.tryEmitNext(savedFrame);
+                log.info("[BACKEND] frame emitted to WebSocket sink: id={}", savedFrame.getId());
             }
             ack.acknowledge();
         } catch (Exception e) {

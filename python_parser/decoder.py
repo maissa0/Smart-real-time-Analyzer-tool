@@ -196,7 +196,11 @@ class CanDecoderService:
             )
             self.producer.poll(0)
             self.decoded_count += 1
-
+            # Debug: print every frame decoded
+            print(f"[DECODER] #{self.decoded_count} session={decoded['session_id'][:8]} "
+                  f"msg={decoded['msg_id']} name={decoded['msg_name']} "
+                  f"signals={len(decoded['signals'])} ts={decoded['timestamp']:.3f}",
+                  flush=True)
             if self.decoded_count % 100 == 0:
                 log.info(
                     "Decoded %d frames | Last: %s (%d signals)",

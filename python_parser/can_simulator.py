@@ -250,6 +250,7 @@ class CanSimulator:
         start_ts: float,
         end_ts: float,
         frame_count: int,
+        status: str | None = None,
     ) -> None:
         meta = {
             "session_id": self.session_id,
@@ -258,6 +259,8 @@ class CanSimulator:
             "end_ts": end_ts,
             "frame_count": frame_count,
         }
+        if status is not None:
+            meta["status"] = status
         # Link session to a vehicle if --car-uid was provided
         if getattr(self.args, 'car_uid', None):
             meta["car_uid"] = self.args.car_uid
@@ -400,7 +403,9 @@ class CanSimulator:
         print("Press Ctrl+C to stop\n")
 
         start_ts = time.time()
+        self._session_start_ts = start_ts
         self._produce_session_meta("live_simulation", start_ts, start_ts + 3600, 0)
+        print(f"[SIM] session started: {self.session_id} at {start_ts:.3f}", flush=True)
         print(f"Session published: {self.session_id}")
 
         catalog = load_catalog(Path(self.args.catalogues))
@@ -450,6 +455,7 @@ class CanSimulator:
                         self.publish_random_frame(msg, signals, now)
                         last_sent[msg["msg_id"]] = now
                         sent_any = True
+                        print(f"[SIM] frame #{self.frame_counter} msg={msg['msg_id']} signals={len(signals)} t={now:.3f}", flush=True)
 
                 if not sent_any:
                     time.sleep(0.05)
@@ -460,6 +466,15 @@ class CanSimulator:
                 f"\nSimulator stopped. Total frames: {self.frame_counter}, "
                 f"Faults: {self.fault_stats}"
             )
+            end_ts = time.time()
+            self._produce_session_meta(
+                "live_simulation",
+                self._session_start_ts,
+                end_ts,
+                self.frame_counter,
+                status="COMPLETE",
+            )
+            print(f"Session {self.session_id} marked COMPLETE")
 
     def run(self):
         if self.args.mode == "replay":

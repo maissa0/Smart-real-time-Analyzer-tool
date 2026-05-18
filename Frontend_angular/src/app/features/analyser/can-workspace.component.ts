@@ -310,7 +310,7 @@ interface Session {
                   stroke-width="2" viewBox="0 0 24 24">
                   <polygon points="5 3 19 12 5 21 5 3"/>
                 </svg>
-                {{ simOpen() ? 'Hide Simulator' : 'Start Simulator' }}
+                {{ simOpen() ? 'Hide Simulator' : 'Show Simulator' }}
               </button>
 
               @if (simOpen()) {
@@ -426,7 +426,6 @@ export class CanWorkspaceComponent implements OnInit {
   }
 
   onSimulatorStarted(): void {
-    this.simOpen.set(false); // collapse simulator panel
     // After 3s — session should be in MySQL, auto-select it
     setTimeout(() => {
       this.loadSessions(this.selectedVehicleUid());

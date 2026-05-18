@@ -1,7 +1,11 @@
 /* ═══ LAYOUT ═══ */
-.kpit-sniffer-layout {
+.kpit-sniffer-layout { display: none; }
+
+.kpit-sniffer-content {
   display: flex;
-  min-height: calc(100vh - 52px);
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
   background: #07090b;
 }
 

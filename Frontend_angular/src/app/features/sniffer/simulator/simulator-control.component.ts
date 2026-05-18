@@ -188,7 +188,7 @@ interface SimStatus {
         <span class="sc-label">Frequency</span>
         <div class="sc-slider-row">
           <input type="range" class="sc-slider"
-            min="1" max="100" step="1"
+            min="1" max="20" step="1"
             [(ngModel)]="frequency">
           <span class="sc-slider-val">{{ frequency }} Hz</span>
         </div>
@@ -287,7 +287,7 @@ export class SimulatorControlComponent implements OnInit {
   readonly error    = signal<string | null>(null);
 
   logFile           = 'C:/tools/Kpit_c/log_file.txt';
-  frequency         = 60;
+  frequency         = 10;
   loop              = false;
   injectValueErrors = false;
   injectTimingGaps  = true;
