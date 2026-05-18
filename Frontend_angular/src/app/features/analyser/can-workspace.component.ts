@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { Router, ActivatedRoute } from '@angular/router';
 import { API_BASE_URL } from '../../core/config/api.config';
+import { LiveTelemetryService } from '../../core/services/live-telemetry.service';
 import { SnifferComponent } from '../sniffer/sniffer.component';
 import { SimulatorControlComponent } from '../sniffer/simulator/simulator-control.component';
 
@@ -386,6 +387,7 @@ export class CanWorkspaceComponent implements OnInit {
   private readonly http  = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly route  = inject(ActivatedRoute);
+  private readonly liveTelemetry = inject(LiveTelemetryService);
 
   readonly cars             = signal<Car[]>([]);
   readonly sessions         = signal<Session[]>([]);
@@ -395,7 +397,7 @@ export class CanWorkspaceComponent implements OnInit {
   readonly simOpen          = signal(false);
   readonly loading          = signal(false);
   readonly faultsOnly       = signal(false);
-  readonly connected        = signal(false);
+  readonly connected = this.liveTelemetry.connected;
 
   ngOnInit(): void {
     this.loadCars();
