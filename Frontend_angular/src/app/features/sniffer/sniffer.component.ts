@@ -514,6 +514,41 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
         setTimeout(() => this.setTab('charts'), 100);
       }
     });
+    // Listen for session status changes (e.g. COMPLETE from backend)
+    this.liveTelemetry.subscribeToSessions((updatedSessionJson: string) => {
+      try {
+        const updated = JSON.parse(updatedSessionJson);
+        this.sessions.update(list =>
+          list.map(s =>
+            s.sessionId === updated.session_id
+              ? { ...s, status: updated.status ?? s.status }
+              : s
+          )
+        );
+        const curSel = this.selectedSession();
+        if (curSel && curSel.sessionId === updated.session_id) {
+          this.selectedSession.set({
+            ...curSel,
+            status: updated.status ?? curSel.status ?? null,
+          });
+        }
+        // If the currently selected live session just became COMPLETE
+        const current = this.selectedSession();
+        if (
+          current &&
+          current.sessionId === updated.session_id &&
+          updated.status === 'COMPLETE' &&
+          this.isLiveSession()
+        ) {
+          this.isLiveSession.set(false);
+          this.stopLiveTicker();
+          this.stopChartRaf();
+          console.log('[session] live session marked COMPLETE via WebSocket');
+        }
+      } catch {
+        // ignore parse errors
+      }
+    });
     this.loadSessions();
     this.loadCars();
   }

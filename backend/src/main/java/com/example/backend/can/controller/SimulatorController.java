@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -54,14 +55,17 @@ public class SimulatorController {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final CanSessionRepository canSessionRepository;
     private final ObjectMapper objectMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public SimulatorController(
             KafkaTemplate<String, String> kafkaTemplate,
             CanSessionRepository canSessionRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            SimpMessagingTemplate messagingTemplate) {
         this.kafkaTemplate = kafkaTemplate;
         this.canSessionRepository = canSessionRepository;
         this.objectMapper = objectMapper;
+        this.messagingTemplate = messagingTemplate;
     }
 
     /** Holds runtime metadata for a running simulator process. */
@@ -207,6 +211,17 @@ public class SimulatorController {
                     session.setStatus("COMPLETE");
                     canSessionRepository.save(session);
                     log.info("Marked live_simulation session COMPLETE: {}", session.getSessionId());
+                    // Notify Angular frontend via WebSocket
+                    try {
+                        String payload = String.format(
+                            "{\"session_id\":\"%s\",\"status\":\"COMPLETE\"}",
+                            session.getSessionId()
+                        );
+                        messagingTemplate.convertAndSend("/topic/sessions", payload);
+                        log.info("[WS] Broadcast COMPLETE for session {}", session.getSessionId());
+                    } catch (Exception wsEx) {
+                        log.warn("Could not broadcast COMPLETE: {}", wsEx.getMessage());
+                    }
                 });
         } catch (Exception e) {
             log.warn("Could not mark session complete: {}", e.getMessage());

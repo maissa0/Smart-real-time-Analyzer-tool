@@ -9,6 +9,7 @@ import {
   map,
   mergeMap,
   retry,
+  take,
   catchError,
   EMPTY,
 } from 'rxjs';
@@ -28,6 +29,8 @@ export class LiveTelemetryService {
   private frameSubject = new Subject<CanFrame>();
   private topicSubscription: Subscription | null = null;
   private playbackSubscription: Subscription | null = null;
+  private sessionsSubscription: Subscription | null = null;
+  private sessionsCb: ((json: string) => void) | null = null;
   private playbackSubject = new Subject<any>();
   readonly playback$ = this.playbackSubject.asObservable();
 
@@ -94,6 +97,7 @@ export class LiveTelemetryService {
           this.signalStateSubject.next(new Map(this.signalStateMap));
         }
       });
+    this.rxStomp.connectionState$.pipe(filter(s => s === RxStompState.OPEN), take(1)).subscribe(() => this.attachSessionsSubscription());
   }
 
   connectGlobal(): void {
@@ -129,6 +133,30 @@ export class LiveTelemetryService {
           this.signalStateSubject.next(new Map(this.signalStateMap));
         }
       });
+  }
+
+  subscribeToSessions(callback: (json: string) => void): void {
+    this.sessionsCb = callback;
+    if (!this.rxStomp.connected()) {
+      this.rxStomp.configure(this.getConfig('sessions'));
+      this.rxStomp.activate();
+      this.rxStomp.connectionState$
+        .pipe(filter(s => s === RxStompState.OPEN), take(1))
+        .subscribe(() => this.attachSessionsSubscription());
+      return;
+    }
+    this.attachSessionsSubscription();
+  }
+
+  private attachSessionsSubscription(): void {
+    this.sessionsSubscription?.unsubscribe();
+    this.sessionsSubscription = null;
+    if (!this.sessionsCb || !this.rxStomp.connected()) {
+      return;
+    }
+    this.sessionsSubscription = this.rxStomp
+      .watch('/topic/sessions')
+      .subscribe(msg => this.sessionsCb!(msg.body));
   }
 
   /**
@@ -194,6 +222,8 @@ export class LiveTelemetryService {
   }
 
   disconnect(): void {
+    this.sessionsSubscription?.unsubscribe();
+    this.sessionsSubscription = null;
     this.playbackSubscription?.unsubscribe();
     this.playbackSubscription = null;
     this.topicSubscription?.unsubscribe();
