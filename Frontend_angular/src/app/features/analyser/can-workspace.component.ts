@@ -331,14 +331,24 @@ interface Session {
                 <div class="filter-row">
                   <div class="filter-field">
                     <label class="filter-field-label">Message ID</label>
-                    <select class="filter-select">
+                    <select class="filter-select"
+                      [value]="filterMsgId()"
+                      (change)="filterMsgId.set($any($event.target).value)">
                       <option value="">All</option>
+                      @for (id of availableMsgIds(); track id) {
+                        <option [value]="id">{{ id }}</option>
+                      }
                     </select>
                   </div>
                   <div class="filter-field">
                     <label class="filter-field-label">Bus / Channel</label>
-                    <select class="filter-select">
+                    <select class="filter-select"
+                      [value]="filterBus()"
+                      (change)="filterBus.set($any($event.target).value)">
                       <option value="">All</option>
+                      @for (bus of availableBuses(); track bus) {
+                        <option [value]="bus">{{ bus }}</option>
+                      }
                     </select>
                   </div>
                   <button class="fault-toggle"
@@ -373,6 +383,9 @@ interface Session {
                 [hideUpload]="true"
                 [hideSimulator]="true"
                 [autoSelectSessionId]="activeSessionId() ?? undefined"
+                [externalMsgId]="filterMsgId()"
+                [externalBusFilter]="filterBus()"
+                [externalFaultsOnly]="faultsOnly()"
                 style="display:block; height:100%;">
               </app-sniffer>
             </div>
@@ -397,6 +410,10 @@ export class CanWorkspaceComponent implements OnInit {
   readonly simOpen          = signal(false);
   readonly loading          = signal(false);
   readonly faultsOnly       = signal(false);
+  readonly filterMsgId      = signal<string>('');
+  readonly filterBus        = signal<string>('');
+  readonly availableMsgIds  = signal<string[]>([]);
+  readonly availableBuses   = signal<string[]>([]);
   readonly connected = this.liveTelemetry.connected;
 
   ngOnInit(): void {
@@ -414,13 +431,39 @@ export class CanWorkspaceComponent implements OnInit {
   }
 
   openSession(id: string): void {
-    this.activeSessionId.set(this.activeSessionId() === id ? null : id);
+    const toggled = this.activeSessionId() === id ? null : id;
+    this.activeSessionId.set(toggled);
+    // Reset filters on every session change
+    this.filterMsgId.set('');
+    this.filterBus.set('');
+    this.faultsOnly.set(false);
+    this.availableMsgIds.set([]);
+    this.availableBuses.set([]);
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { sessionId: id },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
+    if (toggled) {
+      // Fetch frames to populate filter dropdowns
+      this.http.get<any[]>(
+        `${API_BASE_URL}/api/can/sessions/${toggled}/frames`,
+        { headers: this.h() }
+      ).subscribe({
+        next: frames => {
+          const msgIds = [...new Set(
+            frames.map(f => f.msgId ?? '').filter(Boolean)
+          )].sort();
+          const buses = [...new Set(
+            frames.map(f => f.channelName ?? '').filter(Boolean)
+          )].sort();
+          this.availableMsgIds.set(msgIds);
+          this.availableBuses.set(buses);
+        },
+        error: () => {}
+      });
+    }
   }
 
   uploadFile(e: Event): void {

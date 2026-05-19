@@ -57,6 +57,18 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
   @Input() autoSelectSessionId: string | undefined = undefined;
   /** Live Monitor KPIT styling: lime primary line height, taller canvases — see monitor-page.component.scss */
   @Input() kpitMonitorChartTheme = false;
+  @Input() set externalMsgId(val: string) {
+    this.filterAddress.set(val);
+  }
+  @Input() set externalBusFilter(val: string) {
+    this.filterBus.set(val);
+  }
+  @Input() set externalFaultsOnly(val: boolean) {
+    if (this.faultsOnly() === val) return;
+    this.faultsOnly.set(val);
+    const session = this.selectedSession();
+    if (session) this.loadFrames(session.sessionId);
+  }
 
   /** Mirrors `liveOnly` input so `filteredSessions` stays reactive with signals. */
   private readonly liveOnlyFlag = signal(false);
