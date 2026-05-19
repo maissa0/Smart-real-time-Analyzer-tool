@@ -1,12 +1,13 @@
 import {
   ChangeDetectionStrategy, Component, OnInit,
-  inject, signal
+  computed, inject, signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { Router, ActivatedRoute } from '@angular/router';
 import { API_BASE_URL } from '../../core/config/api.config';
+import { CanFrame, parseSignals } from '../../data/models/can.model';
 import { LiveTelemetryService } from '../../core/services/live-telemetry.service';
 import { SnifferComponent } from '../sniffer/sniffer.component';
 import { SimulatorControlComponent } from '../sniffer/simulator/simulator-control.component';
@@ -186,6 +187,58 @@ interface Session {
       border: 1px solid; cursor: pointer;
       transition: all 0.15s; align-self: flex-start;
     }
+    .clear-filters-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: #484f58;
+      font-size: 0.6rem;
+      cursor: pointer;
+      padding: 0 0.25rem;
+    }
+    .clear-filters-btn:hover { color: #ff4444; }
+    .filter-toggles {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .fault-toggle.active {
+      background: rgba(255,170,0,0.1) !important;
+      border-color: #ffaa00 !important;
+      color: #ffaa00 !important;
+    }
+    .filter-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      margin-top: 0.4rem;
+    }
+    .filter-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+    .filter-check-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.65rem;
+      color: #484f58;
+      cursor: pointer;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+    }
+    .filter-check-item:hover { background: #161b22; color: #e6edf3; }
+    .filter-check-item.active { color: #e6edf3; }
+    .filter-check-item input[type=checkbox] { accent-color: #b0ff44; }
+    .check-label { flex: 1; }
+    .check-id {
+      font-size: 0.58rem;
+      color: #30363d;
+      font-family: monospace;
+    }
 
     /* ── Right panel ── */
     .right-panel {
@@ -327,38 +380,116 @@ interface Session {
             <!-- Filters -->
             @if (activeSessionId()) {
               <div class="lp-block-flex">
-                <p class="block-label">Filters</p>
-                <div class="filter-row">
-                  <div class="filter-field">
-                    <label class="filter-field-label">Message ID</label>
-                    <select class="filter-select"
-                      [value]="filterMsgId()"
-                      (change)="filterMsgId.set($any($event.target).value)">
-                      <option value="">All</option>
-                      @for (id of availableMsgIds(); track id) {
-                        <option [value]="id">{{ id }}</option>
-                      }
-                    </select>
-                  </div>
-                  <div class="filter-field">
-                    <label class="filter-field-label">Bus / Channel</label>
-                    <select class="filter-select"
-                      [value]="filterBus()"
-                      (change)="filterBus.set($any($event.target).value)">
-                      <option value="">All</option>
-                      @for (bus of availableBuses(); track bus) {
-                        <option [value]="bus">{{ bus }}</option>
-                      }
-                    </select>
-                  </div>
-                  <button class="fault-toggle"
-                    [style.background]="faultsOnly() ? 'rgba(255,170,0,0.1)' : 'transparent'"
-                    [style.borderColor]="faultsOnly() ? '#ffaa00' : '#30363d'"
-                    [style.color]="faultsOnly() ? '#ffaa00' : '#8a9ab0'"
-                    (click)="faultsOnly.set(!faultsOnly())">
+                <p class="block-label">
+                  Filters
+                  @if (activeFilterCount() > 0) {
+                    <span class="block-label-count"
+                      style="background:rgba(176,255,68,0.15);
+                             color:#b0ff44; border-color:rgba(176,255,68,0.3);">
+                      {{ activeFilterCount() }} active
+                    </span>
+                  }
+                  @if (activeFilterCount() > 0) {
+                    <button class="clear-filters-btn"
+                      (click)="wsClearAllFilters()">
+                      ✕ Clear
+                    </button>
+                  }
+                </p>
+
+                <!-- Message ID -->
+                <div class="filter-field">
+                  <label class="filter-field-label">Message ID</label>
+                  <select class="filter-select"
+                    [value]="filterMsgId()"
+                    (change)="wsOnMsgIdChange($any($event.target).value)">
+                    <option value="">All Messages</option>
+                    @for (id of availableMsgIds(); track id) {
+                      <option [value]="id">{{ id }}</option>
+                    }
+                  </select>
+                </div>
+
+                <!-- Bus / Channel -->
+                <div class="filter-field">
+                  <label class="filter-field-label">Bus / Channel</label>
+                  <select class="filter-select"
+                    [value]="filterBus()"
+                    (change)="wsOnBusChange($any($event.target).value)">
+                    <option value="">All Buses</option>
+                    @for (bus of availableBuses(); track bus) {
+                      <option [value]="bus">{{ bus }}</option>
+                    }
+                  </select>
+                </div>
+
+                <!-- Fault toggles -->
+                <div class="filter-toggles">
+                  <button type="button" class="fault-toggle"
+                    [class.active]="faultsOnly()"
+                    (click)="wsToggleFaultsOnly()">
                     ⚠ Faults only
                   </button>
+                  <button type="button" class="fault-toggle"
+                    [class.active]="anomalyOnly()"
+                    (click)="wsToggleAnomalyOnly()">
+                    🔍 Anomaly only
+                  </button>
                 </div>
+
+                <!-- Message checklist -->
+                @if (availableMessages().length > 0) {
+                  <div class="filter-section">
+                    <label class="filter-field-label">
+                      Messages
+                      <span style="color:#484f58; font-weight:400;">
+                        ({{ visibleMessages().size || availableMessages().length }}/{{ availableMessages().length }})
+                      </span>
+                    </label>
+                    <div class="filter-checklist">
+                      @for (msg of availableMessages(); track msg.msgId) {
+                        <label class="filter-check-item"
+                          [class.active]="wsIsMessageVisible(msg.msgId)">
+                          <input type="checkbox"
+                            [checked]="wsIsMessageVisible(msg.msgId)"
+                            (change)="wsToggleMessage(msg.msgId)"/>
+                          <span class="check-label">{{ msg.msgName || msg.msgId }}</span>
+                          <span class="check-id">{{ msg.msgId }}</span>
+                        </label>
+                      }
+                    </div>
+                  </div>
+                }
+
+                <!-- Signal name checklist -->
+                @if (availableSignalNames().length > 0) {
+                  <div class="filter-section">
+                    <label class="filter-field-label">
+                      Signals
+                      <span style="color:#484f58; font-weight:400;">
+                        ({{ visibleSignalNames().size || availableSignalNames().length }}/{{ availableSignalNames().length }})
+                      </span>
+                    </label>
+                    <div class="filter-checklist">
+                      @for (sig of availableSignalNames(); track sig) {
+                        <label class="filter-check-item"
+                          [class.active]="wsIsSignalVisible(sig)">
+                          <input type="checkbox"
+                            [checked]="wsIsSignalVisible(sig)"
+                            (change)="wsToggleSignal(sig)"/>
+                          <span class="check-label">{{ sig }}</span>
+                        </label>
+                      }
+                    </div>
+                  </div>
+                }
+
+                @if (wsLoadingFrames()) {
+                  <p style="font-size:0.65rem; color:#484f58;
+                             padding: 0.25rem 0;">
+                    Loading filter options...
+                  </p>
+                }
               </div>
             }
 
@@ -386,6 +517,9 @@ interface Session {
                 [externalMsgId]="filterMsgId()"
                 [externalBusFilter]="filterBus()"
                 [externalFaultsOnly]="faultsOnly()"
+                [externalAnomalyOnly]="anomalyOnly()"
+                [externalVisibleMessages]="visibleMessages()"
+                [externalVisibleSignalNames]="visibleSignalNames()"
                 style="display:block; height:100%;">
               </app-sniffer>
             </div>
@@ -409,11 +543,64 @@ export class CanWorkspaceComponent implements OnInit {
   readonly panelOpen        = signal(true);
   readonly simOpen          = signal(false);
   readonly loading          = signal(false);
-  readonly faultsOnly       = signal(false);
-  readonly filterMsgId      = signal<string>('');
-  readonly filterBus        = signal<string>('');
-  readonly availableMsgIds  = signal<string[]>([]);
-  readonly availableBuses   = signal<string[]>([]);
+  readonly faultsOnly         = signal(false);
+  readonly anomalyOnly        = signal(false);
+  readonly filterMsgId        = signal<string>('');
+  readonly filterBus          = signal<string>('');
+  readonly visibleMessages    = signal<Set<string>>(new Set());
+  readonly visibleSignalNames = signal<Set<string>>(new Set());
+
+  // All frames for the active session — loaded by workspace
+  readonly wsFrames           = signal<CanFrame[]>([]);
+  readonly wsLoadingFrames    = signal(false);
+
+  // Cascading filter options derived from wsFrames
+  readonly availableMsgIds = computed(() =>
+    [...new Set(this.wsFrames().map(f => f.msgId).filter(Boolean))].sort()
+  );
+  readonly availableBuses = computed(() => {
+    const frames = this.filterMsgId()
+      ? this.wsFrames().filter(f => f.msgId === this.filterMsgId())
+      : this.wsFrames();
+    return [...new Set(frames.map(f => f.channelName).filter(Boolean))].sort();
+  });
+  readonly availableMessages = computed(() => {
+    const map = new Map<string, string>();
+    this.wsFrames()
+      .filter(f =>
+        (!this.filterMsgId() || f.msgId === this.filterMsgId()) &&
+        (!this.filterBus()   || f.channelName === this.filterBus())
+      )
+      .forEach(f => map.set(f.msgId, f.msgName));
+    return [...map.entries()].map(([msgId, msgName]) => ({ msgId, msgName }));
+  });
+  readonly availableSignalNames = computed(() => {
+    const names = new Set<string>();
+    this.wsFrames()
+      .filter(f =>
+        (!this.filterMsgId() || f.msgId === this.filterMsgId()) &&
+        (!this.filterBus()   || f.channelName === this.filterBus())
+      )
+      .forEach(f => {
+        try {
+          const sigs = parseSignals(
+            typeof f.signals === 'string' ? f.signals : JSON.stringify(f.signals ?? [])
+          );
+          sigs.forEach(s => names.add(s.signal_name));
+        } catch { /* ignore */ }
+      });
+    return [...names].sort();
+  });
+  readonly activeFilterCount = computed(() => {
+    let count = 0;
+    if (this.filterMsgId())           count++;
+    if (this.filterBus())             count++;
+    if (this.faultsOnly())            count++;
+    if (this.anomalyOnly())           count++;
+    if (this.visibleMessages().size)  count++;
+    if (this.visibleSignalNames().size) count++;
+    return count;
+  });
   readonly connected = this.liveTelemetry.connected;
 
   ngOnInit(): void {
@@ -430,15 +617,105 @@ export class CanWorkspaceComponent implements OnInit {
     this.loadSessions(uid);
   }
 
-  openSession(id: string): void {
-    const toggled = this.activeSessionId() === id ? null : id;
-    this.activeSessionId.set(toggled);
-    // Reset filters on every session change
+  wsOnMsgIdChange(val: string): void {
+    this.filterMsgId.set(val);
+    this.filterBus.set('');
+    this.visibleMessages.set(new Set());
+    this.visibleSignalNames.set(new Set());
+    this.wsPassFiltersToSniffer();
+  }
+
+  wsOnBusChange(val: string): void {
+    this.filterBus.set(val);
+    this.visibleMessages.set(new Set());
+    this.visibleSignalNames.set(new Set());
+    this.wsPassFiltersToSniffer();
+  }
+
+  wsToggleMessage(msgId: string): void {
+    const s = new Set(this.visibleMessages());
+    if (s.has(msgId)) {
+      s.delete(msgId);
+    } else {
+      s.add(msgId);
+    }
+    this.visibleMessages.set(s);
+    this.wsPassFiltersToSniffer();
+  }
+
+  wsIsMessageVisible(msgId: string): boolean {
+    const vis = this.visibleMessages();
+    return vis.size === 0 || vis.has(msgId);
+  }
+
+  wsToggleSignal(name: string): void {
+    const s = new Set(this.visibleSignalNames());
+    if (s.has(name)) {
+      s.delete(name);
+    } else {
+      s.add(name);
+    }
+    this.visibleSignalNames.set(s);
+    this.wsPassFiltersToSniffer();
+  }
+
+  wsIsSignalVisible(name: string): boolean {
+    const vis = this.visibleSignalNames();
+    return vis.size === 0 || vis.has(name);
+  }
+
+  wsToggleFaultsOnly(): void {
+    this.faultsOnly.update(v => !v);
+    this.anomalyOnly.set(false);
+    this.wsPassFiltersToSniffer();
+  }
+
+  wsToggleAnomalyOnly(): void {
+    this.anomalyOnly.update(v => !v);
+    this.faultsOnly.set(false);
+    this.wsPassFiltersToSniffer();
+  }
+
+  wsClearAllFilters(): void {
     this.filterMsgId.set('');
     this.filterBus.set('');
     this.faultsOnly.set(false);
-    this.availableMsgIds.set([]);
-    this.availableBuses.set([]);
+    this.anomalyOnly.set(false);
+    this.visibleMessages.set(new Set());
+    this.visibleSignalNames.set(new Set());
+    this.wsPassFiltersToSniffer();
+  }
+
+  private wsPassFiltersToSniffer(): void {
+    // Signals are bound in template via [externalMsgId] etc.
+    // This method exists for future imperative calls if needed.
+  }
+
+  wsLoadFrames(sessionId: string): void {
+    this.wsLoadingFrames.set(true);
+    this.http.get<CanFrame[]>(
+      `${API_BASE_URL}/api/can/sessions/${sessionId}/frames`,
+      { headers: this.h() }
+    ).subscribe({
+      next: frames => {
+        this.wsFrames.set(frames);
+        this.wsLoadingFrames.set(false);
+      },
+      error: () => this.wsLoadingFrames.set(false)
+    });
+  }
+
+  openSession(id: string): void {
+    const toggled = this.activeSessionId() === id ? null : id;
+    this.activeSessionId.set(toggled);
+    // Reset all filters
+    this.filterMsgId.set('');
+    this.filterBus.set('');
+    this.faultsOnly.set(false);
+    this.anomalyOnly.set(false);
+    this.visibleMessages.set(new Set());
+    this.visibleSignalNames.set(new Set());
+    this.wsFrames.set([]);
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { sessionId: id },
@@ -446,23 +723,7 @@ export class CanWorkspaceComponent implements OnInit {
       replaceUrl: true,
     });
     if (toggled) {
-      // Fetch frames to populate filter dropdowns
-      this.http.get<any[]>(
-        `${API_BASE_URL}/api/can/sessions/${toggled}/frames`,
-        { headers: this.h() }
-      ).subscribe({
-        next: frames => {
-          const msgIds = [...new Set(
-            frames.map(f => f.msgId ?? '').filter(Boolean)
-          )].sort();
-          const buses = [...new Set(
-            frames.map(f => f.channelName ?? '').filter(Boolean)
-          )].sort();
-          this.availableMsgIds.set(msgIds);
-          this.availableBuses.set(buses);
-        },
-        error: () => {}
-      });
+      this.wsLoadFrames(toggled);
     }
   }
 

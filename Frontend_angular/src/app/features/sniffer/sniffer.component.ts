@@ -69,6 +69,18 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     const session = this.selectedSession();
     if (session) this.loadFrames(session.sessionId);
   }
+  @Input() set externalAnomalyOnly(val: boolean) {
+    if (this.anomalyOnly() === val) return;
+    this.anomalyOnly.set(val);
+    const session = this.selectedSession();
+    if (session) this.loadFrames(session.sessionId);
+  }
+  @Input() set externalVisibleMessages(val: Set<string>) {
+    this.visibleMessages.set(val);
+  }
+  @Input() set externalVisibleSignalNames(val: Set<string>) {
+    this.visibleSignalNames.set(val);
+  }
 
   /** Mirrors `liveOnly` input so `filteredSessions` stays reactive with signals. */
   private readonly liveOnlyFlag = signal(false);
