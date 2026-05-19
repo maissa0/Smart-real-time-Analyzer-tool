@@ -289,7 +289,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     const token = localStorage.getItem('access_token') ?? '';
     // Note: token in URL is acceptable for file download endpoints
     // where Authorization header cannot be set on <a href>.
-    return `http://localhost:8080/api/can/sessions/${session.sessionId}/frames/export.csv?token=${token}`;
+    return `${API_BASE_URL}/api/can/sessions/${session.sessionId}/frames/export.csv?token=${token}`;
   });
 
   /**
