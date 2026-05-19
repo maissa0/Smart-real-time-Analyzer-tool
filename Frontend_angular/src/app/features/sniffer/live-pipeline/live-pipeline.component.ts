@@ -1,6 +1,6 @@
 import {
   ChangeDetectionStrategy, Component, inject,
-  signal, computed, OnInit, OnDestroy, input, DestroyRef
+  signal, computed, OnInit, OnDestroy, input,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
@@ -156,14 +156,14 @@ import { API_BASE_URL } from '../../../core/config/api.config';
             <span class="stage-icon">📈</span>
             <span class="stage-label">InfluxDB Pts</span>
           </div>
-          <span class="stage-count">{{ influxEstimate() | number }}</span>
+          <span class="stage-count">{{ influxPoints() | number }}</span>
           <div class="stage-bar-wrap">
             <div class="stage-bar"
               style="background:#8b5cf6"
               [style.width]="influxPercent() + '%'">
             </div>
           </div>
-          <span class="stage-rate">~{{ avgSignals() }} sig/frame</span>
+          <span class="stage-rate">real-time</span>
         </div>
 
       </div>
@@ -173,7 +173,6 @@ import { API_BASE_URL } from '../../../core/config/api.config';
 export class LivePipelineComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
   readonly liveTelemetry = inject(LiveTelemetryService);
-  private readonly destroyRef = inject(DestroyRef);
 
   readonly sessionId = input<string>('');
 
@@ -181,7 +180,7 @@ export class LivePipelineComponent implements OnInit, OnDestroy {
   readonly wsFrames = signal<number>(0);
   readonly mysqlFrames = signal<number>(0);
   readonly elapsedSeconds = signal<number>(0);
-  readonly avgSignals = signal<number>(5);
+  readonly influxPoints = signal<number>(0);
 
   readonly elapsedTime = computed(() => {
     const e = this.elapsedSeconds();
@@ -208,12 +207,8 @@ export class LivePipelineComponent implements OnInit, OnDestroy {
     Math.min(100, Math.round((this.mysqlFrames() / this.maxFrames()) * 100))
   );
 
-  readonly influxEstimate = computed(() =>
-    Math.round(this.mysqlFrames() * this.avgSignals())
-  );
-
   readonly influxPercent = computed(() =>
-    this.mysqlPercent()
+    Math.min(100, Math.round((this.influxPoints() / Math.max(this.wsFrames(), 1)) * 100))
   );
 
   private _pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -221,7 +216,7 @@ export class LivePipelineComponent implements OnInit, OnDestroy {
   private _animTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
-    // Poll MySQL frame count every 2s
+    // Poll real pipeline stats every 3s
     this._pollTimer = setInterval(() => {
       const sid = this.sessionId();
       if (!sid) return;
@@ -230,21 +225,18 @@ export class LivePipelineComponent implements OnInit, OnDestroy {
         ? new HttpHeaders({ Authorization: `Bearer ${token}` })
         : new HttpHeaders();
       this.http.get<any>(
-        `${API_BASE_URL}/api/can/sessions/${sid}/frame-count`,
+        `${API_BASE_URL}/api/can/sessions/${sid}/pipeline-stats`,
         { headers }
       ).subscribe({
         next: s => {
-          const count = s.count ?? 0;
-          this.mysqlFrames.set(count);
-          // Estimate avg signals per frame from InfluxDB
-          // Each CAN message typically has 3-8 signals
-          if (count > 0) {
-            this.avgSignals.set(5); // reasonable default
+          this.mysqlFrames.set(s.mysqlFrames ?? 0);
+          if ((s.influxPoints ?? -1) >= 0) {
+            this.influxPoints.set(s.influxPoints);
           }
         },
         error: () => {}
       });
-    }, 2000);
+    }, 3000);
 
     // Increment elapsed time every second
     this._clockTimer = setInterval(() => {

@@ -5,9 +5,13 @@ import com.example.backend.can.entity.CanSessionEntity;
 import com.example.backend.can.repository.CanSessionRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.influxdb.client.InfluxDBClient;
+import com.influxdb.client.QueryApi;
 import com.influxdb.client.WriteApiBlocking;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
+import com.influxdb.query.FluxRecord;
+import com.influxdb.query.FluxTable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class InfluxWriteService {
 
+    private final InfluxDBClient influxDBClient;
     private final WriteApiBlocking writeApi;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
@@ -152,6 +157,41 @@ public class InfluxWriteService {
         } catch (Exception e) {
             log.error("Failed to write frame to InfluxDB: frameId={} error={}",
                     frame.getId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Returns the total number of signal points written
+     * to InfluxDB for the given session.
+     */
+    public long countPoints(String sessionId) {
+        try {
+            validateSessionId(sessionId);
+            String flux = String.format("""
+                    from(bucket: "%s")
+                      |> range(start: 0)
+                      |> filter(fn: (r) => r["_measurement"] == "can_signals")
+                      |> filter(fn: (r) => r["session_id"] == "%s")
+                      |> filter(fn: (r) => r["_field"] == "value")
+                      |> count()
+                      |> sum()
+                    """, bucket, sessionId);
+            QueryApi queryApi = influxDBClient.getQueryApi();
+            List<FluxTable> tables = queryApi.query(flux, influxOrg);
+            long total = 0;
+            for (FluxTable table : tables) {
+                for (FluxRecord record : table.getRecords()) {
+                    Object val = record.getValue();
+                    if (val instanceof Number) {
+                        total += ((Number) val).longValue();
+                    }
+                }
+            }
+            return total;
+        } catch (Exception e) {
+            log.warn("Could not count InfluxDB points for session {}: {}",
+                    sessionId, e.getMessage());
+            return -1;
         }
     }
 

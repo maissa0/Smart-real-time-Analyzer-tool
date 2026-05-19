@@ -90,6 +90,18 @@ public class CanController {
         return ResponseEntity.ok(body);
     }
 
+    @GetMapping("/sessions/{sessionId}/pipeline-stats")
+    public ResponseEntity<Map<String, Object>> getPipelineStats(
+            @PathVariable String sessionId) {
+        long mysqlFrames = canSessionService.getFrameCount(sessionId);
+        long influxPoints = influxWriteService.countPoints(sessionId);
+        return ResponseEntity.ok(Map.of(
+                "sessionId",    sessionId,
+                "mysqlFrames",  mysqlFrames,
+                "influxPoints", influxPoints
+        ));
+    }
+
     /**
      * Export all frames for a session as CSV.
      * GET /api/can/sessions/{sessionId}/frames/export.csv
