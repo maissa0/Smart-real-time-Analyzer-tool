@@ -181,12 +181,6 @@ interface Session {
       font-size: 0.73rem; padding: 4px 7px; outline: none;
     }
     .filter-select:focus { border-color: rgba(176,255,68,0.35); }
-    .fault-toggle {
-      padding: 4px 10px; border-radius: 5px;
-      font-size: 0.67rem; font-weight: 600;
-      border: 1px solid; cursor: pointer;
-      transition: all 0.15s; align-self: flex-start;
-    }
     .clear-filters-btn {
       margin-left: auto;
       background: none;
@@ -199,11 +193,28 @@ interface Session {
     .clear-filters-btn:hover { color: #ff4444; }
     .filter-toggles {
       display: flex;
-      gap: 0.4rem;
-      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-top: 0.2rem;
+    }
+    .fault-toggle {
+      flex: 1;
+      padding: 0.25rem 0.4rem;
+      font-size: 0.6rem;
+      border: 1px solid #21262d;
+      border-radius: 4px;
+      background: transparent;
+      color: #484f58;
+      cursor: pointer;
+      text-align: center;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .fault-toggle:hover {
+      border-color: #30363d;
+      color: #8a9ab0;
     }
     .fault-toggle.active {
-      background: rgba(255,170,0,0.1) !important;
+      background: rgba(255,170,0,0.08) !important;
       border-color: #ffaa00 !important;
       color: #ffaa00 !important;
     }
@@ -428,12 +439,12 @@ interface Session {
                   <button type="button" class="fault-toggle"
                     [class.active]="faultsOnly()"
                     (click)="wsToggleFaultsOnly()">
-                    ⚠ Faults only
+                    ⚠ Faults
                   </button>
                   <button type="button" class="fault-toggle"
                     [class.active]="anomalyOnly()"
                     (click)="wsToggleAnomalyOnly()">
-                    🔍 Anomaly only
+                    🔍 Anomaly
                   </button>
                 </div>
 
