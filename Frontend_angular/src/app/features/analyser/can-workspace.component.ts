@@ -266,6 +266,27 @@ interface Session {
     .empty-state small { font-size:0.72rem; color:#30363d; }
     .sniffer-host { flex:1; overflow:hidden; display:flex; flex-direction:column; }
     .sniffer-host ::ng-deep .kpit-sniffer-layout { height:100%; }
+    .session-loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 1rem;
+      color: #484f58;
+      font-size: 0.75rem;
+    }
+    .session-loading-spinner {
+      width: 32px;
+      height: 32px;
+      border: 2px solid #21262d;
+      border-top-color: #b0ff44;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   `],
   template: `
     <div class="workspace">
@@ -520,7 +541,14 @@ interface Session {
               <small>or upload a log file / start the simulator from the left panel</small>
             </div>
           } @else {
-            <div class="sniffer-host">
+            @if (sessionLoading()) {
+              <div class="session-loading-state">
+                <div class="session-loading-spinner"></div>
+                <p>Loading session...</p>
+              </div>
+            }
+            <div class="sniffer-host"
+              [style.display]="sessionLoading() ? 'none' : 'block'">
               <app-sniffer
                 [hideUpload]="true"
                 [hideSimulator]="true"
@@ -554,6 +582,7 @@ export class CanWorkspaceComponent implements OnInit {
   readonly panelOpen        = signal(true);
   readonly simOpen          = signal(false);
   readonly loading          = signal(false);
+  readonly sessionLoading   = signal(false);
   readonly faultsOnly         = signal(false);
   readonly anomalyOnly        = signal(false);
   readonly filterMsgId        = signal<string>('');
@@ -618,7 +647,10 @@ export class CanWorkspaceComponent implements OnInit {
     this.loadCars();
     this.loadSessions('');
     this.route.queryParams.subscribe(p => {
-      if (p['sessionId']) this.activeSessionId.set(p['sessionId']);
+      if (p['sessionId']) {
+        this.activeSessionId.set(p['sessionId']);
+        this.wsLoadFrames(p['sessionId']);
+      }
     });
   }
 
@@ -734,7 +766,11 @@ export class CanWorkspaceComponent implements OnInit {
       replaceUrl: true,
     });
     if (toggled) {
+      this.sessionLoading.set(true);
       this.wsLoadFrames(toggled);
+      // Clear loading after frames are fetched for filter options
+      // sniffer handles its own internal frame loading
+      setTimeout(() => this.sessionLoading.set(false), 2000);
     }
   }
 
