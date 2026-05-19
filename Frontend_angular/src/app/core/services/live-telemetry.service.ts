@@ -61,7 +61,7 @@ export class LiveTelemetryService {
       },
       heartbeatIncoming: 0,
       heartbeatOutgoing: 0,
-      reconnectDelay: 5000,
+      reconnectDelay: 0,
     };
   }
 
