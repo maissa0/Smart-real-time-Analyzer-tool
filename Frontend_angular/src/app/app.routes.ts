@@ -24,13 +24,6 @@ export const appRoutes: Routes = [
           ),
       },
       {
-        path: 'upload',
-        loadComponent: () =>
-          import('./features/upload/upload-page.component').then(
-            (m) => m.UploadPageComponent
-          ),
-      },
-      {
         path: 'sniffer',
         loadChildren: () =>
           import('./features/sniffer/sniffer.routes').then(

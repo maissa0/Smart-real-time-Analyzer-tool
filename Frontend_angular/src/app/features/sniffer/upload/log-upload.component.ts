@@ -126,7 +126,9 @@ import { CanService } from '../../../core/services/can.service';
   `
 })
 export class LogUploadComponent {
-  @Input() carUid: string = '';
+  @Input() set carUid(val: string) {
+    if (val) this.selectedCarUid.set(val);
+  }
   @Input() cars: { carUid: string; make: string; model: string; year: number }[] = [];
   @Output() uploadComplete = new EventEmitter<string>();
   selectedCarUid = signal<string>('');
