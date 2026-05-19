@@ -11,6 +11,7 @@ import { CanFrame, parseSignals } from '../../data/models/can.model';
 import { LiveTelemetryService } from '../../core/services/live-telemetry.service';
 import { SnifferComponent } from '../sniffer/sniffer.component';
 import { SimulatorControlComponent } from '../sniffer/simulator/simulator-control.component';
+import { LogUploadComponent } from '../sniffer/upload/log-upload.component';
 
 interface Car {
   carUid: string; make: string; model: string;
@@ -26,7 +27,7 @@ interface Session {
   selector: 'app-can-workspace',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, HttpClientModule, SnifferComponent, SimulatorControlComponent],
+  imports: [CommonModule, FormsModule, HttpClientModule, SnifferComponent, SimulatorControlComponent, LogUploadComponent],
   styles: [`
     :host { display:block; height:100vh; overflow:hidden; }
 
@@ -378,17 +379,23 @@ interface Session {
             <div class="lp-block" style="overflow-y:auto; max-height:calc(100vh - 320px);">
               <p class="block-label">New Session</p>
 
-              <label class="action-btn action-btn-upload">
-                <input type="file" accept=".asc,.blf,.log,.txt"
-                  style="display:none" (change)="uploadFile($event)"/>
+              <button class="action-btn action-btn-upload"
+                (click)="uploadOpen.set(!uploadOpen())">
                 <svg width="13" height="13" fill="none" stroke="currentColor"
                   stroke-width="2" viewBox="0 0 24 24">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
                   <polyline points="17 8 12 3 7 8"/>
                   <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
-                Upload Log File
-              </label>
+                {{ uploadOpen() ? 'Hide Upload' : 'Upload Log File' }}
+              </button>
+              @if (uploadOpen()) {
+                <div class="sim-expanded">
+                  <app-log-upload
+                    (uploadComplete)="onUploadComplete($event)">
+                  </app-log-upload>
+                </div>
+              }
 
               <button class="action-btn action-btn-sim"
                 (click)="simOpen.set(!simOpen())">
@@ -581,6 +588,7 @@ export class CanWorkspaceComponent implements OnInit {
   readonly selectedVehicleUid = signal<string>('');
   readonly panelOpen        = signal(true);
   readonly simOpen          = signal(false);
+  readonly uploadOpen       = signal(false);
   readonly loading          = signal(false);
   readonly sessionLoading   = signal(false);
   readonly faultsOnly         = signal(false);
@@ -774,8 +782,18 @@ export class CanWorkspaceComponent implements OnInit {
     }
   }
 
-  uploadFile(e: Event): void {
-    this.router.navigate(['/admin/upload']);
+  onUploadComplete(sessionId: string): void {
+    this.uploadOpen.set(false);
+    // Refresh session list and auto-select the uploaded session
+    setTimeout(() => {
+      this.loadSessions(this.selectedVehicleUid());
+      setTimeout(() => {
+        const uploaded = this.sessions().find(
+          s => s.sessionId === sessionId
+        );
+        if (uploaded) this.openSession(uploaded.sessionId);
+      }, 500);
+    }, 2000);
   }
 
   onSimulatorStarted(): void {
