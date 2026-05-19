@@ -1,5 +1,5 @@
 import {
-  Component, Output, EventEmitter, signal,
+  Component, Input, Output, EventEmitter, signal,
   ChangeDetectionStrategy, inject, DestroyRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -45,6 +45,27 @@ import { CanService } from '../../../core/services/can.service';
   `],
   template: `
     <div class="mb-3">
+      @if (cars.length > 0) {
+        <div style="margin-bottom: 0.5rem;">
+          <label style="font-size:0.65rem; color:#484f58;
+                         text-transform:uppercase; letter-spacing:0.08em;">
+            Link to Vehicle
+          </label>
+          <select
+            style="width:100%; margin-top:0.25rem; padding:0.3rem 0.5rem;
+                   background:#161b22; border:1px solid #21262d;
+                   border-radius:4px; color:#e6edf3; font-size:0.72rem;"
+            [value]="selectedCarUid()"
+            (change)="selectedCarUid.set($any($event.target).value)">
+            <option value="">No vehicle (unlinked)</option>
+            @for (car of cars; track car.carUid) {
+              <option [value]="car.carUid">
+                {{ car.make }} {{ car.model }} {{ car.year }}
+              </option>
+            }
+          </select>
+        </div>
+      }
       <div
         class="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all"
         [class]="isDragging()
@@ -105,7 +126,10 @@ import { CanService } from '../../../core/services/can.service';
   `
 })
 export class LogUploadComponent {
+  @Input() carUid: string = '';
+  @Input() cars: { carUid: string; make: string; model: string; year: number }[] = [];
   @Output() uploadComplete = new EventEmitter<string>();
+  selectedCarUid = signal<string>('');
 
   private canService = inject(CanService);
   private destroyRef = inject(DestroyRef);
@@ -135,7 +159,7 @@ export class LogUploadComponent {
     this.uploadError.set(null);
     this.uploadStatus.set('Uploading...');
 
-    this.canService.uploadLog(file).pipe(
+    this.canService.uploadLog(file, this.selectedCarUid() || this.carUid || undefined).pipe(
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (res) => {

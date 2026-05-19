@@ -63,9 +63,10 @@ export class CanService {
     );
   }
 
-  uploadLog(file: File): Observable<{ sessionId: string; filename: string; status: string }> {
+  uploadLog(file: File, carUid?: string): Observable<{ sessionId: string; filename: string; status: string }> {
     const formData = new FormData();
     formData.append('file', file);
+    if (carUid) formData.append('carUid', carUid);
     const logsBase = `${API_BASE_URL}/api/logs`;
     return this.http.post<{ sessionId: string; filename: string; status: string }>(
       `${logsBase}/upload`,

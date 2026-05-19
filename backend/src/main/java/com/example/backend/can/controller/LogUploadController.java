@@ -27,7 +27,8 @@ public class LogUploadController {
     @AuditLog(action = "LOG_UPLOAD", resource = "logs")
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> upload(
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "carUid", required = false) String carUid) {
 
         if (file.isEmpty()) {
             return ResponseEntity.badRequest()
@@ -42,7 +43,7 @@ public class LogUploadController {
         }
 
         try {
-            String sessionId = logUploadService.processUpload(file);
+            String sessionId = logUploadService.processUpload(file, carUid);
             return ResponseEntity.ok(Map.of(
                     "sessionId", sessionId,
                     "filename", name,

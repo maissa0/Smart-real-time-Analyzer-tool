@@ -392,6 +392,8 @@ interface Session {
               @if (uploadOpen()) {
                 <div class="sim-expanded">
                   <app-log-upload
+                    [cars]="cars()"
+                    [carUid]="selectedVehicleUid()"
                     (uploadComplete)="onUploadComplete($event)">
                   </app-log-upload>
                 </div>

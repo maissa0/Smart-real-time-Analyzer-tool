@@ -72,6 +72,7 @@ def publish_session_meta(
     start_ts: float,
     end_ts: float,
     frame_count: int,
+    car_uid: str = "",
 ) -> None:
     """Publish session-meta so Spring Boot creates the session row."""
     meta = {
@@ -81,6 +82,8 @@ def publish_session_meta(
         "end_ts": end_ts,
         "frame_count": frame_count,
     }
+    if car_uid:
+        meta["car_uid"] = car_uid
     producer.produce(
         "session-meta",
         key=session_id.encode("utf-8"),
@@ -156,7 +159,7 @@ class FileProcessingWorker:
             raise ValueError(f"Unsupported file format: {suffix}")
 
     def _process_ascii_file(
-        self, file_path: Path, session_id: str, source_filename: str
+        self, file_path: Path, session_id: str, source_filename: str, car_uid: str = ""
     ) -> int:
         """Parse ASCII CAN log and publish frames. Returns frame count."""
         log.info("Extracting metadata from ASCII log: %s", file_path.name)
@@ -193,6 +196,7 @@ class FileProcessingWorker:
                 start_ts,
                 end_ts,
                 0,  # Spring Boot increments on each frame received
+                car_uid,
             )
             # Stream frames line-by-line — no full file load into RAM
             frame_seq: dict[str, int] = {}
@@ -236,7 +240,7 @@ class FileProcessingWorker:
             raise
 
     def _process_blf_file(
-        self, file_path: Path, session_id: str, source_filename: str
+        self, file_path: Path, session_id: str, source_filename: str, car_uid: str = ""
     ) -> int:
         """Parse BLF file and publish frames. Returns frame count."""
         import os
@@ -271,6 +275,7 @@ class FileProcessingWorker:
                 metadata["start_ts"],
                 metadata["end_ts"],
                 0,  # start at 0 — Spring Boot increments on each frame
+                car_uid,
             )
 
             # Stream frames
@@ -308,6 +313,7 @@ class FileProcessingWorker:
         file_path_str = job.get("file_path", "")
         source_filename = job.get("source_filename", "unknown")
         catalogues_dir = job.get("catalogues_dir", self.args.catalogues)
+        car_uid = job.get("car_uid", "") or ""
 
         log.info(
             "Processing job — session=%s file=%s",
@@ -332,11 +338,11 @@ class FileProcessingWorker:
             fmt = self._detect_format(file_path)
             if fmt == "ascii":
                 frame_count = self._process_ascii_file(
-                    file_path, session_id, source_filename
+                    file_path, session_id, source_filename, car_uid
                 )
             elif fmt == "blf":
                 frame_count = self._process_blf_file(
-                    file_path, session_id, source_filename
+                    file_path, session_id, source_filename, car_uid
                 )
             else:
                 raise ValueError(f"Unknown format: {fmt}")

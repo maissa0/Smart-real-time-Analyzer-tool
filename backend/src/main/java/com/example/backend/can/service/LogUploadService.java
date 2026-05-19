@@ -14,6 +14,7 @@ import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -36,7 +37,7 @@ public class LogUploadService {
      * Saves the uploaded log file to disk and publishes a processing job to Kafka.
      * Returns the session ID immediately — processing happens asynchronously.
      */
-    public String processUpload(MultipartFile file) throws Exception {
+    public String processUpload(MultipartFile file, String carUid) throws Exception {
         Path uploadPath = Paths.get(uploadsDir);
         Files.createDirectories(uploadPath);
 
@@ -58,17 +59,20 @@ public class LogUploadService {
                 .build();
         logFileRepository.save(logFile);
 
-        publishProcessingJob(sessionId, filePath, originalName);
+        publishProcessingJob(sessionId, filePath, originalName, carUid);
         return sessionId;
     }
 
-    private void publishProcessingJob(String sessionId, Path filePath, String sourceFilename) throws Exception {
-        Map<String, String> job = Map.of(
-                "session_id", sessionId,
-                "file_path", filePath.toAbsolutePath().toString(),
-                "source_filename", sourceFilename,
-                "catalogues_dir", cataloguesDir
-        );
+    private void publishProcessingJob(String sessionId, Path filePath,
+            String sourceFilename, String carUid) throws Exception {
+        Map<String, Object> job = new HashMap<>();
+        job.put("session_id", sessionId);
+        job.put("file_path", filePath.toAbsolutePath().toString());
+        job.put("source_filename", sourceFilename);
+        job.put("catalogues_dir", cataloguesDir);
+        if (carUid != null && !carUid.isBlank()) {
+            job.put("car_uid", carUid);
+        }
         String jobJson = objectMapper.writeValueAsString(job);
         kafkaTemplate.send("file-processing-jobs", sessionId, jobJson);
         log.info("Published file processing job for session {}", sessionId);
@@ -89,7 +93,7 @@ public class LogUploadService {
         if (!Files.exists(filePath)) {
             throw new FileNotFoundException("File not found: " + filePath);
         }
-        publishProcessingJob(logFile.getSessionId(), filePath, logFile.getFilename());
+        publishProcessingJob(logFile.getSessionId(), filePath, logFile.getFilename(), null);
         return logFile.getSessionId();
     }
 }
