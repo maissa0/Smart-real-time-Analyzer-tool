@@ -92,6 +92,8 @@ interface Session {
     .lp-block {
       padding: 1rem;
       border-bottom: 1px solid #161b22;
+      min-width: 0; 
+      overflow: hidden;
     }
     .lp-block-flex {
       padding: 1rem;
@@ -168,7 +170,11 @@ interface Session {
       margin-top: 0.6rem;
       background: #161b22;
       border: 1px solid rgba(176,255,68,0.1);
-      border-radius: 8px; padding: 0.75rem;
+      border-radius: 8px;
+      padding: 0.75rem;
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
 
     /* Filters */

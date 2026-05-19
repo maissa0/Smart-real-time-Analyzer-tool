@@ -45,7 +45,7 @@ interface SimStatus {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, FormsModule],
   styles: [`
-    .sc-wrap { display: flex; flex-direction: column; gap: 1rem; }
+    .sc-wrap { display: flex; flex-direction: column; gap: 1rem; width: 100%; box-sizing: border-box; overflow: hidden; }
 
     /* Section label */
     .sc-section { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -84,13 +84,13 @@ interface SimStatus {
     }
 
     /* Slider */
-    .sc-slider-row { display: flex; align-items: center; gap: 0.75rem; }
+    .sc-slider-row { display: flex; align-items: center; gap: 0.5rem; width: 100%; min-width: 0; }
     .sc-slider {
-      flex: 1; accent-color: #b0ff44; cursor: pointer;
+      flex: 1; min-width: 0; accent-color: #b0ff44; cursor: pointer; width: 0;
     }
     .sc-slider-val {
       font-size: 0.78rem; font-weight: 700; color: #b0ff44;
-      min-width: 48px; text-align: right;
+      min-width: 40px; text-align: right; flex-shrink: 0;
     }
 
     /* Checkboxes */
