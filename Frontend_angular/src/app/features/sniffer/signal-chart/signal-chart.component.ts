@@ -206,6 +206,30 @@ export class SignalChartComponent implements AfterViewInit, OnChanges, OnDestroy
 
       const chart = new Chart(ctx, {
         type: 'line',
+        plugins: [
+          {
+            id: 'playheadLine',
+            afterDraw: (chart: any) => {
+              const t = this.playheadTime;
+              if (!t || t <= 0) return;
+              const xScale = chart.scales['x'];
+              if (!xScale) return;
+              const xPixel = xScale.getPixelForValue(t);
+              if (xPixel < xScale.left || xPixel > xScale.right) return;
+              const ctx2 = chart.ctx;
+              ctx2.save();
+              ctx2.beginPath();
+              ctx2.moveTo(xPixel, chart.chartArea.top);
+              ctx2.lineTo(xPixel, chart.chartArea.bottom);
+              ctx2.lineWidth = 1.5;
+              ctx2.strokeStyle = '#b0ff44';
+              ctx2.globalAlpha = 0.8;
+              ctx2.setLineDash([3, 3]);
+              ctx2.stroke();
+              ctx2.restore();
+            }
+          }
+        ],
         data: {
           datasets: [
             {
