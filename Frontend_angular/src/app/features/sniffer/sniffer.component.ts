@@ -200,9 +200,11 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     if (changes['uploadOnly']) {
       this.uploadOnlyFlag.set(this.uploadOnly);
     }
-    if (changes['autoSelectSessionId'] && this.autoSelectSessionId) {
-      this.loadSessions(this.autoSelectSessionId);
-    }
+    if (changes['autoSelectSessionId'] && 
+      this.autoSelectSessionId &&
+      this.autoSelectSessionId !== this.selectedSession()?.sessionId) {
+    this.loadSessions(this.autoSelectSessionId);
+  }
     if (changes['autoSelectLive'] && this.autoSelectLive) {
       this.loadSessions();
     }
@@ -497,14 +499,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
       });
       this.telemetry.appendLiveFrame(frame);
 
-      console.log('[live] frame received:', {
-        sessionId: frame.sessionId,
-        timestamp: frame.timestamp,
-        isLive: this.isLiveSession(),
-        bufferSize: this._frameBuffer.length,
-        liveGroupsCount: this.liveChartGroups()?.length ?? 0,
-        activeTab: this.activeTab(),
-      });
+      
       const relTime = parseFloat((frame.timestamp - this.sessionFirstTs()).toFixed(3));
       const signals = this.getSignals(frame);
 
@@ -567,7 +562,6 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
           this.isLiveSession.set(false);
           this.stopLiveTicker();
           this.stopChartRaf();
-          console.log('[session] live session marked COMPLETE via WebSocket');
         }
       } catch {
         // ignore parse errors
@@ -754,13 +748,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
           || freshSession.status === 'LIVE');
     this.isLiveSession.set(isLive);
 
-    console.log('[selectSession]', {
-      sessionId: session.sessionId,
-      sourceFilename: session.sourceFilename,
-      frameCount: session.frameCount,
-      status: (session as any).status,
-      isLive,
-    });
+  
 
     this.loadFrames(session.sessionId);
     this.loadIntegrity(session.sessionId);
@@ -888,8 +876,7 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
     const groups = this.allSignalGroups();
     if (groups.length === 0) return [];
 
-    console.log('[live] buildLiveChartGroupBindings — groups:', groups.length,
-      'allFrames:', this.allFrames().length);
+    
     return groups.map((g) => ({
       groupTitle: g.groupTitle,
       msgName: g.msgName,
@@ -1189,7 +1176,6 @@ export class SnifferComponent implements OnInit, OnDestroy, OnChanges {
           this.playbackSpeed = this.telemetry.speed();
           this.playbackSessionStartTs =
             Number((point as { sessionStartTs?: number }).sessionStartTs) || session.startTs;
-          console.log('[playback] started:', point.playbackId);
         } else if (point.type === 'point') {
           const pt = {
             time: Number(point.time),
