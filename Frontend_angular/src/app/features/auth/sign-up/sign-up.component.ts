@@ -15,6 +15,7 @@ import { API_BASE_URL } from '../../../core/config/api.config';
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, CommonModule],
   templateUrl: './sign-up.component.html',
+  styleUrls: ['./sign-up.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SignUpComponent {

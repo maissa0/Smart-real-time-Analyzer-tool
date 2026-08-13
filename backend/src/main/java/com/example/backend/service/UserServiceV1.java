@@ -1,5 +1,6 @@
 package com.example.backend.service;
 
+import com.example.backend.can.dto.UserPermissionsResponse;
 import com.example.backend.dto.common.PageResponse;
 import com.example.backend.dto.permission.PermissionResponse;
 import com.example.backend.dto.user.UserResponse;
@@ -7,6 +8,7 @@ import com.example.backend.dto.v1.*;
 import com.example.backend.entity.PermissionEntity;
 import com.example.backend.entity.RoleEntity;
 import com.example.backend.entity.UserEntity;
+import com.example.backend.exception.ConflictException;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.mapper.UserMapper;
 import com.example.backend.repository.PermissionRepository;
@@ -20,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,7 +30,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,6 +50,9 @@ public class UserServiceV1 {
     private final PermissionRepository permissionRepository;
     private final EmailService emailService;
     private final JwtService jwtService;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     @Transactional(readOnly = true)
     public PageResponse<UserResponse> findAll(String search, String status, String roleId,
@@ -79,28 +89,37 @@ public class UserServiceV1 {
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
 
-        var roles = user.getRoles() == null ? null : user.getRoles().stream()
+        List<RoleEntity> roleEntities = (user.getRoleIds() == null || user.getRoleIds().isEmpty())
+                ? List.of()
+                : roleRepository.findByIdIn(new ArrayList<>(user.getRoleIds()));
+
+        List<UUID> allPermIds = roleEntities.stream()
+                .filter(r -> r.getPermissionIds() != null && !r.getPermissionIds().isEmpty())
+                .flatMap(r -> r.getPermissionIds().stream())
+                .distinct()
+                .collect(Collectors.toList());
+        Map<UUID, PermissionEntity> permMap = allPermIds.isEmpty()
+                ? Map.of()
+                : permissionRepository.findByIdIn(allPermIds).stream()
+                        .collect(Collectors.toMap(PermissionEntity::getId, p -> p));
+
+        List<com.example.backend.dto.role.RoleResponse> roles = roleEntities.stream()
                 .map(r -> new com.example.backend.dto.role.RoleResponse(
                         r.getId().toString(),
                         r.getName(),
                         r.getDescription(),
-                        r.getPermissions() == null ? null : r.getPermissions().stream()
-                                .map(p -> new com.example.backend.dto.permission.PermissionResponse(
-                                        p.getId().toString(),
-                                        p.getSlug(),
-                                        p.getDescription()))
-                                .collect(Collectors.toList())))
+                        (r.getPermissionIds() == null || r.getPermissionIds().isEmpty()) ? null
+                                : r.getPermissionIds().stream()
+                                        .map(permMap::get)
+                                        .filter(Objects::nonNull)
+                                        .map(p -> new com.example.backend.dto.permission.PermissionResponse(
+                                                p.getId().toString(), p.getSlug(), p.getDescription()))
+                                        .collect(Collectors.toList())))
                 .collect(Collectors.toList());
 
-        var permissions = user.getRoles() == null ? List.<com.example.backend.dto.permission.PermissionResponse>of()
-                : user.getRoles().stream()
-                .flatMap(r -> r.getPermissions() == null ? java.util.stream.Stream.<com.example.backend.dto.permission.PermissionResponse>empty()
-                        : r.getPermissions().stream()
-                        .map(p -> new com.example.backend.dto.permission.PermissionResponse(
-                                p.getId().toString(),
-                                p.getSlug(),
-                                p.getDescription())))
-                .distinct()
+        List<com.example.backend.dto.permission.PermissionResponse> permissions = permMap.values().stream()
+                .map(p -> new com.example.backend.dto.permission.PermissionResponse(
+                        p.getId().toString(), p.getSlug(), p.getDescription()))
                 .collect(Collectors.toList());
 
         return new UserDetailResponse(
@@ -156,7 +175,7 @@ public class UserServiceV1 {
     @Transactional
     public UserDetailResponse inviteUser(InviteUserRequest request) {
         if (userRepository.existsByEmailAndDeletedAtIsNull(request.email())) {
-            throw new IllegalArgumentException("Email already registered: " + request.email());
+            throw new ConflictException("Email already registered: " + request.email());
         }
 
         // Generate a secure temporary password the user will never see
@@ -179,13 +198,13 @@ public class UserServiceV1 {
         // DB roles are named "Admin" and "User" — no slug column exists
         String roleName = (request.role() != null && !request.role().isBlank())
                 ? request.role() : "User";
-        roleRepository.findByName(roleName).ifPresent(r -> user.getRoles().add(r));
+        roleRepository.findByName(roleName).ifPresent(r -> user.getRoleIds().add(r.getId()));
 
         userRepository.save(user);
 
         // Generate a one-use reset token (15 min expiry) for first-time password setup
         String resetToken = jwtService.generateResetToken(user.getEmail(), user.getId());
-        String setPasswordUrl = "http://localhost:4200/auth/set-password?token=" + resetToken;
+        String setPasswordUrl = frontendUrl + "/auth/set-password?token=" + resetToken;
 
         // Send invitation email with direct set-password link
         try {
@@ -272,7 +291,7 @@ public class UserServiceV1 {
         try {
             emailService.sendApprovalEmail(user.getEmail(), user.getFullName());
         } catch (Exception e) {
-            // non-fatal
+            log.error("Failed to send approval email to {}: {}", user.getEmail(), e.getMessage());
         }
     }
 
@@ -286,7 +305,7 @@ public class UserServiceV1 {
         try {
             emailService.sendRejectionEmail(user.getEmail(), user.getFullName(), reason);
         } catch (Exception e) {
-            // non-fatal
+            log.error("Failed to send rejection email to {}: {}", user.getEmail(), e.getMessage());
         }
     }
 
@@ -312,8 +331,8 @@ public class UserServiceV1 {
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
         RoleEntity role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new ResourceNotFoundException("Role", roleName));
-        user.getRoles().clear();
-        user.getRoles().add(role);
+        user.getRoleIds().clear();
+        user.getRoleIds().add(role.getId());
         userRepository.save(user);
         return findById(userId);
     }
@@ -323,30 +342,35 @@ public class UserServiceV1 {
      * role permissions + extra per-user permissions.
      */
     @Transactional(readOnly = true)
-    public java.util.Map<String, Object> getUserPermissions(UUID userId) {
+    public UserPermissionsResponse getUserPermissions(UUID userId) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
-        var rolePerms = user.getRoles().stream()
-                .flatMap(r -> r.getPermissions().stream())
-                .map(p -> new PermissionResponse(p.getId().toString(), p.getSlug(), p.getDescription()))
-                .distinct().toList();
+        List<RoleEntity> roleEntitiesForPerms = (user.getRoleIds() == null || user.getRoleIds().isEmpty())
+                ? List.of()
+                : roleRepository.findByIdIn(new ArrayList<>(user.getRoleIds()));
+        List<UUID> rolePermIds = roleEntitiesForPerms.stream()
+                .filter(r -> r.getPermissionIds() != null && !r.getPermissionIds().isEmpty())
+                .flatMap(r -> r.getPermissionIds().stream())
+                .distinct()
+                .collect(Collectors.toList());
+        var rolePerms = rolePermIds.isEmpty()
+                ? List.<PermissionResponse>of()
+                : permissionRepository.findByIdIn(rolePermIds).stream()
+                        .map(p -> new PermissionResponse(p.getId().toString(), p.getSlug(), p.getDescription()))
+                        .toList();
 
-        var extraPerms = user.getExtraPermissions() == null
-                ? java.util.List.of()
-                : user.getExtraPermissions().stream()
-                .map(p -> new PermissionResponse(p.getId().toString(), p.getSlug(), p.getDescription()))
-                .toList();
+        var extraPerms = (user.getExtraPermissionIds() == null || user.getExtraPermissionIds().isEmpty())
+                ? List.<PermissionResponse>of()
+                : permissionRepository.findByIdIn(new ArrayList<>(user.getExtraPermissionIds())).stream()
+                        .map(p -> new PermissionResponse(p.getId().toString(), p.getSlug(), p.getDescription()))
+                        .toList();
 
         var allPerms = permissionRepository.findAll().stream()
                 .map(p -> new PermissionResponse(p.getId().toString(), p.getSlug(), p.getDescription()))
                 .toList();
 
-        return java.util.Map.of(
-                "rolePermissions", rolePerms,
-                "extraPermissions", extraPerms,
-                "allPermissions", allPerms
-        );
+        return new UserPermissionsResponse(userId, rolePerms, extraPerms, allPerms);
     }
 
     /**
@@ -358,15 +382,13 @@ public class UserServiceV1 {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
-        var permissions = permissionRepository.findAllById(
+        var validPermIds = permissionRepository.findAllById(
                 permissionIds.stream().map(UUID::fromString).toList()
-        );
-
-        if (user.getExtraPermissions() == null) {
-            user.setExtraPermissions(new java.util.HashSet<>());
-        }
-        user.getExtraPermissions().clear();
-        user.getExtraPermissions().addAll(permissions);
+        ).stream()
+                .map(PermissionEntity::getId)
+                .collect(Collectors.toCollection(HashSet::new));
+        user.getExtraPermissionIds().clear();
+        user.getExtraPermissionIds().addAll(validPermIds);
         userRepository.save(user);
     }
 

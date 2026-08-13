@@ -8,338 +8,442 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
-import { Router } from '@angular/router';
-import { API_BASE_URL } from '../../core/config/api.config';
+import { ActivatedRoute, Router } from '@angular/router';
+import { FleetService, Car, CarCatalog, CatalogSummary } from './fleet.service';
+import { CarRequirementSet, RequirementSummary } from '../../core/models/requirement.model';
+import { RequirementService } from '../../core/services/requirement.service';
+import { NlQueryService, NlQueryResponse } from '../../core/services/nl-query.service';
+import { CanSession } from '../../core/models/can.model';
+import { CanService } from '../../core/services/can.service';
+import { LogUploadComponent } from '../sniffer/upload/log-upload.component';
+import { SimulatorControlComponent } from '../sniffer/simulator/simulator-control.component';
+import { CatalogDetailPageComponent } from '../catalogs/catalog-detail-page.component';
+import { RequirementDetailPageComponent } from '../requirements/requirement-detail-page.component';
 
-interface Car {
-  carUid: string;
-  make: string;
-  model: string;
-  year: number;
-  color: string | null;
-  vin: string | null;
-  isVirtual: boolean;
-  isActive: boolean;
-  createdAt: string | null;
-  sessionCount?: number;
-  totalFrames?: number;
-  faultRate?: number;
+/** Per-session integrity info derived from the existing faults endpoint. */
+interface SessionFaultInfo {
+  count: number;
+  ruleIds: string[];
+  typeCounts: Record<string, number>;
+  ruleCounts: Record<string, number>;
 }
+
+/** Fault-rate target (faults / 1k frames) the Overview panel judges against. */
+const FAULT_RATE_TARGET = 10;
+/** How many recent sessions get their fault details fetched for the cards. */
+const FAULT_SCAN_LIMIT = 30;
 
 @Component({
   selector: 'app-fleet-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, HttpClientModule, FormsModule],
-  template: `
-    <div style="padding:1.5rem; max-width:1100px; margin:0 auto;">
-
-      <!-- Header -->
-      <div style="display:flex; align-items:center; justify-content:space-between;
-        margin-bottom:1.75rem; padding-bottom:1.25rem;
-        border-bottom:1px solid rgba(176,255,68,0.10);">
-        <div style="display:flex; align-items:center; gap:1rem;">
-          <div style="width:44px; height:44px; background:rgba(176,255,68,0.10);
-            border:1px solid rgba(176,255,68,0.20); border-radius:10px;
-            display:flex; align-items:center; justify-content:center; color:#b0ff44;">
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <rect x="1" y="11" width="22" height="9" rx="2" ry="2"/>
-              <path d="M1 11l4-7h14l4 7"/>
-              <circle cx="7" cy="20" r="1"/>
-              <circle cx="17" cy="20" r="1"/>
-            </svg>
-          </div>
-          <div>
-            <h1 style="font-size:1.25rem; font-weight:700; color:#fff; margin:0 0 0.2rem;">Fleet Management</h1>
-            <p style="font-size:0.78rem; color:#8a9ab0; margin:0;">Manage vehicles and view their CAN analysis history</p>
-          </div>
-        </div>
-        <button style="
-          display:inline-flex; align-items:center; gap:0.5rem;
-          background:#b0ff44; color:#07090b;
-          border:none; border-radius:8px;
-          padding:9px 20px; font-size:0.82rem; font-weight:700;
-          cursor:pointer; transition:opacity 0.2s;"
-          onmouseover="this.style.opacity='0.85'"
-          onmouseout="this.style.opacity='1'"
-          (click)="openAddModal()">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Add Vehicle
-        </button>
-      </div>
-
-      <!-- Stats row -->
-      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem;">
-        <div style="background:#0d1117; border:1px solid rgba(176,255,68,0.12); border-radius:10px; padding:1rem;">
-          <p style="font-size:0.65rem; font-weight:700; letter-spacing:0.1em; color:#484f58; text-transform:uppercase; margin:0 0 0.4rem;">Total Vehicles</p>
-          <p style="font-size:1.75rem; font-weight:700; color:#e6edf3; margin:0;">{{ cars().length }}</p>
-        </div>
-        <div style="background:#0d1117; border:1px solid rgba(176,255,68,0.12); border-radius:10px; padding:1rem;">
-          <p style="font-size:0.65rem; font-weight:700; letter-spacing:0.1em; color:#484f58; text-transform:uppercase; margin:0 0 0.4rem;">Physical</p>
-          <p style="font-size:1.75rem; font-weight:700; color:#e6edf3; margin:0;">{{ physicalCount() }}</p>
-        </div>
-        <div style="background:#0d1117; border:1px solid rgba(176,255,68,0.12); border-radius:10px; padding:1rem;">
-          <p style="font-size:0.65rem; font-weight:700; letter-spacing:0.1em; color:#484f58; text-transform:uppercase; margin:0 0 0.4rem;">Virtual</p>
-          <p style="font-size:1.75rem; font-weight:700; color:#e6edf3; margin:0;">{{ virtualCount() }}</p>
-        </div>
-      </div>
-
-      <!-- Vehicle table -->
-      <div style="background:#0d1117; border:1px solid rgba(176,255,68,0.12); border-radius:12px; overflow:hidden;">
-        <table style="width:100%; border-collapse:collapse; font-size:0.78rem;">
-          <thead>
-            <tr style="background:#161b22; border-bottom:1px solid #21262d;">
-              <th style="padding:10px 14px; text-align:left; color:#484f58; font-weight:700; letter-spacing:0.08em; font-size:0.65rem; text-transform:uppercase;">Vehicle</th>
-              <th style="padding:10px 14px; text-align:left; color:#484f58; font-weight:700; letter-spacing:0.08em; font-size:0.65rem; text-transform:uppercase;">Year</th>
-              <th style="padding:10px 14px; text-align:left; color:#484f58; font-weight:700; letter-spacing:0.08em; font-size:0.65rem; text-transform:uppercase;">VIN</th>
-              <th style="padding:10px 14px; text-align:left; color:#484f58; font-weight:700; letter-spacing:0.08em; font-size:0.65rem; text-transform:uppercase;">Type</th>
-              <th style="padding:10px 14px; text-align:left; color:#484f58; font-weight:700; letter-spacing:0.08em; font-size:0.65rem; text-transform:uppercase;">Status</th>
-              <th style="padding:10px 14px; text-align:right; color:#484f58; font-weight:700; letter-spacing:0.08em; font-size:0.65rem; text-transform:uppercase;">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (loading()) {
-              <tr><td colspan="6" style="padding:2rem; text-align:center; color:#484f58;">Loading vehicles...</td></tr>
-            } @else if (cars().length === 0) {
-              <tr><td colspan="6" style="padding:2rem; text-align:center; color:#484f58;">No vehicles registered yet. Add your first vehicle.</td></tr>
-            }
-            @for (car of cars(); track car.carUid) {
-              <tr style="border-bottom:1px solid #161b22; cursor:pointer; transition:background 0.15s;"
-                onmouseover="this.style.background='#161b22'"
-                onmouseout="this.style.background='transparent'"
-                (click)="selectCar(car)">
-                <td style="padding:12px 14px;">
-                  <div style="display:flex; align-items:center; gap:0.6rem;">
-                    <div style="width:32px; height:32px; border-radius:8px;
-                      background:rgba(176,255,68,0.08); border:1px solid rgba(176,255,68,0.15);
-                      display:flex; align-items:center; justify-content:center; color:#b0ff44; flex-shrink:0;">
-                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <rect x="1" y="11" width="22" height="9" rx="2" ry="2"/>
-                        <path d="M1 11l4-7h14l4 7"/>
-                        <circle cx="7" cy="20" r="1"/><circle cx="17" cy="20" r="1"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p style="color:#e6edf3; font-weight:600; margin:0;">{{ car.make }} {{ car.model }}</p>
-                      @if (car.color) {
-                        <p style="color:#484f58; font-size:0.68rem; margin:0;">{{ car.color }}</p>
-                      }
-                    </div>
-                  </div>
-                </td>
-                <td style="padding:12px 14px; color:#8a9ab0;">{{ car.year }}</td>
-                <td style="padding:12px 14px; color:#8a9ab0; font-family:monospace; font-size:0.72rem;">
-                  {{ car.vin || '—' }}
-                </td>
-                <td style="padding:12px 14px;">
-                  @if (car.isVirtual) {
-                    <span style="background:rgba(130,80,255,0.15); color:#a78bfa;
-                      border:1px solid rgba(130,80,255,0.3); border-radius:20px;
-                      padding:2px 10px; font-size:0.68rem; font-weight:600;">Virtual</span>
-                  } @else {
-                    <span style="background:rgba(46,160,67,0.15); color:#3fb950;
-                      border:1px solid rgba(46,160,67,0.3); border-radius:20px;
-                      padding:2px 10px; font-size:0.68rem; font-weight:600;">Physical</span>
-                  }
-                </td>
-                <td style="padding:12px 14px;">
-                  @if (car.isActive) {
-                    <span style="background:rgba(176,255,68,0.1); color:#b0ff44;
-                      border:1px solid rgba(176,255,68,0.2); border-radius:20px;
-                      padding:2px 10px; font-size:0.68rem; font-weight:600;">● Active</span>
-                  } @else {
-                    <span style="background:rgba(255,68,68,0.1); color:#ff6666;
-                      border:1px solid rgba(255,68,68,0.2); border-radius:20px;
-                      padding:2px 10px; font-size:0.68rem; font-weight:600;">○ Inactive</span>
-                  }
-                </td>
-                <td style="padding:12px 14px; text-align:right;" (click)="$event.stopPropagation()">
-                  <div style="display:flex; align-items:center; justify-content:flex-end; gap:0.5rem;">
-                    <button style="padding:4px 12px; border-radius:6px; font-size:0.68rem; font-weight:600;
-                      border:1px solid #30363d; background:transparent; color:#8a9ab0; cursor:pointer;"
-                      onmouseover="this.style.borderColor='rgba(176,255,68,0.3)'; this.style.color='#b0ff44'"
-                      onmouseout="this.style.borderColor='#30363d'; this.style.color='#8a9ab0'"
-                      (click)="openEditModal(car)">Edit</button>
-                    <button style="padding:4px 12px; border-radius:6px; font-size:0.68rem; font-weight:600;
-                      border:1px solid rgba(255,68,68,0.2); background:transparent; color:#ff6666; cursor:pointer;"
-                      onmouseover="this.style.borderColor='#ff4444'"
-                      onmouseout="this.style.borderColor='rgba(255,68,68,0.2)'"
-                      (click)="deleteCar(car)">Delete</button>
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Sessions panel for selected car -->
-      @if (selectedCar()) {
-        <div style="margin-top:1.5rem; background:#0d1117; border:1px solid rgba(176,255,68,0.12); border-radius:12px; padding:1.25rem;">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
-            <h2 style="font-size:0.78rem; font-weight:700; color:#8a9ab0; letter-spacing:0.08em; text-transform:uppercase; margin:0;">
-              Sessions — {{ selectedCar()!.make }} {{ selectedCar()!.model }} {{ selectedCar()!.year }}
-            </h2>
-            <button style="background:none; border:none; color:#484f58; cursor:pointer; font-size:0.8rem;"
-              (click)="selectedCar.set(null)">✕ Close</button>
-          </div>
-          @if (sessionsLoading()) {
-            <p style="color:#484f58; font-size:0.78rem; text-align:center; padding:1rem;">Loading sessions...</p>
-          } @else if (carSessions().length === 0) {
-            <p style="color:#484f58; font-size:0.78rem; text-align:center; padding:1rem;">No sessions found for this vehicle.</p>
-          } @else {
-            <table style="width:100%; border-collapse:collapse; font-size:0.75rem;">
-              <thead>
-                <tr style="border-bottom:1px solid #21262d;">
-                  <th style="padding:6px 10px; text-align:left; color:#484f58; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em;">Session ID</th>
-                  <th style="padding:6px 10px; text-align:left; color:#484f58; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em;">File</th>
-                  <th style="padding:6px 10px; text-align:left; color:#484f58; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em;">Frames</th>
-                  <th style="padding:6px 10px; text-align:left; color:#484f58; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em;">Status</th>
-                  <th style="padding:6px 10px; text-align:left; color:#484f58; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em;">Date</th>
-                  <th style="padding:6px 10px; text-align:right; color:#484f58; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em;"></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (s of carSessions(); track s.sessionId) {
-                  <tr style="border-bottom:1px solid #161b22;">
-                    <td style="padding:8px 10px; font-family:monospace; font-size:0.68rem; color:#8a9ab0;">
-                      {{ s.sessionId | slice:0:8 }}...
-                    </td>
-                    <td style="padding:8px 10px; color:#e6edf3;">{{ s.sourceFilename || '—' }}</td>
-                    <td style="padding:8px 10px; color:#e6edf3;">{{ s.frameCount | number }}</td>
-                    <td style="padding:8px 10px;">
-                      <span [style.color]="s.status === 'COMPLETE' ? '#b0ff44' : s.status === 'ERROR' ? '#ff4444' : '#f0a500'"
-                        style="font-size:0.68rem; font-weight:600;">
-                        {{ s.status || 'PROCESSING' }}
-                      </span>
-                    </td>
-                    <td style="padding:8px 10px; color:#484f58;">{{ s.createdAt | slice:0:10 }}</td>
-                    <td style="padding:8px 10px; text-align:right;">
-                      <button style="padding:3px 10px; border-radius:5px; font-size:0.68rem; font-weight:600;
-                        border:1px solid #30363d; background:transparent; color:#8a9ab0; cursor:pointer;"
-                        onmouseover="this.style.borderColor='rgba(176,255,68,0.3)'; this.style.color='#b0ff44'"
-                        onmouseout="this.style.borderColor='#30363d'; this.style.color='#8a9ab0'"
-                        (click)="analyseSession(s.sessionId)">Analyse →</button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          }
-        </div>
-      }
-
-      <!-- Add/Edit Modal -->
-      @if (showModal()) {
-        <div style="position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000;
-          display:flex; align-items:center; justify-content:center;"
-          (click)="closeModal()">
-          <div style="background:#0d1117; border:1px solid rgba(176,255,68,0.2); border-radius:16px;
-            padding:1.75rem; width:460px; max-width:90vw;"
-            (click)="$event.stopPropagation()">
-            <h2 style="font-size:1rem; font-weight:700; color:#fff; margin:0 0 1.25rem;">
-              {{ editingCar() ? 'Edit Vehicle' : 'Add Vehicle' }}
-            </h2>
-
-            <div style="display:flex; flex-direction:column; gap:0.875rem;">
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
-                <div>
-                  <label style="font-size:0.65rem; font-weight:700; letter-spacing:0.1em; color:#484f58; text-transform:uppercase; display:block; margin-bottom:0.35rem;">Make *</label>
-                  <input [(ngModel)]="form.make" placeholder="e.g. Toyota"
-                    style="width:100%; background:#161b22; border:1px solid rgba(176,255,68,0.2);
-                    border-radius:6px; color:#e6edf3; font-size:0.82rem; padding:7px 10px; outline:none; box-sizing:border-box;"
-                    onfocus="this.style.borderColor='rgba(176,255,68,0.5)'"
-                    onblur="this.style.borderColor='rgba(176,255,68,0.2)'"/>
-                </div>
-                <div>
-                  <label style="font-size:0.65rem; font-weight:700; letter-spacing:0.1em; color:#484f58; text-transform:uppercase; display:block; margin-bottom:0.35rem;">Model *</label>
-                  <input [(ngModel)]="form.model" placeholder="e.g. Camry"
-                    style="width:100%; background:#161b22; border:1px solid rgba(176,255,68,0.2);
-                    border-radius:6px; color:#e6edf3; font-size:0.82rem; padding:7px 10px; outline:none; box-sizing:border-box;"
-                    onfocus="this.style.borderColor='rgba(176,255,68,0.5)'"
-                    onblur="this.style.borderColor='rgba(176,255,68,0.2)'"/>
-                </div>
-              </div>
-
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
-                <div>
-                  <label style="font-size:0.65rem; font-weight:700; letter-spacing:0.1em; color:#484f58; text-transform:uppercase; display:block; margin-bottom:0.35rem;">Year *</label>
-                  <input [(ngModel)]="form.year" type="number" placeholder="2024" min="1990" max="2030"
-                    style="width:100%; background:#161b22; border:1px solid rgba(176,255,68,0.2);
-                    border-radius:6px; color:#e6edf3; font-size:0.82rem; padding:7px 10px; outline:none; box-sizing:border-box;"
-                    onfocus="this.style.borderColor='rgba(176,255,68,0.5)'"
-                    onblur="this.style.borderColor='rgba(176,255,68,0.2)'"/>
-                </div>
-                <div>
-                  <label style="font-size:0.65rem; font-weight:700; letter-spacing:0.1em; color:#484f58; text-transform:uppercase; display:block; margin-bottom:0.35rem;">Color</label>
-                  <input [(ngModel)]="form.color" placeholder="e.g. White"
-                    style="width:100%; background:#161b22; border:1px solid rgba(176,255,68,0.2);
-                    border-radius:6px; color:#e6edf3; font-size:0.82rem; padding:7px 10px; outline:none; box-sizing:border-box;"
-                    onfocus="this.style.borderColor='rgba(176,255,68,0.5)'"
-                    onblur="this.style.borderColor='rgba(176,255,68,0.2)'"/>
-                </div>
-              </div>
-
-              <div>
-                <label style="font-size:0.65rem; font-weight:700; letter-spacing:0.1em; color:#484f58; text-transform:uppercase; display:block; margin-bottom:0.35rem;">VIN</label>
-                <input [(ngModel)]="form.vin" placeholder="17-character VIN (optional)"
-                  maxlength="17"
-                  style="width:100%; background:#161b22; border:1px solid rgba(176,255,68,0.2);
-                  border-radius:6px; color:#e6edf3; font-size:0.82rem; padding:7px 10px; outline:none; box-sizing:border-box; font-family:monospace;"
-                  onfocus="this.style.borderColor='rgba(176,255,68,0.5)'"
-                  onblur="this.style.borderColor='rgba(176,255,68,0.2)'"/>
-              </div>
-
-              <div style="display:flex; align-items:center; gap:0.75rem;">
-                <input type="checkbox" [(ngModel)]="form.isVirtual" id="isVirtual"
-                  style="width:16px; height:16px; accent-color:#b0ff44; cursor:pointer;"/>
-                <label for="isVirtual" style="font-size:0.78rem; color:#8a9ab0; cursor:pointer;">
-                  Virtual vehicle (simulator only — no physical VIN required)
-                </label>
-              </div>
-            </div>
-
-            @if (formError()) {
-              <p style="color:#ff4444; font-size:0.75rem; margin:0.75rem 0 0;">{{ formError() }}</p>
-            }
-
-            <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
-              <button style="padding:8px 20px; border-radius:8px; font-size:0.82rem;
-                border:1px solid #30363d; background:transparent; color:#8a9ab0; cursor:pointer;"
-                (click)="closeModal()">Cancel</button>
-              <button style="padding:8px 20px; border-radius:8px; font-size:0.82rem; font-weight:700;
-                background:#b0ff44; color:#07090b; border:none; cursor:pointer;"
-                [disabled]="saving()"
-                (click)="saveVehicle()">
-                {{ saving() ? 'Saving...' : (editingCar() ? 'Save Changes' : 'Add Vehicle') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      }
-
-    </div>
-  `,
+  imports: [
+    CommonModule, FormsModule, LogUploadComponent, SimulatorControlComponent,
+    CatalogDetailPageComponent, RequirementDetailPageComponent,
+  ],
+  templateUrl: './fleet-page.component.html',
+  styleUrl: './fleet-page.component.scss',
 })
 export class FleetPageComponent implements OnInit {
-  private readonly http   = inject(HttpClient);
-  private readonly router = inject(Router);
+  private readonly fleetService  = inject(FleetService);
+  private readonly router        = inject(Router);
+  private readonly route         = inject(ActivatedRoute);
+  private readonly nlQueryService = inject(NlQueryService);
+  private readonly requirementService = inject(RequirementService);
+  private readonly canService    = inject(CanService);
 
   readonly cars            = signal<Car[]>([]);
   readonly loading         = signal(true);
-  readonly selectedCar     = signal<Car | null>(null);
-  readonly carSessions     = signal<any[]>([]);
-  readonly sessionsLoading = signal(false);
   readonly showModal       = signal(false);
   readonly editingCar      = signal<Car | null>(null);
   readonly saving          = signal(false);
   readonly formError       = signal('');
 
+  readonly selectedCar = signal<Car | null>(null);
+  readonly selectedCarSessions = signal<CanSession[]>([]);
+  readonly sessionsLoading = signal(false);
+
+  // Inline session tools for the selected car (mirror of the workspace page)
+  readonly showUpload    = signal(false);
+  readonly showSimulator = signal(false);
+
+  // Catalog assignment (selected-car modal)
+  readonly carCatalogs        = signal<CarCatalog[]>([]);
+  readonly showCatalogModal   = signal(false);
+  readonly allCatalogs        = signal<CatalogSummary[]>([]);
+  readonly selectedFilenames  = signal<Set<string>>(new Set());
+  readonly catalogsSaving     = signal(false);
+  readonly catalogsError      = signal('');
+
+  // Requirement-set assignment (selected-car modal) — mirror of the catalog flow.
+  // Empty assignment = requirements engine OFF for this car's sessions.
+  readonly carRequirements       = signal<CarRequirementSet[]>([]);
+  readonly showRequirementModal  = signal(false);
+  readonly allRequirementSets    = signal<RequirementSummary[]>([]);
+  readonly selectedReqFilenames  = signal<Set<string>>(new Set());
+  readonly requirementsSaving    = signal(false);
+  readonly requirementsError     = signal('');
+  readonly reqUploading          = signal(false);
+
+  // ── Vehicle-detail presentation state (tabs, filters, joins, toasts) ──────
+  readonly activeTab = signal<'overview' | 'sessions' | 'catalogs' | 'requirements'>('overview');
+  readonly sessionFilter = signal<'all' | 'faults' | 'clean'>('all');
+  readonly sessionQuery = signal('');
+  readonly allCatalogSummaries = signal<CatalogSummary[]>([]);
+  readonly sessionFaults = signal<Map<string, SessionFaultInfo>>(new Map());
+  readonly selectedCatalogFile = signal<string | null>(null);
+  readonly selectedReqFile = signal<string | null>(null);
+  readonly toasts = signal<{ id: number; text: string }[]>([]);
+  private toastSeq = 0;
+
+  readonly faultRateTarget = FAULT_RATE_TARGET;
+
+  readonly sessionsNewestFirst = computed(() =>
+    [...this.selectedCarSessions()].sort(
+      (a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
+
+  readonly recentSessions = computed(() => this.sessionsNewestFirst().slice(0, 3));
+
+  readonly faultSessionCount = computed(() =>
+    this.sessionsNewestFirst().filter(
+      s => (this.sessionFaults().get(s.sessionId)?.count ?? 0) > 0).length);
+
+  readonly cleanSessionCount = computed(() =>
+    this.sessionsNewestFirst().length - this.faultSessionCount());
+
+  readonly filteredSessions = computed(() => {
+    const q = this.sessionQuery().toLowerCase().trim();
+    const filter = this.sessionFilter();
+    return this.sessionsNewestFirst().filter(s => {
+      const faults = this.sessionFaults().get(s.sessionId)?.count ?? 0;
+      if (filter === 'faults' && faults === 0) return false;
+      if (filter === 'clean' && faults > 0) return false;
+      if (q && !`${s.sessionId} ${s.sourceFilename ?? ''}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  });
+
+  /** Attached catalogs enriched with message/signal counts from the summary list. */
+  readonly catalogCards = computed(() => {
+    const summaries = new Map(this.allCatalogSummaries().map(c => [c.filename, c]));
+    return this.carCatalogs().map(c => ({
+      ...c,
+      messageCount: summaries.get(c.filename)?.messageCount ?? null,
+      signalCount: summaries.get(c.filename)?.signalCount ?? null,
+    }));
+  });
+
+  readonly totalSignals = computed(() =>
+    this.catalogCards().reduce((acc, c) => acc + (c.signalCount ?? 0), 0));
+
+  /** Attached requirement sets enriched with rule/draft counts + version. */
+  readonly requirementCards = computed(() => {
+    const infos = new Map(this.allRequirementSets().map(r => [r.filename, r]));
+    return this.carRequirements().map(r => ({
+      ...r,
+      ruleCount: infos.get(r.filename)?.ruleCount ?? null,
+      draftCount: infos.get(r.filename)?.draftCount ?? null,
+      version: r.version ?? infos.get(r.filename)?.version ?? null,
+    }));
+  });
+
+  readonly totalRules = computed(() =>
+    this.requirementCards().reduce((acc, r) => acc + (r.ruleCount ?? 0), 0));
+
+  /** True when the car's fault rate exceeds the target. */
+  readonly overTarget = computed(() => {
+    const rate = this.selectedCar()?.faultRate;
+    return rate != null && rate > FAULT_RATE_TARGET;
+  });
+
+  /** Four newest sessions (oldest → newest) as trend bars + the target line. */
+  readonly faultTrend = computed(() => {
+    const points = this.sessionsNewestFirst().slice(0, 4).reverse().map(s => {
+      const info = this.sessionFaults().get(s.sessionId);
+      const frames = s.frameCount || 0;
+      const rate = info && frames > 0 ? (info.count / frames) * 1000 : null;
+      return { sessionId: s.sessionId, label: (s.createdAt || '').slice(5, 10), rate };
+    });
+    const max = Math.max(FAULT_RATE_TARGET * 1.4, ...points.map(p => p.rate ?? 0));
+    return {
+      bars: points.map(p => ({
+        ...p,
+        pct: p.rate == null ? 0 : Math.max(4, Math.round((p.rate / max) * 100)),
+      })),
+      targetPct: Math.round((FAULT_RATE_TARGET / max) * 100),
+    };
+  });
+
+  /** Most frequent fault type across the scanned sessions + the rule it maps to. */
+  readonly dominantFault = computed(() => {
+    const typeTotals = new Map<string, number>();
+    const ruleTotals = new Map<string, number>();
+    for (const info of this.sessionFaults().values()) {
+      for (const [t, n] of Object.entries(info.typeCounts)) {
+        typeTotals.set(t, (typeTotals.get(t) ?? 0) + n);
+      }
+      for (const [r, n] of Object.entries(info.ruleCounts)) {
+        ruleTotals.set(r, (ruleTotals.get(r) ?? 0) + n);
+      }
+    }
+    const top = (m: Map<string, number>) =>
+      [...m.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
+    const topType = top(typeTotals);
+    const topRule = top(ruleTotals);
+    if (!topType) return null;
+    return { type: topType[0], count: topType[1], rule: topRule ? topRule[0] : null };
+  });
+
+  /** "Traffic from BUS_A, BUS_B · checked against Set X" — from attached data. */
+  readonly simulatorSubtitle = computed(() => {
+    const buses = this.carCatalogs().map(c => c.busName || c.name || c.filename);
+    const sets = this.carRequirements().map(r => r.name || r.filename);
+    const busPart = buses.length > 0
+      ? `Traffic from ${buses.join(', ')}`
+      : 'Traffic from all catalogs (none assigned)';
+    const setPart = sets.length > 0
+      ? `checked against ${sets.join(', ')}`
+      : 'no requirement sets assigned';
+    return `${busPart} · ${setPart}`;
+  });
+
+  /** Explicit thousands separators — locale-independent by design. */
+  formatNum(n: number | null | undefined): string {
+    if (n == null) return '—';
+    const sign = n < 0 ? '-' : '';
+    const digits = Math.trunc(Math.abs(n)).toString();
+    return sign + digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  formatRate(n: number | null | undefined): string {
+    return n == null ? '—' : n.toFixed(1);
+  }
+
+  faultInfo(sessionId: string): SessionFaultInfo | undefined {
+    return this.sessionFaults().get(sessionId);
+  }
+
+  /** Session card edge/outcome: red = faults or error, green = clean, amber = pending. */
+  sessionOutcome(s: CanSession): 'fault' | 'clean' | 'pending' {
+    if (s.status === 'ERROR') return 'fault';
+    const info = this.sessionFaults().get(s.sessionId);
+    if (!info || (s.status && s.status !== 'COMPLETE')) return info?.count ? 'fault' : 'pending';
+    return info.count > 0 ? 'fault' : 'clean';
+  }
+
+  pushToast(text: string): void {
+    const id = ++this.toastSeq;
+    this.toasts.update(list => [...list, { id, text }]);
+    setTimeout(
+      () => this.toasts.update(list => list.filter(t => t.id !== id)),
+      4000);
+  }
+
+  /** Breadcrumb: back to the fleet list (clears the ?car query param). */
+  clearSelection(): void {
+    this.selectedCar.set(null);
+    this.selectedCarSessions.set([]);
+    this.showUpload.set(false);
+    this.showSimulator.set(false);
+    this.router.navigate([], {
+      queryParams: { car: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  selectCatalog(filename: string): void {
+    this.selectedCatalogFile.set(filename);
+  }
+
+  selectRequirement(filename: string): void {
+    this.selectedReqFile.set(filename);
+  }
+
+  onSimulatorStarted(): void {
+    this.onSimulatorChanged();
+    this.showSimulator.set(false);
+    this.activeTab.set('sessions');
+    this.pushToast('Simulator started — a new session is being captured.');
+  }
+
+  onSimulatorStopped(): void {
+    this.onSimulatorChanged();
+    this.pushToast('Simulator stopped.');
+  }
+
+  onCatalogSaved(): void {
+    this.pushToast('Catalog saved.');
+    const car = this.selectedCar();
+    if (!car) return;
+    this.fleetService.getCarCatalogs(car.carUid).subscribe({
+      next: catalogs => this.carCatalogs.set(catalogs),
+      error: () => {},
+    });
+    this.fleetService.getAllCatalogs().subscribe({
+      next: s => this.allCatalogSummaries.set(s),
+      error: () => {},
+    });
+  }
+
+  onRequirementSaved(): void {
+    this.pushToast('Requirement set saved.');
+    const car = this.selectedCar();
+    if (!car) return;
+    this.fleetService.getCarRequirements(car.carUid).subscribe({
+      next: sets => this.carRequirements.set(sets),
+      error: () => {},
+    });
+    this.fleetService.getAllRequirementSets().subscribe({
+      next: sets => this.allRequirementSets.set(sets),
+      error: () => {},
+    });
+  }
+
+  /** Keep a valid catalog selected after assign/remove/delete mutations. */
+  private syncCatalogSelection(): void {
+    const list = this.carCatalogs();
+    if (!list.some(c => c.filename === this.selectedCatalogFile())) {
+      this.selectedCatalogFile.set(list[0]?.filename ?? null);
+    }
+  }
+
+  private syncRequirementSelection(): void {
+    const list = this.carRequirements();
+    if (!list.some(r => r.filename === this.selectedReqFile())) {
+      this.selectedReqFile.set(list[0]?.filename ?? null);
+    }
+  }
+
+  /** Fetch fault info for the newest sessions through the existing endpoint. */
+  private loadSessionFaults(sessions: CanSession[]): void {
+    const recent = [...sessions]
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+      .slice(0, FAULT_SCAN_LIMIT);
+    for (const s of recent) {
+      if (this.sessionFaults().has(s.sessionId)) continue;
+      this.canService.getIntegrityFaults(s.sessionId).subscribe({
+        next: faults => {
+          const typeCounts: Record<string, number> = {};
+          const ruleCounts: Record<string, number> = {};
+          const ruleIds: string[] = [];
+          for (const f of faults) {
+            typeCounts[f.faultType] = (typeCounts[f.faultType] ?? 0) + 1;
+            const rule = f.requirementId || null;
+            if (rule) ruleCounts[rule] = (ruleCounts[rule] ?? 0) + 1;
+            const id = f.requirementId || f.faultType;
+            if (!ruleIds.includes(id)) ruleIds.push(id);
+          }
+          this.sessionFaults.update(m => {
+            const next = new Map(m);
+            next.set(s.sessionId, { count: faults.length, ruleIds, typeCounts, ruleCounts });
+            return next;
+          });
+        },
+        error: () => { /* leave unknown — card falls back to pending */ },
+      });
+    }
+  }
+
+  // Catalog selection inside the Add/Edit Vehicle modal
+  readonly formCatalogs = signal<Set<string>>(new Set());
+  readonly catalogUploading = signal(false);
+  readonly formCatalogList   = computed(() => [...this.formCatalogs()].sort());
+  readonly assignCatalogList = computed(() => [...this.selectedFilenames()].sort());
+
+  /** Selected files not yet in the system list — fresh uploads shown as chips. */
+  readonly pendingUploadChips = computed(() => {
+    const known = new Set(this.allCatalogs().map(c => c.filename));
+    return [...this.selectedFilenames()].filter(f => !known.has(f)).sort();
+  });
+
+  // NL query
+  readonly nlLoading = signal(false);
+  readonly nlResult  = signal<NlQueryResponse | null>(null);
+  readonly nlError   = signal('');
+  readonly nlColumns = computed(() => {
+    const r = this.nlResult();
+    if (!r || r.results.length === 0) return [];
+    return Object.keys(r.results[0]);
+  });
+  nlQuestion = '';
+
+  readonly nlResultType = computed<'sessions' | 'vehicles' | 'signals' | 'generic'>(() => {
+    const r = this.nlResult();
+    if (!r || r.results.length === 0) return 'generic';
+    const first = r.results[0];
+    if (r.queryType === 'flux') return 'signals';
+    if ('frame_count' in first && 'session_id' in first) return 'sessions';
+    if ('make' in first || 'car_uid' in first) return 'vehicles';
+    return 'generic';
+  });
+
+  readonly nlSessionGroups = computed(() => {
+    const r = this.nlResult();
+    if (!r || this.nlResultType() !== 'sessions') return [];
+    const map = new Map<string, Record<string, unknown>[]>();
+    for (const row of r.results) {
+      const key = String(row['status'] ?? 'UNKNOWN');
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(row);
+    }
+    const order = ['COMPLETE', 'ERROR', 'PROCESSING', 'UNKNOWN'];
+    return Array.from(map.entries())
+      .sort(([a], [b]) => (order.indexOf(a) + 99) % 99 - (order.indexOf(b) + 99) % 99 || a.localeCompare(b))
+      .map(([status, rows]) => ({ status, rows }));
+  });
+
+  readonly nlVehicleGroups = computed(() => {
+    const r = this.nlResult();
+    if (!r || this.nlResultType() !== 'vehicles') return [];
+    const map = new Map<string, Record<string, unknown>[]>();
+    for (const row of r.results) {
+      const key = String(row['make'] ?? 'Unknown');
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(row);
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([make, rows]) => ({ make, rows }));
+  });
+
+  readonly nlFrameGroups = computed(() => {
+    const r = this.nlResult();
+    if (!r || r.queryType !== 'flux') return [];
+    const sessionIds = new Set(r.results.map(row => String(row['session_id'] ?? '')));
+    const multiSession = sessionIds.size > 1;
+    const map = new Map<string, Record<string, unknown>[]>();
+    for (const row of r.results) {
+      const sid = multiSession ? String(row['session_id'] ?? '').slice(0, 8) : '';
+      const key = multiSession ? `${sid}::${row['msg_id']}` : String(row['msg_id'] ?? 'unknown');
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(row);
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, rows]) => {
+        const [sessionPrefix, msgId] = key.includes('::') ? key.split('::') : ['', key];
+        return { msgId, sessionPrefix, rows };
+      });
+  });
+
+  readonly expandedFrames = signal(new Set<string>());
+  readonly collapsedGroups = signal(new Set<string>());
+
   readonly physicalCount = computed(() => this.cars().filter(c => !c.isVirtual).length);
   readonly virtualCount  = computed(() => this.cars().filter(c => c.isVirtual).length);
+  readonly activeCount   = computed(() => this.cars().filter(c => c.isActive).length);
+
+  readonly fleetMode = signal<'registry' | 'ai'>('registry');
+  readonly searchQuery = signal('');
+
+  readonly filteredCars = computed(() => {
+    const q = this.searchQuery().toLowerCase().trim();
+    if (!q) return this.cars();
+    return this.cars().filter(c =>
+      `${c.make} ${c.model} ${c.year} ${c.vin ?? ''}`.toLowerCase().includes(q)
+    );
+  });
 
   form = { make: '', model: '', year: new Date().getFullYear(), color: '', vin: '', isVirtual: false };
 
@@ -347,26 +451,126 @@ export class FleetPageComponent implements OnInit {
 
   loadCars(): void {
     this.loading.set(true);
-    this.http.get<Car[]>(`${API_BASE_URL}/api/cars`, { headers: this.authHeaders() })
-      .subscribe({ next: cars => { this.cars.set(cars); this.loading.set(false); }, error: () => this.loading.set(false) });
+    this.fleetService.getCars()
+      .subscribe({
+        next: cars => {
+          this.cars.set(cars);
+          this.loading.set(false);
+          this.restoreSelectedCarFromUrl(cars);
+        },
+        error: () => this.loading.set(false),
+      });
+  }
+
+  private restoreSelectedCarFromUrl(cars: Car[]): void {
+    if (this.selectedCar()) return;
+    const carUid = this.route.snapshot.queryParamMap.get('car');
+    // Deep link wins; otherwise auto-select the first vehicle so the merged
+    // page always shows a detail column.
+    const car = (carUid ? cars.find(c => c.carUid === carUid) : undefined) ?? cars[0];
+    if (car) this.selectCar(car);
   }
 
   selectCar(car: Car): void {
     this.selectedCar.set(car);
+    this.selectedCarSessions.set([]);
     this.sessionsLoading.set(true);
-    this.carSessions.set([]);
-    this.http.get<any[]>(`${API_BASE_URL}/api/cars/${car.carUid}/sessions`, { headers: this.authHeaders() })
-      .subscribe({ next: s => { this.carSessions.set(s); this.sessionsLoading.set(false); }, error: () => this.sessionsLoading.set(false) });
+    // Close the inline tools so reopening re-binds them to the new car.
+    this.showUpload.set(false);
+    this.showSimulator.set(false);
+    // Reset the detail-page presentation state for the new car.
+    this.activeTab.set('overview');
+    this.sessionFilter.set('all');
+    this.sessionQuery.set('');
+    this.sessionFaults.set(new Map());
+    this.selectedCatalogFile.set(null);
+    this.selectedReqFile.set(null);
+    this.carCatalogs.set([]);
+    this.fleetService.getCarCatalogs(car.carUid).subscribe({
+      next: catalogs => {
+        this.carCatalogs.set(catalogs);
+        this.syncCatalogSelection();
+      },
+      error: () => this.carCatalogs.set([]),
+    });
+    this.carRequirements.set([]);
+    this.fleetService.getCarRequirements(car.carUid).subscribe({
+      next: sets => {
+        this.carRequirements.set(sets);
+        this.syncRequirementSelection();
+      },
+      error: () => this.carRequirements.set([]),
+    });
+    // Card enrichment (message/signal + rule/draft counts) from existing lists.
+    this.fleetService.getAllCatalogs().subscribe({
+      next: s => this.allCatalogSummaries.set(s),
+      error: () => {},
+    });
+    this.fleetService.getAllRequirementSets().subscribe({
+      next: sets => this.allRequirementSets.set(sets),
+      error: () => {},
+    });
+    this.router.navigate([], {
+      queryParams: { car: car.carUid },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    this.fleetService.getCarSessions(car.carUid).subscribe({
+      next: sessions => {
+        this.selectedCarSessions.set(sessions);
+        this.sessionsLoading.set(false);
+        this.loadSessionFaults(sessions);
+      },
+      error: () => this.sessionsLoading.set(false),
+    });
   }
 
   analyseSession(sessionId: string): void {
-    this.router.navigate(['/admin/sniffer'], { queryParams: { sessionId } });
+    this.router.navigate(['/admin/workspace/session', sessionId], {
+      queryParams: { returnUrl: this.router.url },
+    });
+  }
+
+  toggleUpload(): void {
+    this.showUpload.update(v => !v);
+    if (this.showUpload()) this.showSimulator.set(false);
+  }
+
+  toggleSimulator(): void {
+    this.showSimulator.update(v => !v);
+    if (this.showSimulator()) this.showUpload.set(false);
+  }
+
+  refreshSelectedCarSessions(): void {
+    const car = this.selectedCar();
+    if (!car) return;
+    this.sessionsLoading.set(true);
+    this.fleetService.getCarSessions(car.carUid).subscribe({
+      next: sessions => {
+        this.selectedCarSessions.set(sessions);
+        this.sessionsLoading.set(false);
+        this.loadSessionFaults(sessions);
+      },
+      error: () => this.sessionsLoading.set(false),
+    });
+  }
+
+  onUploadComplete(): void {
+    this.refreshSelectedCarSessions();
+    this.showUpload.set(false);
+    this.activeTab.set('sessions');
+    this.pushToast('Log analysed — session added.');
+  }
+
+  onSimulatorChanged(): void {
+    this.refreshSelectedCarSessions();
   }
 
   openAddModal(): void {
     this.editingCar.set(null);
     this.form = { make: '', model: '', year: new Date().getFullYear(), color: '', vin: '', isVirtual: false };
     this.formError.set('');
+    this.formCatalogs.set(new Set());
     this.showModal.set(true);
   }
 
@@ -374,7 +578,153 @@ export class FleetPageComponent implements OnInit {
     this.editingCar.set(car);
     this.form = { make: car.make, model: car.model, year: car.year, color: car.color || '', vin: car.vin || '', isVirtual: car.isVirtual };
     this.formError.set('');
+    // Edit is only reachable from the detail panel, so carCatalogs holds this
+    // car's current assignment — prefill so save keeps it unless changed.
+    this.formCatalogs.set(new Set(this.carCatalogs().map(c => c.filename)));
     this.showModal.set(true);
+  }
+
+  /** Open the full decode view of a catalog file. The current URL (which
+   *  carries ?car=<uid>) rides along so the detail page's Back button returns
+   *  here with the same car selected. */
+  openCatalogDetail(filename: string): void {
+    this.router.navigate(['/admin/catalogs', filename],
+      { queryParams: { returnUrl: this.router.url } });
+  }
+
+  /** Open the rule view of a requirement-set file (same Back behavior). */
+  openRequirementDetail(filename: string): void {
+    this.router.navigate(['/admin/requirements', filename],
+      { queryParams: { returnUrl: this.router.url } });
+  }
+
+  /** Collapse state of the two asset sections in the car detail pane. */
+  readonly catalogsCollapsed = signal(false);
+  readonly requirementsCollapsed = signal(false);
+
+  toggleCatalogsSection(): void {
+    this.catalogsCollapsed.update(v => !v);
+  }
+
+  toggleRequirementsSection(): void {
+    this.requirementsCollapsed.update(v => !v);
+  }
+
+  /** Unassign a catalog from the selected car — the file itself is kept. */
+  removeCarCatalog(filename: string): void {
+    const car = this.selectedCar();
+    if (!car) return;
+    if (!confirm(`Remove "${filename}" from ${car.make} ${car.model}?\nThe catalog file itself is kept and can be re-assigned later.`)) return;
+    const remaining = this.carCatalogs().map(c => c.filename).filter(f => f !== filename);
+    this.fleetService.setCarCatalogs(car.carUid, remaining).subscribe({
+      next: catalogs => {
+        this.carCatalogs.set(catalogs);
+        this.syncCatalogSelection();
+      },
+      error: () => { /* interceptor toasts */ },
+    });
+  }
+
+  /** Permanently delete a catalog file — disappears for every car. */
+  deleteCatalogFile(filename: string): void {
+    if (!confirm(`Permanently DELETE the catalog file "${filename}"?\nIt will disappear for every car that uses it. This cannot be undone.`)) return;
+    this.fleetService.deleteCatalogFile(filename).subscribe({
+      next: () => {
+        this.carCatalogs.update(list => list.filter(c => c.filename !== filename));
+        this.syncCatalogSelection();
+      },
+      error: () => { /* interceptor toasts */ },
+    });
+  }
+
+  /** Unassign a requirement set from the selected car — the file itself is kept. */
+  removeCarRequirement(filename: string): void {
+    const car = this.selectedCar();
+    if (!car) return;
+    if (!confirm(`Remove "${filename}" from ${car.make} ${car.model}?\nThe requirement file itself is kept and can be re-assigned later.`)) return;
+    const remaining = this.carRequirements().map(r => r.filename).filter(f => f !== filename);
+    this.fleetService.setCarRequirements(car.carUid, remaining).subscribe({
+      next: sets => {
+        this.carRequirements.set(sets);
+        this.syncRequirementSelection();
+      },
+      error: () => { /* interceptor toasts */ },
+    });
+  }
+
+  /** Permanently delete a requirement-set file — disappears for every car. */
+  deleteRequirementFile(filename: string): void {
+    if (!confirm(`Permanently DELETE the requirement set "${filename}"?\nIt will disappear for every car that uses it. This cannot be undone.`)) return;
+    this.fleetService.deleteRequirementSetFile(filename).subscribe({
+      next: () => {
+        this.carRequirements.update(list => list.filter(r => r.filename !== filename));
+        this.syncRequirementSelection();
+      },
+      error: () => { /* interceptor toasts */ },
+    });
+  }
+
+  toggleFormCatalog(filename: string): void {
+    this.formCatalogs.update(s => {
+      const next = new Set(s);
+      next.has(filename) ? next.delete(filename) : next.add(filename);
+      return next;
+    });
+  }
+
+  // ── Catalog file intake (browse / drag-drop / paste) ──────────────────────
+
+  onCatalogFileInput(event: Event, target: 'form' | 'assign'): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files?.length) this.addCatalogFiles(Array.from(input.files), target);
+    input.value = '';
+  }
+
+  onCatalogDrop(event: DragEvent, target: 'form' | 'assign'): void {
+    event.preventDefault();
+    const files = event.dataTransfer?.files;
+    if (files?.length) this.addCatalogFiles(Array.from(files), target);
+  }
+
+  onCatalogPaste(event: ClipboardEvent, target: 'form' | 'assign'): void {
+    const files = event.clipboardData?.files;
+    if (files?.length) {
+      event.preventDefault();
+      this.addCatalogFiles(Array.from(files), target);
+    }
+  }
+
+  /**
+   * Uploads each picked XML through the catalog API (which saves the file and
+   * reloads the backend catalog set), then adds the stored filename to the
+   * target selection: 'form' = Add/Edit Vehicle modal, 'assign' = Catalogs modal.
+   */
+  private addCatalogFiles(files: File[], target: 'form' | 'assign'): void {
+    const setError = (msg: string) =>
+      target === 'form' ? this.formError.set(msg) : this.catalogsError.set(msg);
+    const xmls = files.filter(f => f.name.toLowerCase().endsWith('.xml'));
+    if (xmls.length === 0) {
+      setError('Only .xml catalog files are supported.');
+      return;
+    }
+    setError('');
+    this.catalogUploading.set(true);
+    let remaining = xmls.length;
+    for (const file of xmls) {
+      this.fleetService.uploadCatalog(file).subscribe({
+        next: res => {
+          const filename = res.filename || file.name;
+          const add = (s: Set<string>) => { const n = new Set(s); n.add(filename); return n; };
+          if (target === 'form') this.formCatalogs.update(add);
+          else this.selectedFilenames.update(add);
+          if (--remaining === 0) this.catalogUploading.set(false);
+        },
+        error: err => {
+          setError(err?.error?.error || `Upload failed for ${file.name}.`);
+          if (--remaining === 0) this.catalogUploading.set(false);
+        },
+      });
+    }
   }
 
   closeModal(): void { this.showModal.set(false); this.editingCar.set(null); }
@@ -388,22 +738,217 @@ export class FleetPageComponent implements OnInit {
     const body = { make: this.form.make.trim(), model: this.form.model.trim(), year: this.form.year, color: this.form.color || null, vin: this.form.vin || null, isVirtual: this.form.isVirtual };
     const editing = this.editingCar();
     const req = editing
-      ? this.http.put<Car>(`${API_BASE_URL}/api/cars/${editing.carUid}`, body, { headers: this.authHeaders() })
-      : this.http.post<Car>(`${API_BASE_URL}/api/cars`, body, { headers: this.authHeaders() });
+      ? this.fleetService.updateCar(editing.carUid, body)
+      : this.fleetService.createCar(body);
     req.subscribe({
-      next: () => { this.saving.set(false); this.closeModal(); this.loadCars(); },
+      next: saved => {
+        // Chain the catalog assignment: create/update the car first, then PUT
+        // its catalog set. Skipped only for a brand-new car with no selection.
+        const carUid = editing ? editing.carUid : saved.carUid;
+        const filenames = [...this.formCatalogs()];
+        if (!editing && filenames.length === 0) {
+          this.saving.set(false); this.closeModal(); this.loadCars();
+          return;
+        }
+        this.fleetService.setCarCatalogs(carUid, filenames).subscribe({
+          next: catalogs => {
+            if (this.selectedCar()?.carUid === carUid) this.carCatalogs.set(catalogs);
+            this.saving.set(false); this.closeModal(); this.loadCars();
+          },
+          error: () => {
+            this.saving.set(false);
+            this.formError.set('Vehicle saved, but the catalog assignment failed - use the Catalogs button to retry.');
+            this.loadCars();
+          },
+        });
+      },
       error: err => { this.saving.set(false); this.formError.set(err?.error?.message || 'Save failed.'); }
     });
   }
 
   deleteCar(car: Car): void {
     if (!confirm(`Delete ${car.make} ${car.model} ${car.year}? This cannot be undone.`)) return;
-    this.http.delete(`${API_BASE_URL}/api/cars/${car.carUid}`, { headers: this.authHeaders() })
-      .subscribe({ next: () => { this.loadCars(); if (this.selectedCar()?.carUid === car.carUid) this.selectedCar.set(null); }, error: () => {} });
+    this.fleetService.deleteCar(car.carUid).subscribe({
+      next: () => {
+        if (this.selectedCar()?.carUid === car.carUid) {
+          this.selectedCar.set(null);
+          this.selectedCarSessions.set([]);
+          this.router.navigate([], { queryParams: { car: null }, queryParamsHandling: 'merge', replaceUrl: true });
+        }
+        this.loadCars();
+      },
+      error: () => {},
+    });
   }
 
-  private authHeaders(): HttpHeaders {
-    const token = localStorage.getItem('access_token');
-    return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
+  // ── Catalog assignment ─────────────────────────────────────────────────────
+
+  openCatalogModal(): void {
+    const car = this.selectedCar();
+    if (!car) return;
+    this.catalogsError.set('');
+    this.selectedFilenames.set(new Set(this.carCatalogs().map(c => c.filename)));
+    // Existing catalogs in the system, offered as checkboxes next to the upload.
+    this.fleetService.getAllCatalogs().subscribe({
+      next: catalogs => this.allCatalogs.set(catalogs),
+      error: () => this.allCatalogs.set([]),
+    });
+    this.showCatalogModal.set(true);
+  }
+
+  closeCatalogModal(): void {
+    this.showCatalogModal.set(false);
+    this.catalogsError.set('');
+  }
+
+  toggleCatalogSelection(filename: string): void {
+    this.selectedFilenames.update(s => {
+      const next = new Set(s);
+      next.has(filename) ? next.delete(filename) : next.add(filename);
+      return next;
+    });
+  }
+
+  saveCatalogs(): void {
+    const car = this.selectedCar();
+    if (!car) return;
+    this.catalogsSaving.set(true);
+    this.catalogsError.set('');
+    this.fleetService.setCarCatalogs(car.carUid, [...this.selectedFilenames()]).subscribe({
+      next: catalogs => {
+        this.carCatalogs.set(catalogs);
+        this.syncCatalogSelection();
+        this.catalogsSaving.set(false);
+        this.showCatalogModal.set(false);
+        this.pushToast('Catalog assignment saved.');
+      },
+      error: err => {
+        this.catalogsSaving.set(false);
+        this.catalogsError.set(err?.error?.message || 'Could not save catalog assignment.');
+      },
+    });
+  }
+
+  // ── Requirement-set assignment (mirror of catalog assignment) ──────────────
+
+  openRequirementModal(): void {
+    const car = this.selectedCar();
+    if (!car) return;
+    this.requirementsError.set('');
+    this.selectedReqFilenames.set(new Set(this.carRequirements().map(r => r.filename)));
+    this.fleetService.getAllRequirementSets().subscribe({
+      next: sets => this.allRequirementSets.set(sets),
+      error: () => this.requirementsError.set('Could not load requirement sets.'),
+    });
+    this.showRequirementModal.set(true);
+  }
+
+  closeRequirementModal(): void {
+    this.showRequirementModal.set(false);
+    this.requirementsError.set('');
+  }
+
+  toggleRequirementSelection(filename: string): void {
+    this.selectedReqFilenames.update(s => {
+      const next = new Set(s);
+      next.has(filename) ? next.delete(filename) : next.add(filename);
+      return next;
+    });
+  }
+
+  saveRequirements(): void {
+    const car = this.selectedCar();
+    if (!car) return;
+    this.requirementsSaving.set(true);
+    this.requirementsError.set('');
+    this.fleetService.setCarRequirements(car.carUid, [...this.selectedReqFilenames()]).subscribe({
+      next: sets => {
+        this.carRequirements.set(sets);
+        this.syncRequirementSelection();
+        this.requirementsSaving.set(false);
+        this.showRequirementModal.set(false);
+        this.pushToast('Requirement assignment saved.');
+      },
+      error: err => {
+        this.requirementsSaving.set(false);
+        this.requirementsError.set(err?.error?.message || 'Could not save requirement assignment.');
+      },
+    });
+  }
+
+  /**
+   * Phase B chooser, option 1: upload a requirement YAML from the car's modal.
+   * The new set is selected and the assignment saved immediately (auto-assign).
+   */
+  uploadRequirementForCar(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.reqUploading.set(true);
+    this.requirementsError.set('');
+    this.requirementService.upload(file).subscribe({
+      next: saved => {
+        this.reqUploading.set(false);
+        this.selectedReqFilenames.update(s => new Set(s).add(saved.filename));
+        this.fleetService.getAllRequirementSets().subscribe({
+          next: sets => this.allRequirementSets.set(sets),
+        });
+        this.saveRequirements();
+      },
+      error: err => {
+        this.reqUploading.set(false);
+        this.requirementsError.set(err?.error?.error || `Upload failed for ${file.name}.`);
+      },
+    });
+  }
+
+  /** Phase B chooser, option 2: create a new set pre-assigned to this car. */
+  createRequirementForCar(): void {
+    const car = this.selectedCar();
+    if (!car) return;
+    this.closeRequirementModal();
+    this.router.navigate(['/admin/requirements/new'], {
+      queryParams: { car: car.carUid },
+    });
+  }
+
+  toggleGroup(key: string): void {
+    this.collapsedGroups.update(s => {
+      const next = new Set(s);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }
+
+  toggleFrame(msgId: string): void {
+    this.expandedFrames.update(s => {
+      const next = new Set(s);
+      next.has(msgId) ? next.delete(msgId) : next.add(msgId);
+      return next;
+    });
+  }
+
+  runNlQuery(): void {
+    const q = this.nlQuestion.trim();
+    if (!q) return;
+    this.nlLoading.set(true);
+    this.nlError.set('');
+    this.nlResult.set(null);
+    this.collapsedGroups.set(new Set());
+    this.expandedFrames.set(new Set());
+    this.nlQueryService.query(q).subscribe({
+      next: res => { this.nlResult.set(res); this.nlLoading.set(false); },
+      error: err => {
+        this.nlError.set(err?.error?.error ?? 'Query failed. Try rephrasing.');
+        this.nlLoading.set(false);
+      },
+    });
+  }
+
+  clearNlResult(): void {
+    this.nlResult.set(null);
+    this.nlError.set('');
+    this.nlQuestion = '';
   }
 }

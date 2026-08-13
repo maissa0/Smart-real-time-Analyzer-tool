@@ -1,0 +1,2 @@
+[      93ms] [LOG] Angular is running in development mode. @ http://localhost:4200/@fs/C:/tools/Kpit_c/Frontend_angular/.angular/cache/21.2.13/user-management-platform/vite/deps/chunk-TWCEFUUT.js?v=ecbc87ab:11236
+[     275ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "username"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:4200/auth/login:0

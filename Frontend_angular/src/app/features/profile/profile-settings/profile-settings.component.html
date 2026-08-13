@@ -1,244 +1,158 @@
-<div style="background:#07090b; min-height:100vh; padding:1.5rem;">
+<div class="ps-page">
   <app-breadcrumb />
 
-  <div style="margin-bottom:1.5rem; margin-top:1rem;">
-    <h1 style="font-size:1.5rem; font-weight:700; color:#fff; margin:0;">
-      Profile & Account
-    </h1>
+  <div class="ps-title-row">
+    <h1 class="ps-title">Profile & Account</h1>
   </div>
 
-  <div style="display:flex; gap:1.5rem; align-items:flex-start;">
+  <div class="ps-shell">
 
     <!-- Sidebar -->
-    <div style="width:240px; flex-shrink:0;">
-      <div style="
-        background:#0d1117; border:1px solid rgba(176,255,68,0.12);
-        border-radius:12px; padding:1.5rem; text-align:center;">
+    <div class="ps-sidebar">
+      <div class="ps-profile-card">
 
-        <div style="position:relative; width:72px; margin:0 auto 1rem;">
-          <div style="
-            width:72px; height:72px; border-radius:50%;
-            background:rgba(176,255,68,0.15);
-            border:2px solid rgba(176,255,68,0.3);
-            display:flex; align-items:center; justify-content:center;
-            font-size:1.8rem; font-weight:700; color:#b0ff44;
-            overflow:hidden;">
+        <div class="ps-avatar-wrap">
+          <div class="ps-avatar">
             @if (avatarPreview() || authStore.user()?.avatarUrl) {
-              <img [src]="avatarPreview() ?? authStore.user()?.avatarUrl"
-                style="width:100%; height:100%; object-fit:cover;" alt="avatar"/>
+              <img [src]="avatarPreview() ?? authStore.user()?.avatarUrl" alt="avatar"/>
             } @else {
               {{ authStore.user()?.fullName?.charAt(0)?.toUpperCase() ?? 'U' }}
             }
           </div>
 
           <!-- Upload button overlay -->
-          <label style="
-            position:absolute; bottom:0; right:0;
-            width:22px; height:22px; border-radius:50%;
-            background:#b0ff44; border:2px solid #0d1117;
-            display:flex; align-items:center; justify-content:center;
-            cursor:pointer; transition:opacity 0.2s;"
+          <label class="ps-avatar-btn"
             [style.opacity]="uploadingAvatar() ? '0.5' : '1'"
             title="Change profile picture">
-            <svg width="11" height="11" fill="none" stroke="#07090b"
-              stroke-width="2.5" viewBox="0 0 24 24">
-              <path d="M12 4v16m8-8H4"/>
-            </svg>
+            <i class="ti ti-camera"></i>
             <input type="file" accept="image/*"
-              style="display:none;"
               (change)="onAvatarSelected($event)"
               [disabled]="uploadingAvatar()"/>
           </label>
         </div>
 
-        <p style="font-weight:700; color:#e6edf3; font-size:0.95rem; margin:0 0 0.25rem;">
-          {{ authStore.user()?.fullName ?? 'User' }}
-        </p>
-        <p style="font-size:0.75rem; color:#8a9ab0; margin:0 0 1rem;">
-          {{ authStore.user()?.email }}
-        </p>
+        <p class="ps-name">{{ authStore.user()?.fullName ?? 'User' }}</p>
+        <p class="ps-email">{{ authStore.user()?.email }}</p>
 
         @if (authStore.user()?.roles?.length) {
-          <span style="
-            background:rgba(176,255,68,0.1); border:1px solid rgba(176,255,68,0.25);
-            color:#b0ff44; border-radius:20px;
-            padding:3px 12px; font-size:0.7rem; font-weight:600;">
-            {{ primaryRole() }}
-          </span>
+          <span class="ps-role-badge">{{ primaryRole() }}</span>
         }
 
-        <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid #21262d;">
-          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
-            <span style="font-size:0.75rem; color:#8a9ab0;">Status</span>
+        <div class="ps-meta-grid">
+          <div class="ps-meta-cell">
+            <span class="ps-meta-label">Status</span>
             @if (authStore.user()?.isActive) {
-              <span style="font-size:0.75rem; color:#2ea043; font-weight:600;">● Active</span>
+              <span class="ps-meta-value is-active">Active</span>
             } @else {
-              <span style="font-size:0.75rem; color:#ff4444; font-weight:600;">○ Inactive</span>
+              <span class="ps-meta-value is-off">Inactive</span>
             }
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
-            <span style="font-size:0.75rem; color:#8a9ab0;">MFA</span>
-            <span style="font-size:0.75rem; color:#e6edf3; font-weight:600;">
-              {{ authStore.user()?.mfaEnabled ? '✓ On' : '✗ Off' }}
-            </span>
+          <div class="ps-meta-cell">
+            <span class="ps-meta-label">MFA</span>
+            @if (authStore.user()?.mfaEnabled) {
+              <span class="ps-meta-value is-accent">On</span>
+            } @else {
+              <span class="ps-meta-value is-off">Off</span>
+            }
           </div>
-          <div style="display:flex; justify-content:space-between;">
-            <span style="font-size:0.75rem; color:#8a9ab0;">Since</span>
-            <span style="font-size:0.75rem; color:#e6edf3; font-weight:600;">
-              {{ authStore.user()?.createdAt | date:'MMM yyyy' }}
-            </span>
+          <div class="ps-meta-cell">
+            <span class="ps-meta-label">Since</span>
+            <span class="ps-meta-value">{{ authStore.user()?.createdAt | date:'MMM yyyy' }}</span>
+          </div>
+          <div class="ps-meta-cell">
+            <span class="ps-meta-label">Dept</span>
+            <span class="ps-meta-value">{{ authStore.user()?.department || '—' }}</span>
           </div>
         </div>
       </div>
+
+      <!-- Vertical nav -->
+      <nav class="ps-nav">
+        @for (tab of tabs; track tab.id) {
+          <button type="button" (click)="setTab(tab.id)"
+            class="ps-nav-item"
+            [class.is-active]="activeTab() === tab.id">
+            <i class="ti" [class]="tab.icon"></i>
+            <span>{{ tab.label }}</span>
+          </button>
+        }
+      </nav>
     </div>
 
     <!-- Main content -->
-    <div style="flex:1; min-width:0;">
+    <div class="ps-content">
 
-      <!-- Tabs -->
-      <div style="display:flex; gap:0; margin-bottom:1.25rem; border-bottom:1px solid #21262d;">
-        @for (tab of tabs; track tab.id) {
-          <button type="button" (click)="setTab(tab.id)"
-            style="padding:8px 16px; font-size:0.8rem; font-weight:600;
-              border:none; background:none; cursor:pointer;
-              border-bottom:2px solid transparent; transition:all 0.2s;"
-            [style.color]="activeTab() === tab.id ? '#b0ff44' : '#8a9ab0'"
-            [style.border-bottom-color]="activeTab() === tab.id ? '#b0ff44' : 'transparent'">
-            {{ tab.label }}
-          </button>
-        }
+      <div class="ps-content-header">
+        <h2 class="ps-content-title">{{ currentSection().title }}</h2>
+        <p class="ps-content-subtitle">{{ currentSection().subtitle }}</p>
       </div>
 
-      <!-- Tab card -->
-      <div style="
-        background:#0d1117; border:1px solid rgba(176,255,68,0.12);
-        border-radius:12px; padding:1.75rem;"
-        [formGroup]="form">
+      <div class="ps-panel" [formGroup]="form">
 
         <!-- ── My Profile tab (merged) ───────────────────────────────── -->
         @if (activeTab() === 'profile') {
-          <div style="display:flex; flex-direction:column; gap:1.5rem;">
+          <div style="display:flex; flex-direction:column;">
 
             <!-- Editable fields -->
             <div>
-              <p style="font-size:0.65rem; font-weight:700; color:#b0ff44;
-                letter-spacing:0.12em; margin:0 0 1rem; text-transform:uppercase;">
-                Editable Information
-              </p>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                <div>
-                  <label style="display:block; font-size:0.72rem; font-weight:600;
-                    color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                    FULL NAME
-                  </label>
+              <p class="ps-section-heading">Editable Information</p>
+              <div class="ps-form-grid">
+                <div class="ps-field">
+                  <label class="ps-label">Full Name</label>
                   <input formControlName="fullName" type="text"
                     placeholder="Your display name"
-                    style="width:100%; background:#161b22;
-                      border:1px solid rgba(176,255,68,0.2);
-                      border-radius:6px; color:#e6edf3; font-size:0.85rem;
-                      padding:9px 12px; outline:none; box-sizing:border-box;"/>
+                    class="ps-input"/>
                 </div>
-                <div>
-                  <label style="display:block; font-size:0.72rem; font-weight:600;
-                    color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                    PHONE
-                  </label>
+                <div class="ps-field">
+                  <label class="ps-label">Phone</label>
                   <input formControlName="phone" type="tel"
                     placeholder="+1 234 567 8900"
-                    style="width:100%; background:#161b22;
-                      border:1px solid rgba(176,255,68,0.2);
-                      border-radius:6px; color:#e6edf3; font-size:0.85rem;
-                      padding:9px 12px; outline:none; box-sizing:border-box;"/>
+                    class="ps-input"/>
                 </div>
               </div>
               <div style="margin-top:1rem;">
                 <button type="button" (click)="saveProfile()"
                   [disabled]="isSavingProfile()"
-                  style="background:#b0ff44; color:#07090b; border:none;
-                    border-radius:8px; padding:9px 24px;
-                    font-size:0.85rem; font-weight:700; cursor:pointer;"
-                  [style.opacity]="isSavingProfile() ? '0.5' : '1'">
+                  class="ps-btn-primary">
+                  <i class="ti ti-device-floppy"></i>
                   {{ isSavingProfile() ? 'Saving…' : 'Save Changes' }}
                 </button>
               </div>
             </div>
 
-            <div style="height:1px; background:#21262d;"></div>
+            <div class="ps-divider"></div>
 
             <!-- Read-only fields -->
             <div>
-              <p style="font-size:0.65rem; font-weight:700; color:#484f58;
-                letter-spacing:0.12em; margin:0 0 1rem; text-transform:uppercase;">
-                Account Information (read only)
-              </p>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                <div>
-                  <label style="display:block; font-size:0.72rem; font-weight:600;
-                    color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                    EMAIL
-                  </label>
-                  <p style="background:#161b22; border:1px solid #21262d;
-                    border-radius:6px; color:#484f58; font-size:0.85rem;
-                    padding:9px 12px; margin:0;">
-                    {{ authStore.user()?.email }}
-                  </p>
+              <p class="ps-section-heading">Account Information (read only)</p>
+              <div class="ps-form-grid">
+                <div class="ps-field">
+                  <label class="ps-label">Email</label>
+                  <p class="ps-input-static">{{ authStore.user()?.email }}</p>
                 </div>
-                <div>
-                  <label style="display:block; font-size:0.72rem; font-weight:600;
-                    color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                    USERNAME
-                  </label>
-                  <p style="background:#161b22; border:1px solid #21262d;
-                    border-radius:6px; color:#484f58; font-size:0.85rem;
-                    padding:9px 12px; margin:0;">
-                    {{ authStore.user()?.username }}
-                  </p>
+                <div class="ps-field">
+                  <label class="ps-label">Username</label>
+                  <p class="ps-input-static">{{ authStore.user()?.username }}</p>
                 </div>
-                <div>
-                  <label style="display:block; font-size:0.72rem; font-weight:600;
-                    color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                    JOB TITLE
-                    <span style="color:#30363d; font-weight:400;">(set by admin)</span>
+                <div class="ps-field">
+                  <label class="ps-label">
+                    Job Title <span class="ps-label-hint">(set by admin)</span>
                   </label>
-                  <p style="background:#161b22; border:1px solid #21262d;
-                    border-radius:6px; color:#484f58; font-size:0.85rem;
-                    padding:9px 12px; margin:0;">
-                    {{ authStore.user()?.jobTitle || '—' }}
-                  </p>
+                  <p class="ps-input-static">{{ authStore.user()?.jobTitle || '—' }}</p>
                 </div>
-                <div>
-                  <label style="display:block; font-size:0.72rem; font-weight:600;
-                    color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                    DEPARTMENT
-                    <span style="color:#30363d; font-weight:400;">(set by admin)</span>
+                <div class="ps-field">
+                  <label class="ps-label">
+                    Department <span class="ps-label-hint">(set by admin)</span>
                   </label>
-                  <p style="background:#161b22; border:1px solid #21262d;
-                    border-radius:6px; color:#484f58; font-size:0.85rem;
-                    padding:9px 12px; margin:0;">
-                    {{ authStore.user()?.department || '—' }}
-                  </p>
+                  <p class="ps-input-static">{{ authStore.user()?.department || '—' }}</p>
                 </div>
-                <div>
-                  <label style="display:block; font-size:0.72rem; font-weight:600;
-                    color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                    ROLE
-                  </label>
-                  <p style="background:#161b22; border:1px solid #21262d;
-                    border-radius:6px; color:#484f58; font-size:0.85rem;
-                    padding:9px 12px; margin:0;">
-                    {{ primaryRole() }}
-                  </p>
+                <div class="ps-field">
+                  <label class="ps-label">Role</label>
+                  <p class="ps-input-static">{{ primaryRole() }}</p>
                 </div>
-                <div>
-                  <label style="display:block; font-size:0.72rem; font-weight:600;
-                    color:#484f58; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                    MEMBER SINCE
-                  </label>
-                  <p style="background:#161b22; border:1px solid #21262d;
-                    border-radius:6px; color:#484f58; font-size:0.85rem;
-                    padding:9px 12px; margin:0;">
-                    {{ authStore.user()?.createdAt | date:'dd MMM yyyy' }}
-                  </p>
+                <div class="ps-field">
+                  <label class="ps-label">Member Since</label>
+                  <p class="ps-input-static">{{ authStore.user()?.createdAt | date:'dd MMM yyyy' }}</p>
                 </div>
               </div>
             </div>
@@ -247,42 +161,28 @@
 
         <!-- ── Change Password tab ───────────────────────────────────── -->
         @if (activeTab() === 'password') {
-          <div style="max-width:420px; display:flex; flex-direction:column; gap:1.25rem;">
-            <div>
-              <label style="display:block; font-size:0.72rem; font-weight:600;
-                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                CURRENT PASSWORD
-              </label>
+          <div style="max-width:440px; display:flex; flex-direction:column; gap:1.25rem;">
+            <div class="ps-field">
+              <label class="ps-label">Current Password</label>
               <input formControlName="currentPassword" type="password"
                 placeholder="••••••••"
-                style="width:100%; background:#161b22;
-                  border:1px solid rgba(176,255,68,0.2);
-                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
-                  padding:9px 12px; outline:none; box-sizing:border-box;"/>
+                class="ps-input"/>
             </div>
-            <div>
-              <label style="display:block; font-size:0.72rem; font-weight:600;
-                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                NEW PASSWORD
-              </label>
+            <div class="ps-field">
+              <label class="ps-label">New Password</label>
               <input formControlName="newPassword" type="password"
                 placeholder="••••••••"
-                style="width:100%; background:#161b22;
-                  border:1px solid rgba(176,255,68,0.2);
-                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
-                  padding:9px 12px; outline:none; box-sizing:border-box;"/>
+                class="ps-input"/>
+              <div class="ps-strength-bar">
+                <div class="ps-strength-fill" style="width:45%;"></div>
+              </div>
+              <p class="ps-strength-hint">Add numbers and symbols for a stronger password</p>
             </div>
-            <div>
-              <label style="display:block; font-size:0.72rem; font-weight:600;
-                color:#8a9ab0; margin-bottom:0.4rem; letter-spacing:0.05em;">
-                CONFIRM NEW PASSWORD
-              </label>
+            <div class="ps-field">
+              <label class="ps-label">Confirm New Password</label>
               <input formControlName="confirmPassword" type="password"
                 placeholder="••••••••"
-                style="width:100%; background:#161b22;
-                  border:1px solid rgba(176,255,68,0.2);
-                  border-radius:6px; color:#e6edf3; font-size:0.85rem;
-                  padding:9px 12px; outline:none; box-sizing:border-box;"/>
+                class="ps-input"/>
             </div>
             <div>
               <button type="button" (click)="changePassword()"
@@ -290,10 +190,8 @@
                             !form.get('newPassword')?.value ||
                             !form.get('confirmPassword')?.value ||
                             isChangingPassword()"
-                style="background:#b0ff44; color:#07090b; border:none;
-                  border-radius:8px; padding:9px 24px;
-                  font-size:0.85rem; font-weight:700; cursor:pointer;"
-                [style.opacity]="isChangingPassword() ? '0.5' : '1'">
+                class="ps-btn-primary">
+                <i class="ti ti-key"></i>
                 {{ isChangingPassword() ? 'Updating…' : 'Update Password' }}
               </button>
             </div>
@@ -302,41 +200,25 @@
 
         <!-- ── Settings tab ─────────────────────────────────────────── -->
         @if (activeTab() === 'settings') {
-          <div style="display:flex; flex-direction:column; gap:1rem;">
-            <div style="
-              display:flex; align-items:center; justify-content:space-between;
-              background:#161b22; border:1px solid #21262d;
-              border-radius:8px; padding:1rem;">
+          <div>
+            <div class="ps-setting-row">
               <div>
-                <p style="font-size:0.85rem; font-weight:600; color:#e6edf3; margin:0 0 0.2rem;">
-                  Email Notifications
-                </p>
-                <p style="font-size:0.72rem; color:#8a9ab0; margin:0;">
-                  Receive security alerts and account updates
-                </p>
+                <p class="ps-setting-title">Email Notifications</p>
+                <p class="ps-setting-desc">Receive security alerts and account updates</p>
               </div>
-              <label style="position:relative; display:inline-flex; cursor:pointer; align-items:center;">
+              <label style="display:inline-flex; cursor:pointer;">
                 <input type="checkbox" style="position:absolute; opacity:0; width:0; height:0;" checked />
-                <div style="width:44px; height:24px; background:#b0ff44;
-                  border-radius:12px; position:relative;">
-                  <div style="position:absolute; top:2px; left:22px;
-                    width:20px; height:20px; background:#07090b; border-radius:50%;"></div>
-                </div>
+                <span class="ps-toggle is-on">
+                  <span class="ps-toggle-knob"></span>
+                </span>
               </label>
             </div>
-            <div style="
-              display:flex; align-items:center; justify-content:space-between;
-              background:#161b22; border:1px solid #21262d;
-              border-radius:8px; padding:1rem;">
+            <div class="ps-setting-row">
               <div>
-                <p style="font-size:0.85rem; font-weight:600; color:#e6edf3; margin:0 0 0.2rem;">
-                  Language
-                </p>
-                <p style="font-size:0.72rem; color:#8a9ab0; margin:0;">Interface language</p>
+                <p class="ps-setting-title">Language</p>
+                <p class="ps-setting-desc">Interface language</p>
               </div>
-              <select style="background:#0d1117; border:1px solid rgba(176,255,68,0.2);
-                border-radius:6px; color:#e6edf3; font-size:0.82rem;
-                padding:6px 12px; outline:none; cursor:pointer;">
+              <select class="ps-select">
                 <option>English</option>
               </select>
             </div>

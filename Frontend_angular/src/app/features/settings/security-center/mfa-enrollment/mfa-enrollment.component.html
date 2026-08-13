@@ -1,143 +1,164 @@
-<div style="
-  background:#0d1117; border:1px solid rgba(176,255,68,0.12);
-  border-radius:12px; padding:1.5rem;">
-  <h2 style="font-size:1rem; font-weight:700; color:#fff; margin:0 0 1rem;">
+<div class="mfa-card">
+  <h2 class="mfa-card-title">
+    <i class="ti ti-shield-lock"></i>
     Two-Factor Authentication (TOTP)
   </h2>
 
   @if (isEnrolled()) {
+
+    @if (backupCodes().length > 0) {
+      <!-- ── Backup codes reveal — shown once immediately after enrollment ── -->
+      <div style="display:flex; flex-direction:column; gap:1rem;">
+        <div style="
+          background:rgba(230,168,23,0.08); border:1px solid rgba(230,168,23,0.35);
+          border-radius:8px; padding:1rem;
+          display:flex; align-items:flex-start; gap:0.75rem;">
+          <i class="ti ti-alert-triangle" style="color:#e6a817; font-size:18px; flex-shrink:0; margin-top:1px;"></i>
+          <p style="font-size:0.8rem; color:#e6a817; margin:0; line-height:1.5;">
+            <strong>Save these codes now.</strong> They will not be shown again.
+            Each code can be used once to sign in if you lose access to your authenticator.
+          </p>
+        </div>
+
+        <div style="
+          display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;
+          background:#0f1828; border:1px solid #141e30;
+          border-radius:8px; padding:1rem;">
+          @for (code of backupCodes(); track code) {
+            <code style="
+              font-family:monospace; font-size:0.85rem; letter-spacing:0.1em;
+              color:#b5c927; background:#0c1020;
+              border:1px solid #141e30;
+              border-radius:4px; padding:4px 10px; text-align:center;">
+              {{ code }}
+            </code>
+          }
+        </div>
+
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+          <button type="button" (click)="copyAllCodes()" class="mfa-btn-ghost" style="border-color:#b5c927; color:#b5c927;">
+            Copy All
+          </button>
+          <button type="button" (click)="downloadCodes()" class="mfa-btn-ghost">
+            Download .txt
+          </button>
+        </div>
+
+        <button type="button" (click)="confirmBackupCodesSaved()"
+          class="mfa-btn-primary" style="align-self:flex-start;">
+          <i class="ti ti-check"></i>
+          I've saved my codes
+        </button>
+      </div>
+
+    } @else {
+    <!-- ── Normal MFA-enabled state ── -->
     <div style="display:flex; flex-direction:column; gap:1rem;">
       <div style="
         display:flex; align-items:center; gap:0.75rem;
-        background:rgba(46,160,67,0.1); border:1px solid rgba(46,160,67,0.3);
+        background:rgba(38,217,160,0.08); border:1px solid rgba(38,217,160,0.3);
         border-radius:8px; padding:1rem;">
-        <svg style="width:20px; height:20px; color:#2ea043; flex-shrink:0;"
-          fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-        </svg>
-        <p style="font-size:0.85rem; font-weight:600; color:#2ea043; margin:0;">
+        <i class="ti ti-shield-check" style="color:#26d9a0; font-size:20px; flex-shrink:0;"></i>
+        <p style="font-size:0.85rem; font-weight:600; color:#26d9a0; margin:0;">
           MFA is enabled — your account is protected.
         </p>
       </div>
 
       @if (!showDisableForm()) {
         <button type="button" (click)="showDisableForm.set(true)"
-          style="
-            align-self:flex-start;
-            background:transparent; border:1px solid rgba(255,68,68,0.4);
-            color:#ff4444; border-radius:8px;
-            padding:8px 18px; font-size:0.82rem; font-weight:600;
-            cursor:pointer; transition:all 0.2s;"
-          onmouseover="this.style.background='rgba(255,68,68,0.1)'"
-          onmouseout="this.style.background='transparent'">
+          class="mfa-btn-danger-outline" style="align-self:flex-start;">
           Disable MFA
         </button>
       } @else {
         <div style="
-          background:#161b22; border:1px solid rgba(255,68,68,0.2);
+          background:#0f1828; border:1px solid #2a1010;
           border-radius:8px; padding:1.25rem;
           display:flex; flex-direction:column; gap:0.75rem;"
           [formGroup]="disableForm">
-          <p style="font-size:0.8rem; color:#8a9ab0; margin:0;">
+          <p style="font-size:0.8rem; color:#7a8a9a; margin:0;">
             Enter your current password to confirm disabling MFA.
           </p>
           <input formControlName="password" type="password"
             placeholder="Your current password"
-            style="
-              background:#0d1117; border:1px solid rgba(176,255,68,0.2);
-              border-radius:6px; color:#e6edf3; font-size:0.85rem;
-              padding:8px 12px; outline:none; width:100%; box-sizing:border-box;"/>
+            class="mfa-input" />
           @if (disableForm.get('password')?.invalid && disableForm.get('password')?.touched) {
-            <p style="font-size:0.7rem; color:#ff4444; margin:0;">Password is required</p>
+            <p style="font-size:0.7rem; color:#e05555; margin:0;">Password is required</p>
           }
           <div style="display:flex; gap:0.75rem;">
             <button type="button" (click)="disableMfa()"
               [disabled]="isDisabling()"
-              style="
-                background:#ff4444; color:#fff; border:none;
-                border-radius:8px; padding:8px 18px;
-                font-size:0.82rem; font-weight:700; cursor:pointer;"
-              [style.opacity]="isDisabling() ? '0.5' : '1'">
+              class="mfa-btn-danger">
               {{ isDisabling() ? 'Disabling…' : 'Confirm Disable' }}
             </button>
-            <button type="button" (click)="cancelDisable()"
-              style="
-                background:transparent; border:1px solid #30363d;
-                color:#8a9ab0; border-radius:8px;
-                padding:8px 18px; font-size:0.82rem; cursor:pointer;">
+            <button type="button" (click)="cancelDisable()" class="mfa-btn-ghost">
               Cancel
             </button>
           </div>
         </div>
       }
     </div>
-  } @else {
-    <p style="font-size:0.82rem; color:#8a9ab0; margin:0 0 1.25rem; line-height:1.6;">
+  }
+} @else {
+    <div class="mfa-disabled-pill">
+      <i class="ti ti-shield-x"></i>
+      MFA is not enabled — your account has no second factor
+    </div>
+
+    <p style="font-size:0.82rem; color:#7a8a9a; margin:0 0 1.25rem; line-height:1.6;">
       Add an extra layer of security by enabling TOTP using an app like
       Google Authenticator or Authy.
     </p>
 
     @if (secret()) {
-      <div class="space-y-6">
+      <div style="display:flex; flex-direction:column; gap:1.25rem;">
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">Scan QR Code</label>
+          <label class="mfa-label">Scan QR Code</label>
           <div style="
             width:192px; height:192px; display:flex;
             align-items:center; justify-content:center;
-            border-radius:8px; border:2px dashed #30363d;
-            background:#161b22; overflow:hidden;">
-            @if (qrCodeUrl()) {
-              <img [src]="qrCodeUrl()" alt="QR Code" class="h-full w-full object-contain" />
+            border-radius:8px; border:2px dashed #141e30;
+            background:#ffffff; overflow:hidden;">
+            @if (qrDataUrl()) {
+              <img [src]="qrDataUrl()" alt="Scan with your authenticator app"
+                style="width:192px; height:192px; display:block;" />
             } @else {
-              <span class="text-center text-sm text-gray-500">
-                QR Code<br />
-                (Secret: {{ secret() }})
+              <span style="text-align:center; font-size:0.75rem; color:#3a4a62; padding:1rem;">
+                Generating QR…
               </span>
             }
           </div>
-          <p style="font-size:0.72rem; color:#8a9ab0; margin:0.5rem 0 0;">
+          <p style="font-size:0.72rem; color:#3a4a62; margin:0.5rem 0 0;">
             Or enter manually:
-            <code style="background:#161b22; border:1px solid #30363d;
-              border-radius:4px; padding:2px 6px; color:#b0ff44;
+            <code style="background:#0f1828; border:1px solid #141e30;
+              border-radius:4px; padding:2px 6px; color:#b5c927;
               font-family:monospace;">{{ secret() }}</code>
           </p>
         </div>
 
         <form [formGroup]="verificationForm" (ngSubmit)="onSubmit()">
-          <div class="mb-4">
-            <label for="mfa-code" class="mb-1 block text-sm font-medium text-gray-700">
+          <div style="margin-bottom:1rem;">
+            <label for="mfa-code" class="mfa-label">
               Enter 6-digit verification code
             </label>
             <input id="mfa-code" type="text" formControlName="code"
               inputmode="numeric" maxlength="6" placeholder="000000"
+              class="mfa-input"
               style="
-                width:200px; background:#161b22;
-                border:1px solid rgba(176,255,68,0.2);
-                border-radius:6px; color:#e6edf3;
-                font-size:1.1rem; padding:8px 12px;
-                text-align:center; letter-spacing:0.5em;
-                outline:none; box-sizing:border-box;"
-              [style.border-color]="isCodeInvalid() ? '#ff4444' : 'rgba(176,255,68,0.2)'"/>
+                width:200px; font-size:1.1rem;
+                text-align:center; letter-spacing:0.5em;"
+              [style.border-color]="isCodeInvalid() ? '#e05555' : '#141e30'"/>
             @if (isCodeInvalid()) {
-              <p style="font-size:0.7rem; color:#ff4444; margin:0.25rem 0 0;">
+              <p style="font-size:0.7rem; color:#e05555; margin:0.25rem 0 0;">
                 Please enter a valid 6-digit code
               </p>
             }
           </div>
-          <div class="flex gap-3">
-            <button type="submit" [disabled]="verificationForm.invalid"
-              style="
-                background:#b0ff44; color:#07090b; border:none;
-                border-radius:8px; padding:8px 20px;
-                font-size:0.82rem; font-weight:700; cursor:pointer;"
-              [style.opacity]="verificationForm.invalid ? '0.5' : '1'">
+          <div style="display:flex; gap:0.75rem;">
+            <button type="submit" [disabled]="verificationForm.invalid" class="mfa-btn-primary">
+              <i class="ti ti-check"></i>
               Verify and Enable
             </button>
-            <button type="button" (click)="cancelEnrollment()"
-              style="
-                background:transparent; border:1px solid #30363d;
-                color:#8a9ab0; border-radius:8px;
-                padding:8px 20px; font-size:0.82rem; cursor:pointer;">
+            <button type="button" (click)="cancelEnrollment()" class="mfa-btn-ghost">
               Cancel
             </button>
           </div>
@@ -146,11 +167,8 @@
     } @else {
       <button type="button" (click)="startEnrollment()"
         [disabled]="isEnrolling()"
-        style="
-          background:#b0ff44; color:#07090b; border:none;
-          border-radius:8px; padding:9px 22px;
-          font-size:0.85rem; font-weight:700; cursor:pointer;"
-        [style.opacity]="isEnrolling() ? '0.5' : '1'">
+        class="mfa-btn-primary">
+        <i class="ti ti-shield-lock"></i>
         {{ isEnrolling() ? 'Setting up…' : 'Enable MFA' }}
       </button>
     }

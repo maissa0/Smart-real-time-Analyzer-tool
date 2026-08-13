@@ -15,7 +15,7 @@ import java.util.UUID;
 @Service
 public class JwtService {
 
-    @Value("${app.jwt.secret:your-256-bit-secret-key-for-jwt-signing-must-be-at-least-32-chars}")
+    @Value("${app.jwt.secret}")
     private String secret;
 
     @Value("${app.jwt.access-token-expiration-ms:900000}") // 15 min

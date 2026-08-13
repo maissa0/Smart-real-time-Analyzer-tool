@@ -1,25 +1,29 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   inject,
   OnInit,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ProfileService } from '../../../../core/services/profile.service';
-import type { Session } from '../../../../data/models/audit-log.model';
+import type { Session } from '../../../../core/models/audit-log.model';
 
 @Component({
   selector: 'app-active-sessions',
   standalone: true,
   imports: [DatePipe],
   templateUrl: './active-sessions.component.html',
+  styleUrl: './active-sessions.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ActiveSessionsComponent implements OnInit {
-  private readonly toast = inject(ToastService);
+  private readonly toast          = inject(ToastService);
   private readonly profileService = inject(ProfileService);
+  private readonly destroyRef     = inject(DestroyRef);
 
   readonly sessions = signal<Session[]>([]);
   readonly isLoading = signal(true);
@@ -31,28 +35,25 @@ export class ActiveSessionsComponent implements OnInit {
 
   loadSessions(): void {
     this.isLoading.set(true);
-    this.profileService.getSessions().subscribe({
-      next: (sessions) => {
-        this.sessions.set(sessions);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.isLoading.set(false);
-      },
-    });
+    this.profileService.getSessions()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (sessions) => { this.sessions.set(sessions); this.isLoading.set(false); },
+        error: () => { this.isLoading.set(false); },
+      });
   }
 
   revokeSession(session: Session): void {
     this.revokingId.set(session.id);
-    this.profileService.revokeSession(session.id).subscribe({
-      next: () => {
-        this.sessions.update((s) => s.filter((x) => x.id !== session.id));
-        this.revokingId.set(null);
-        this.toast.success(`Session on ${session.device ?? 'device'} has been revoked.`);
-      },
-      error: () => {
-        this.revokingId.set(null);
-      },
-    });
+    this.profileService.revokeSession(session.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.sessions.update((s) => s.filter((x) => x.id !== session.id));
+          this.revokingId.set(null);
+          this.toast.success(`Session on ${session.device ?? 'device'} has been revoked.`);
+        },
+        error: () => { this.revokingId.set(null); },
+      });
   }
 }

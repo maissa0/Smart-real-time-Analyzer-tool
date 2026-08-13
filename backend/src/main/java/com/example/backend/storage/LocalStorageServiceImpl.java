@@ -21,7 +21,7 @@ public class LocalStorageServiceImpl implements ImageStorageService {
     @Value("${app.upload.dir:uploads/avatars}")
     private String uploadDir;
 
-    @Value("${app.base-url:http://localhost:8080}")
+    @Value("${app.base-url}")
     private String baseUrl;
 
     @PostConstruct
@@ -39,14 +39,8 @@ public class LocalStorageServiceImpl implements ImageStorageService {
 
     @Override
     public String storeImage(UUID userId, MultipartFile file) throws IOException {
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("File is empty");
-        }
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new IllegalArgumentException("File must be an image");
-        }
-        String extension = getExtension(contentType);
+        ImageFileValidator.validate(file);
+        String extension = getExtension(file.getContentType());
         String filename = userId + "_" + System.currentTimeMillis() + extension;
         Path dir = Paths.get(uploadDir);
         Files.createDirectories(dir);

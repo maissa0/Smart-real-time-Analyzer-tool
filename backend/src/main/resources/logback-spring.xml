@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+  <!-- Inherit Spring Boot's default console appender and patterns -->
+  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+  <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+  <!-- Root: INFO for everything not explicitly listed below -->
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+  </root>
+
+  <!-- ── Authentication diagnostics ───────────────────────────────────────────
+       These loggers emit one line per request/CONNECT, surfacing exactly why
+       the JWT filter passes or rejects a token. Remove or set to INFO before
+       deploying to production.
+  ──────────────────────────────────────────────────────────────────────────── -->
+
+  <!-- Shows per-request JWT validation outcome:
+       "authenticated user=<email> on GET /api/cars"
+       "token invalid or expired on GET /api/cars"
+       "no Bearer token on GET /api/cars"  -->
+  <logger name="com.example.backend.security.JwtAuthenticationFilter" level="DEBUG" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+  </logger>
+
+  <!-- Shows STOMP CONNECT accept/reject:
+       "CONNECT authenticated: user=<email>"
+       "CONNECT rejected: invalid or expired JWT"  -->
+  <logger name="com.example.backend.can.config.WebSocketConfig" level="DEBUG" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+  </logger>
+
+  <!-- Shows Flux rangeClause for every playback start:
+       "Playback Flux rangeClause: start: 2026-06-02T20:36:44Z, stop: …"  -->
+  <logger name="com.example.backend.can.service.PlaybackService" level="DEBUG" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+  </logger>
+
+  <!-- Logs ALL request headers the instant they arrive — runs before Spring
+       Security. Use to prove whether Authorization reaches the server at all.
+       REMOVE THIS LOGGER (and CorsDebugFilter.java) before production. -->
+  <logger name="com.example.backend.security.CorsDebugFilter" level="DEBUG" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+  </logger>
+
+  <!-- FilterChainProxy trace: shows every filter that processes a request
+       in execution order. Useful for detecting phantom/duplicate filters. -->
+  <logger name="org.springframework.security.web.FilterChainProxy" level="DEBUG" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+  </logger>
+
+  <!-- Suppresses Spring Security's own verbose DEBUG noise so the above
+       signal logs are not buried. Remove this stanza to see full security
+       trace output if the above loggers don't yet show the problem. -->
+  <logger name="org.springframework.security" level="WARN" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+  </logger>
+
+</configuration>

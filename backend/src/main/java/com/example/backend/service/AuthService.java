@@ -1,15 +1,19 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.auth.*;
+import com.example.backend.exception.ConflictException;
+import com.example.backend.entity.PermissionEntity;
 import com.example.backend.entity.RefreshTokenEntity;
 import com.example.backend.entity.RoleEntity;
 import com.example.backend.entity.SessionEntity;
 import com.example.backend.entity.UserEntity;
 import com.example.backend.mapper.UserMapper;
+import com.example.backend.repository.PermissionRepository;
 import com.example.backend.repository.RefreshTokenRepository;
 import com.example.backend.repository.RoleRepository;
 import com.example.backend.repository.SessionRepository;
 import com.example.backend.repository.UserRepository;
+import com.example.backend.security.ClientIpResolver;
 import com.example.backend.security.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +28,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,8 +48,22 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
+    private final PermissionRepository permissionRepository;
     private final AuthenticationManager authenticationManager;
     private final AuditService auditService;
+    private final ClientIpResolver clientIpResolver;
+
+    // Caps verification attempts per mfaToken so a stolen token can't be used to brute-force the
+    // 6-digit code across many requests. Bounded by real login attempts (each entry requires a
+    // valid password auth first); tokens expire in app.jwt.mfa-auth-token-expiration-ms regardless,
+    // so this never needs explicit eviction.
+    private static final int MAX_MFA_VERIFY_ATTEMPTS = 5;
+    private final Map<String, java.util.concurrent.atomic.AtomicInteger> mfaVerifyAttempts = new ConcurrentHashMap<>();
+
+    // Marks a password-reset JWT as consumed on first successful use so it can't be replayed
+    // for the remainder of its TTL. Bounded by real successful resets; tokens expire in
+    // app.jwt.reset-token-expiration-ms regardless, so this never needs explicit eviction.
+    private final Set<String> usedResetTokens = ConcurrentHashMap.newKeySet();
 
     /**
      * Login. If user has MFA enabled, returns 202 with mfaToken instead of full tokens.
@@ -54,7 +75,7 @@ public class AuthService {
         );
 
         UserEntity user = userRepository.findByEmailAndDeletedAtIsNull(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (Boolean.TRUE.equals(user.getMfaEnabled())) {
             String mfaToken = jwtService.generateMfaAuthToken(user.getEmail(), user.getId());
@@ -77,6 +98,13 @@ public class AuthService {
         if (!jwtService.isTokenValid(request.getMfaToken()) || !jwtService.isMfaAuthToken(request.getMfaToken())) {
             throw new IllegalArgumentException("Invalid or expired MFA token");
         }
+        String tokenKey = hashToken(request.getMfaToken());
+        int attempts = mfaVerifyAttempts.computeIfAbsent(tokenKey, k -> new java.util.concurrent.atomic.AtomicInteger())
+                .incrementAndGet();
+        if (attempts > MAX_MFA_VERIFY_ATTEMPTS) {
+            throw new IllegalArgumentException("Too many verification attempts. Please log in again.");
+        }
+
         String email = jwtService.getEmailFromToken(request.getMfaToken());
         UUID userId = jwtService.getUserIdFromToken(request.getMfaToken());
         UserEntity user = userRepository.findById(userId)
@@ -94,6 +122,7 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid verification code");
         }
 
+        mfaVerifyAttempts.remove(tokenKey);
         return completeLogin(user, httpRequest);
     }
 
@@ -111,7 +140,7 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request, HttpServletRequest httpRequest) {
         if (userRepository.existsByEmailAndDeletedAtIsNull(request.getEmail())) {
-            throw new IllegalArgumentException("Email already registered");
+            throw new ConflictException("Email already registered");
         }
         String username = request.getEmail().split("@")[0];
         if (userRepository.existsByUsernameAndDeletedAtIsNull(username)) {
@@ -131,7 +160,7 @@ public class AuthService {
                 .status("PENDING")
                 .build();
         if (defaultRole != null) {
-            user.setRoles(new java.util.HashSet<>(java.util.List.of(defaultRole)));
+            user.getRoleIds().add(defaultRole.getId());
         }
 
         user = userRepository.save(user);
@@ -154,10 +183,10 @@ public class AuthService {
 
         RefreshTokenEntity stored = refreshTokenRepository
                 .findByTokenHashAndRevokedAtIsNullAndExpiresAtAfter(tokenHash, now)
-                .orElseThrow(() -> new RuntimeException("Invalid or expired refresh token"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired refresh token"));
 
         UserEntity user = userRepository.findById(stored.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (!Boolean.TRUE.equals(user.getIsActive())) {
             throw new org.springframework.security.authentication.DisabledException("Account Disabled");
@@ -173,7 +202,7 @@ public class AuthService {
             String ua = truncate(httpRequest.getHeader("User-Agent"), 500);
             sessionRepository.findById(sessionId).ifPresent(s -> {
                 s.setLastActive(now);
-                s.setIpAddress(getClientIp(httpRequest));
+                s.setIpAddress(clientIpResolver.resolve(httpRequest));
                 s.setUserAgent(ua);
                 s.setDevice(ua);
                 sessionRepository.save(s);
@@ -230,6 +259,9 @@ public class AuthService {
         if (!jwtService.isTokenValid(request.getResetToken()) || !jwtService.isResetToken(request.getResetToken())) {
             throw new IllegalArgumentException("Invalid or expired reset token");
         }
+        if (!usedResetTokens.add(hashToken(request.getResetToken()))) {
+            throw new IllegalArgumentException("Invalid or expired reset token");
+        }
         String email = jwtService.getEmailFromToken(request.getResetToken());
         UUID userId = jwtService.getUserIdFromToken(request.getResetToken());
         UserEntity user = userRepository.findById(userId)
@@ -246,7 +278,7 @@ public class AuthService {
     }
 
     private SessionEntity createSession(UUID userId, HttpServletRequest request) {
-        String ip = getClientIp(request);
+        String ip = clientIpResolver.resolve(request);
         String ua = truncate(request.getHeader("User-Agent"), 500);
         SessionEntity session = SessionEntity.builder()
                 .userId(userId)
@@ -266,7 +298,7 @@ public class AuthService {
                 .sessionId(sessionId)
                 .tokenHash(tokenHash)
                 .device(request != null ? request.getHeader("User-Agent") : null)
-                .ipAddress(request != null ? getClientIp(request) : null)
+                .ipAddress(request != null ? clientIpResolver.resolve(request) : null)
                 .userAgent(request != null ? request.getHeader("User-Agent") : null)
                 .expiresAt(expiresAt)
                 .build();
@@ -283,25 +315,28 @@ public class AuthService {
         }
     }
 
-    private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
-    }
-
     private AuthResponse buildAuthResponse(UserEntity user, String accessToken, String refreshToken) {
         var userResponse = userMapper.toResponse(user);
-        var permissions = user.getRoles().stream()
-                .flatMap(r -> r.getPermissions().stream())
+
+        java.util.List<RoleEntity> roles = (user.getRoleIds() == null || user.getRoleIds().isEmpty())
+                ? java.util.List.of()
+                : roleRepository.findByIdIn(new java.util.ArrayList<>(user.getRoleIds()));
+
+        java.util.List<UUID> allPermIds = roles.stream()
+                .filter(r -> r.getPermissionIds() != null && !r.getPermissionIds().isEmpty())
+                .flatMap(r -> r.getPermissionIds().stream())
                 .distinct()
-                .map(p -> AuthResponse.PermissionDto.builder()
-                        .id(p.getId().toString())
-                        .slug(p.getSlug())
-                        .description(p.getDescription())
-                        .build())
                 .collect(Collectors.toList());
+
+        var permissions = allPermIds.isEmpty()
+                ? java.util.List.<AuthResponse.PermissionDto>of()
+                : permissionRepository.findByIdIn(allPermIds).stream()
+                        .map(p -> AuthResponse.PermissionDto.builder()
+                                .id(p.getId().toString())
+                                .slug(p.getSlug())
+                                .description(p.getDescription())
+                                .build())
+                        .collect(Collectors.toList());
 
         return AuthResponse.builder()
                 .user(userResponse)

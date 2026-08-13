@@ -3,11 +3,12 @@ import {
   Component,
   inject,
   signal,
+  computed,
   OnInit,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { AuthStore } from '../../../store/auth.store';
+import { AuthStore } from '../../../core/store/auth.store';
 import { BreadcrumbComponent } from '../../../shared/components/breadcrumb/breadcrumb.component';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { ProfileService } from '../../../core/services/profile.service';
@@ -20,6 +21,7 @@ import { SecurityCenterComponent } from '../../settings/security-center/security
   standalone: true,
   imports: [ReactiveFormsModule, BreadcrumbComponent, DatePipe, AuditLogComponent, SecurityCenterComponent],
   templateUrl: './profile-settings.component.html',
+  styleUrl: './profile-settings.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfileSettingsComponent implements OnInit {
@@ -45,14 +47,24 @@ export class ProfileSettingsComponent implements OnInit {
   readonly isChangingPassword = signal(false);
 
   readonly tabs = [
-    { id: 'profile'  as const, label: 'My Profile' },
-    { id: 'password' as const, label: 'Change Password' },
-    { id: 'settings' as const, label: 'Settings' },
-    { id: 'audit'    as const, label: 'Audit Trail' },
-    { id: 'security' as const, label: 'Security Center' },
+    { id: 'profile'  as const, label: 'My Profile',       icon: 'ti-user' },
+    { id: 'password' as const, label: 'Change Password',  icon: 'ti-lock' },
+    { id: 'settings' as const, label: 'Settings',         icon: 'ti-settings' },
+    { id: 'audit'    as const, label: 'Audit Trail',      icon: 'ti-list-details' },
+    { id: 'security' as const, label: 'Security Center',  icon: 'ti-shield-lock' },
   ];
 
   readonly primaryRole = () => this.authStore.user()?.roles?.[0]?.name ?? 'User';
+
+  private readonly sectionMeta: Record<(typeof this.tabs)[number]['id'], { title: string; subtitle: string }> = {
+    profile:  { title: 'My Profile',      subtitle: 'Manage your personal information' },
+    password: { title: 'Change Password', subtitle: 'Update your login credentials' },
+    settings: { title: 'Settings',        subtitle: 'Preferences and interface options' },
+    audit:    { title: 'Audit Trail',     subtitle: 'Full history of account activity' },
+    security: { title: 'Security Center', subtitle: 'Manage MFA and active sessions' },
+  };
+
+  readonly currentSection = computed(() => this.sectionMeta[this.activeTab()]);
 
   ngOnInit(): void {
     this.breadcrumb.set([

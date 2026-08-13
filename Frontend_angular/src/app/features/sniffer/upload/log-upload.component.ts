@@ -107,15 +107,13 @@ import { CanService } from '../../../core/services/can.service';
           </div>
         } @else if (uploadError()) {
           <div class="flex flex-col items-center gap-1 py-1">
-            <span class="text-lg">⚠️</span>
             <span class="text-xs text-red-400">{{ uploadError() }}</span>
             <span class="text-xs text-gray-500">Click to retry</span>
           </div>
         } @else {
           <div class="flex flex-col items-center gap-1 py-1">
-            <span class="text-xl">📂</span>
-            <span class="text-xs text-gray-300 font-medium">Drop log file or click</span>
-            <span class="text-xs text-gray-500">.txt · .log · .asc · .blf</span>
+            <span class="text-xs text-gray-300 font-medium">Drop a log file here, or click to browse</span>
+            <span class="text-xs text-gray-500" style="font-family: var(--kpit-font-mono, monospace);">.txt · .log · .asc · .blf</span>
           </div>
         }
       </div>

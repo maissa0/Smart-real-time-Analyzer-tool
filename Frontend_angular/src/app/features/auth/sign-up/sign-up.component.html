@@ -1,95 +1,154 @@
-<div class="auth-page-bg px-4">
-  <div class="w-full max-w-md">
-    <div class="auth-card p-8 shadow-able-card">
+<div class="signup-page">
 
-      <!-- Logo -->
-      <div class="mb-6 text-center">
-        <h1 class="text-2xl font-bold" style="color:#b0ff44">
-          KPIT <span class="text-sm align-super" style="color:#fff">Analyser</span>
-        </h1>
-        <p style="color:#8a9ab0; font-size:0.75rem; margin-top:0.25rem;">
-          Smart Real-Time CAN Bus Analysis Platform
-        </p>
+  <!-- Left column — brand panel -->
+  <div class="signup-brand">
+    <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0" viewBox="0 0 520 620" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="kpit-grid-signup" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0a0f18" stroke-width="0.5"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#kpit-grid-signup)"/>
+      <line x1="0" y1="0" x2="520" y2="620" stroke="#b5c927" stroke-width="0.4" opacity="0.03"/>
+      <circle cx="400" cy="500" r="180" fill="none" stroke="#b5c927" stroke-width="0.5" opacity="0.04"/>
+    </svg>
+
+    <div class="signup-left-top">
+      <span class="signup-logo-brand">KPIT</span><span class="signup-logo-sub">Analyser</span>
+    </div>
+
+    <div class="signup-left-middle">
+      <div class="signup-accent-bar"></div>
+      <h1 class="signup-headline">
+        Join the KPIT <span class="signup-headline-accent">Analyser platform.</span>
+      </h1>
+      <p class="signup-subheading">
+        Request access to start decoding CAN bus data, running simulations and analysing vehicle signals.
+      </p>
+      <div class="signup-features">
+        <div class="signup-feature-item">
+          <span class="signup-feature-dot"></span>
+          <span class="signup-feature-label">Live signal chart monitoring</span>
+        </div>
+        <div class="signup-feature-item">
+          <span class="signup-feature-dot"></span>
+          <span class="signup-feature-label">Fault injection & integrity analysis</span>
+        </div>
+        <div class="signup-feature-item">
+          <span class="signup-feature-dot"></span>
+          <span class="signup-feature-label">Digital twin vehicle simulation</span>
+        </div>
+        <div class="signup-feature-item">
+          <span class="signup-feature-dot"></span>
+          <span class="signup-feature-label">Multi-session log replay</span>
+        </div>
       </div>
+    </div>
+
+    <div class="signup-left-bottom">© 2026 KPIT Analyser · All rights reserved</div>
+  </div>
+
+  <!-- Right column — form panel -->
+  <div class="signup-form-panel">
+    <div class="signup-form-wrap">
 
       @if (submitted()) {
-        <!-- Pending approval screen -->
-        <div style="text-align:center; padding:1rem 0;">
-          <div style="font-size:3rem; margin-bottom:1rem;">⏳</div>
-          <h2 style="color:#ffaa00; font-size:1.1rem; font-weight:700; margin-bottom:0.75rem;">
-            Registration Submitted
-          </h2>
-          <p style="color:#8a9ab0; font-size:0.82rem; line-height:1.6; margin-bottom:1.5rem;">
-            Your account is <strong style="color:#ffaa00;">pending admin approval</strong>.<br>
+        <div class="signup-success">
+          <div class="signup-success-icon">
+            <i class="ti ti-clock"></i>
+          </div>
+          <h2 class="signup-success-title">Registration submitted</h2>
+          <p class="signup-success-desc">
+            Your account is <span class="signup-success-highlight">pending admin approval.</span><br/>
             You will receive an email once your request has been reviewed.
           </p>
-          <p style="color:#484f58; font-size:0.72rem;">
-            Already approved?
-            <a routerLink="/auth/login"
-              style="color:#b0ff44; text-decoration:none; font-weight:600;">
-              Sign in here
-            </a>
-          </p>
+          <a routerLink="/auth/login" class="signup-back-link">
+            Already approved? Sign in here
+          </a>
         </div>
       } @else {
-        <!-- Registration form -->
-        <h2 class="mb-6 text-xl font-semibold text-white">Create account</h2>
+        <div class="signup-form-header">
+          <div class="signup-badge">
+            <i class="ti ti-user-plus"></i>
+            Create account
+          </div>
+          <h2 class="signup-title">Get started</h2>
+          <p class="signup-subtitle">Request access to your KPIT Analyser workspace</p>
+        </div>
 
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
-          <div>
-            <label class="mb-1 block text-sm font-medium" style="color:#d0d6e0">
-              Full Name
-            </label>
-            <input formControlName="name" type="text"
-              class="auth-input w-full px-3 py-2 text-sm"
-              placeholder="Jane Doe"/>
+        @if (errorMsg()) {
+          <div class="signup-error" role="alert">{{ errorMsg() }}</div>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+          <div class="signup-field">
+            <label class="signup-label">Full name</label>
+            <input
+              formControlName="name"
+              type="text"
+              class="signup-input"
+              [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched"
+              placeholder="Jane Doe"
+            />
             @if (form.get('name')?.invalid && form.get('name')?.touched) {
-              <p style="color:#ff4444; font-size:0.7rem; margin-top:3px;">Full name is required</p>
+              <p class="signup-field-error">Full name is required</p>
             }
           </div>
 
-          <div>
-            <label class="mb-1 block text-sm font-medium" style="color:#d0d6e0">
-              Email
-            </label>
-            <input formControlName="email" type="email"
-              class="auth-input w-full px-3 py-2 text-sm"
-              placeholder="you@kpit.com"/>
+          <div class="signup-field">
+            <label class="signup-label">Email address</label>
+            <input
+              formControlName="email"
+              type="email"
+              class="signup-input"
+              [class.is-invalid]="form.get('email')?.invalid && form.get('email')?.touched"
+              placeholder="you@company.com"
+            />
             @if (form.get('email')?.invalid && form.get('email')?.touched) {
-              <p style="color:#ff4444; font-size:0.7rem; margin-top:3px;">Valid email is required</p>
+              <p class="signup-field-error">Valid email is required</p>
             }
           </div>
 
-          <div>
-            <label class="mb-1 block text-sm font-medium" style="color:#d0d6e0">
-              Password
-            </label>
-            <input formControlName="password" type="password"
-              class="auth-input w-full px-3 py-2 text-sm"
-              placeholder="Min. 8 characters"/>
+          <div class="signup-field">
+            <label class="signup-label">Password</label>
+            <input
+              formControlName="password"
+              type="password"
+              class="signup-input"
+              [class.is-invalid]="form.get('password')?.invalid && form.get('password')?.touched"
+              placeholder="Min. 8 characters"
+            />
             @if (form.get('password')?.invalid && form.get('password')?.touched) {
-              <p style="color:#ff4444; font-size:0.7rem; margin-top:3px;">
-                Password must be at least 8 characters
-              </p>
+              <p class="signup-field-error">Password must be at least 8 characters</p>
             }
           </div>
 
-          @if (errorMsg()) {
-            <p style="color:#ff4444; font-size:0.75rem; text-align:center;">
-              {{ errorMsg() }}
-            </p>
-          }
-
-          <button type="submit"
+          <button
+            type="submit"
             [disabled]="form.invalid || saving()"
-            class="auth-btn-primary w-full px-4 py-2.5">
-            {{ saving() ? 'Registering…' : 'Create Account' }}
+            class="signup-submit-btn"
+          >
+            @if (saving()) {
+              <svg style="width:16px;height:16px;" class="animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Registering...
+            } @else {
+              <i class="ti ti-arrow-right"></i>
+              Create account
+            }
           </button>
+
+          <div class="signup-hint">
+            <i class="ti ti-info-circle"></i>
+            Your account will require admin approval before you can sign in.
+          </div>
         </form>
 
-        <p class="mt-6 text-center text-sm" style="color:#8a9ab0">
+        <p class="signup-signin">
           Already have an account?
-          <a routerLink="/auth/login" class="auth-link font-medium">Sign in</a>
+          <a routerLink="/auth/login" class="signup-signin-link">Sign in</a>
         </p>
       }
     </div>

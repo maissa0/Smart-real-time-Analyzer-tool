@@ -11,7 +11,7 @@ public record AuditLogResponse(
         String action,
         String resource,
         String resourceId,
-        Map<String, Object> metadata,
+        Map<String, String> metadata,
         String ipAddress,
         String userAgent,
         AuditSource source,

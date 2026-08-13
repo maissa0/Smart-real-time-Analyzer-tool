@@ -1,27 +1,28 @@
-<div style="
-  background:#0d1117; border:1px solid rgba(176,255,68,0.12);
-  border-radius:12px; padding:1.5rem;">
-  <h2 style="font-size:1rem; font-weight:700; color:#fff; margin:0 0 0.25rem;">Active Sessions</h2>
-  <p style="font-size:0.78rem; color:#8a9ab0; margin:0 0 1.5rem;">
+<div class="as-card">
+  <h2 class="as-card-title">
+    <i class="ti ti-devices"></i>
+    Active Sessions
+  </h2>
+  <p class="as-card-desc">
     Manage your active sessions. Revoke any session you don't recognize.
   </p>
 
   @if (isLoading()) {
-    <div style="display:flex; flex-direction:column; gap:1rem;">
+    <div style="display:flex; flex-direction:column; gap:0.6rem;">
       @for (i of [1,2,3]; track i) {
-        <div class="h-20 animate-pulse rounded-lg bg-gray-100"></div>
+        <div style="height:52px; border-radius:7px; background:#0f1828; animation:as-pulse 1.4s ease-in-out infinite;"></div>
       }
     </div>
   } @else {
-    <div style="max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:1rem;">
+    <div style="max-height:320px; overflow-y:auto;">
       @for (session of sessions(); track session.id) {
-        <div style="
-          display:flex; align-items:center; justify-content:space-between;
-          background:#161b22; border:1px solid #21262d; border-radius:8px;
-          padding:1rem;">
+        <div class="as-session-row">
           <div style="flex:1;">
-            <p style="font-weight:600; font-size:0.9rem; color:#e6edf3; margin:0;">{{ session.device }}</p>
-            <p style="margin-top:0.35rem; font-size:0.78rem; color:#8a9ab0;">
+            <p class="as-browser">
+              <i class="ti ti-brand-firefox"></i>
+              {{ session.device }}
+            </p>
+            <p class="as-meta">
               IP: {{ session.ipAddress ?? '-' }} · Last active: {{ session.lastActive | date:'medium' }}
             </p>
           </div>
@@ -29,11 +30,7 @@
             type="button"
             (click)="revokeSession(session)"
             [disabled]="revokingId() === session.id"
-            style="
-              background:transparent; border:1px solid rgba(255,68,68,0.4);
-              color:#ff4444; border-radius:6px; padding:4px 12px;
-              font-size:0.75rem; font-weight:600; cursor:pointer;"
-            [style.opacity]="revokingId() === session.id ? '0.5' : '1'"
+            class="as-revoke-btn"
           >
             @if (revokingId() === session.id) {
               Revoking...
@@ -43,8 +40,15 @@
           </button>
         </div>
       } @empty {
-        <p style="padding:2rem 0; text-align:center; font-size:0.82rem; color:#8a9ab0;">No active sessions</p>
+        <p style="padding:2rem 0; text-align:center; font-size:0.82rem; color:#3a4a62;">No active sessions</p>
       }
     </div>
   }
 </div>
+
+<style>
+  @keyframes as-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+</style>

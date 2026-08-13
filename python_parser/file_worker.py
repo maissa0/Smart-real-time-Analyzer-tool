@@ -10,8 +10,8 @@ Supported formats:
     .blf              — Vector Binary Logging Format (via static_parser.py)
 
 Usage:
-    python file_worker.py --kafka localhost:9092 --catalogues catalogues
-    python file_worker.py --kafka localhost:9092 --catalogues catalogues --group file-workers
+    python file_worker.py --kafka 127.0.0.1:9092 --catalogues catalogues
+    python file_worker.py --kafka 127.0.0.1:9092 --catalogues catalogues --group file-workers
 """
 
 from __future__ import annotations
@@ -63,6 +63,17 @@ def delivery_report(err, msg) -> None:
         log.error("Delivery failed for topic %s: %s", msg.topic(), err)
 
 
+def produce_with_retry(producer: Producer, topic: str, *, key: bytes, value: bytes, on_delivery) -> None:
+    """produce() raises BufferError when librdkafka's local queue is full. Poll to free space
+    and retry once instead of letting a transient full-queue condition crash the worker."""
+    try:
+        producer.produce(topic, key=key, value=value, on_delivery=on_delivery)
+    except BufferError:
+        log.warning("Kafka local queue full for topic %s — polling and retrying once", topic)
+        producer.poll(1)
+        producer.produce(topic, key=key, value=value, on_delivery=on_delivery)
+
+
 # ── Session meta publisher ─────────────────────────────────────────────────────
 
 def publish_session_meta(
@@ -84,7 +95,8 @@ def publish_session_meta(
     }
     if car_uid:
         meta["car_uid"] = car_uid
-    producer.produce(
+    produce_with_retry(
+        producer,
         "session-meta",
         key=session_id.encode("utf-8"),
         value=json.dumps(meta).encode("utf-8"),
@@ -109,7 +121,11 @@ def publish_raw_frame(producer: Producer, frame: dict, session_id: str) -> None:
         "direction": frame.get("direction", "Rx"),
         "frame_seq": frame.get("frame_seq", 0),
     }
-    producer.produce(
+    if frame.get("catalog_files"):
+        # Session catalog scope — lets decoder.py decode with the same subset
+        payload["catalog_files"] = frame["catalog_files"]
+    produce_with_retry(
+        producer,
         "raw-can-frames",
         key=session_id.encode("utf-8"),
         value=json.dumps(payload).encode("utf-8"),
@@ -120,7 +136,8 @@ def publish_raw_frame(producer: Producer, frame: dict, session_id: str) -> None:
 def publish_log_file_event(producer: Producer, event: dict) -> None:
     """Publish a log file lifecycle event to log-file-events topic."""
     session_id = event.get("session_id", "unknown")
-    producer.produce(
+    produce_with_retry(
+        producer,
         "log-file-events",
         key=session_id.encode("utf-8"),
         value=json.dumps(event).encode("utf-8"),
@@ -140,6 +157,13 @@ class FileProcessingWorker:
         self.processed_count = 0
         self.error_count = 0
 
+        # Kafka job fields (file_path, catalogues_dir) are untrusted input — anyone able to
+        # publish to file-processing-jobs (or a bug upstream in the Java producer) could point
+        # them anywhere on disk. Every path from a job is resolved and checked against these
+        # roots before use; jobs referencing anything outside are rejected, not read.
+        self.uploads_root = Path(args.uploads_dir).resolve()
+        self.catalogues_root = Path(args.catalogues).resolve().parent
+
         log.info("Loading catalog from: %s", args.catalogues)
         self.catalog = load_catalog(Path(args.catalogues))
         log.info("Catalog loaded — %d messages", len(self.catalog))
@@ -147,6 +171,14 @@ class FileProcessingWorker:
         log.info("Connecting to Kafka: %s", args.kafka)
         self.consumer = make_consumer(args.kafka, args.group)
         self.producer = make_producer(args.kafka)
+
+    @staticmethod
+    def _resolve_within(path_str: str, root: Path, what: str) -> Path:
+        """Resolve `path_str` and ensure it lies within `root`. Raises ValueError otherwise."""
+        resolved = Path(path_str).resolve()
+        if resolved != root and root not in resolved.parents:
+            raise ValueError(f"{what} '{path_str}' escapes allowed root '{root}'")
+        return resolved
 
     def _detect_format(self, file_path: Path) -> str:
         """Detect file format from extension."""
@@ -159,7 +191,8 @@ class FileProcessingWorker:
             raise ValueError(f"Unsupported file format: {suffix}")
 
     def _process_ascii_file(
-        self, file_path: Path, session_id: str, source_filename: str, car_uid: str = ""
+        self, file_path: Path, session_id: str, source_filename: str, car_uid: str = "",
+        catalog: dict | None = None, catalog_files: list[str] | None = None,
     ) -> int:
         """Parse ASCII CAN log and publish frames. Returns frame count."""
         log.info("Extracting metadata from ASCII log: %s", file_path.name)
@@ -201,7 +234,7 @@ class FileProcessingWorker:
             # Stream frames line-by-line — no full file load into RAM
             frame_seq: dict[str, int] = {}
             frame_count = 0
-            for frame in parse_log_stream(file_path, self.catalog, session_id):
+            for frame in parse_log_stream(file_path, catalog or self.catalog, session_id):
                 msg_id = frame.msg_id
                 seq = frame_seq.get(msg_id, -1) + 1
                 frame_seq[msg_id] = seq
@@ -216,6 +249,8 @@ class FileProcessingWorker:
                     "direction": frame.direction,
                     "frame_seq": seq,
                 }
+                if catalog_files:
+                    raw_frame["catalog_files"] = catalog_files
                 publish_raw_frame(self.producer, raw_frame, session_id)
                 frame_count += 1
                 if frame_count % 1000 == 0:
@@ -240,7 +275,8 @@ class FileProcessingWorker:
             raise
 
     def _process_blf_file(
-        self, file_path: Path, session_id: str, source_filename: str, car_uid: str = ""
+        self, file_path: Path, session_id: str, source_filename: str, car_uid: str = "",
+        catalog: dict | None = None, catalog_files: list[str] | None = None,
     ) -> int:
         """Parse BLF file and publish frames. Returns frame count."""
         import os
@@ -280,7 +316,9 @@ class FileProcessingWorker:
 
             # Stream frames
             frame_count = 0
-            for raw_frame in parse_blf(file_path, self.catalog, session_id):
+            for raw_frame in parse_blf(file_path, catalog or self.catalog, session_id):
+                if catalog_files:
+                    raw_frame["catalog_files"] = catalog_files
                 publish_raw_frame(self.producer, raw_frame, session_id)
                 frame_count += 1
 
@@ -321,7 +359,12 @@ class FileProcessingWorker:
             source_filename,
         )
 
-        file_path = Path(file_path_str)
+        try:
+            file_path = self._resolve_within(file_path_str, self.uploads_root, "file_path")
+        except ValueError as e:
+            log.error("Rejected job — %s", e)
+            self.error_count += 1
+            return
         if not file_path.exists():
             log.error("File not found: %s", file_path)
             self.error_count += 1
@@ -329,20 +372,48 @@ class FileProcessingWorker:
 
         # Reload catalog if job specifies different catalogues dir
         catalog = self.catalog
+        effective_cat_dir = Path(self.args.catalogues)
         if catalogues_dir != self.args.catalogues:
-            log.info("Loading catalog from job-specified dir: %s", catalogues_dir)
-            catalog = load_catalog(Path(catalogues_dir))
+            try:
+                validated_catalogues_dir = self._resolve_within(
+                    catalogues_dir, self.catalogues_root, "catalogues_dir"
+                )
+            except ValueError as e:
+                log.error("Rejected job — %s", e)
+                self.error_count += 1
+                return
+            log.info("Loading catalog from job-specified dir: %s", validated_catalogues_dir)
+            catalog = load_catalog(validated_catalogues_dir)
             self.catalog = catalog
+            effective_cat_dir = validated_catalogues_dir
+
+        # Session catalog scope from the car's assignment (Java resolves it) —
+        # parse this session with only those files and stamp them on each frame
+        # so decoder.py decodes with the same subset.
+        raw_scope = job.get("catalog_files") or []
+        scoped_files = (
+            {str(f).strip() for f in raw_scope if str(f).strip()}
+            if isinstance(raw_scope, list) else set()
+        )
+        catalog_files = sorted(scoped_files)
+        if scoped_files:
+            catalog = load_catalog(effective_cat_dir, only_files=scoped_files)
+            log.info(
+                "Session %s scoped to catalogs %s — %d messages",
+                session_id, catalog_files, len(catalog),
+            )
 
         try:
             fmt = self._detect_format(file_path)
             if fmt == "ascii":
                 frame_count = self._process_ascii_file(
-                    file_path, session_id, source_filename, car_uid
+                    file_path, session_id, source_filename, car_uid,
+                    catalog=catalog, catalog_files=catalog_files,
                 )
             elif fmt == "blf":
                 frame_count = self._process_blf_file(
-                    file_path, session_id, source_filename, car_uid
+                    file_path, session_id, source_filename, car_uid,
+                    catalog=catalog, catalog_files=catalog_files,
                 )
             else:
                 raise ValueError(f"Unknown format: {fmt}")
@@ -374,12 +445,12 @@ class FileProcessingWorker:
         self.consumer.subscribe(["file-processing-jobs"])
         log.info("Subscribed to file-processing-jobs — waiting for jobs...")
 
-        print(f"\n=== File Processing Worker ===")
-        print(f"Catalog  : {self.args.catalogues} ({len(self.catalog)} messages)")
-        print(f"Kafka    : {self.args.kafka}")
-        print(f"Group    : {self.args.group}")
-        print(f"Formats  : .txt, .log, .asc, .blf")
-        print(f"Press Ctrl+C to stop\n")
+        log.info("=== File Processing Worker ===")
+        log.info("Catalog  : %s (%d messages)", self.args.catalogues, len(self.catalog))
+        log.info("Kafka    : %s", self.args.kafka)
+        log.info("Group    : %s", self.args.group)
+        log.info("Formats  : .txt, .log, .asc, .blf")
+        log.info("Press Ctrl+C to stop")
 
         try:
             while self.running:
@@ -434,13 +505,19 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--kafka",
-        default="localhost:9092",
-        help="Kafka bootstrap servers (default: localhost:9092)",
+        default="127.0.0.1:9092",
+        help="Kafka bootstrap servers (default: 127.0.0.1:9092)",
     )
     parser.add_argument(
         "--catalogues",
         default="./catalogues",
         help="Path to XML catalog directory (default: ./catalogues)",
+    )
+    parser.add_argument(
+        "--uploads-dir",
+        default="../uploads",
+        help="Allowed root directory for job file_path values (default: ../uploads). "
+             "Jobs referencing a file_path outside this directory are rejected.",
     )
     parser.add_argument(
         "--group",

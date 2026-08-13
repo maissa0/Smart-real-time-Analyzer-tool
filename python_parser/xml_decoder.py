@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import logging
-import xml.etree.ElementTree as ET
 from pathlib import Path
+
+# defusedxml.ElementTree is a drop-in replacement for xml.etree.ElementTree that guards
+# against entity-expansion attacks (billion laughs, quadratic blowup, external entity/DTD
+# resolution) — xml.etree.ElementTree has no such hardening per the stdlib's own docs.
+import defusedxml.ElementTree as ET
 
 from models import DecodedSignal, MessageDefinition, SignalDefinition
 
@@ -15,6 +19,27 @@ def _msg_id_key(msg_id: str) -> str:
     if len(t) >= 2 and t[0] in "0" and t[1] in "xX":
         return "0x" + t[2:].upper()
     return t.upper()
+
+
+def _parse_cycle_ms(msg_el) -> int | None:
+    """Read <Cyclic><status>true</status><cycle>N</cycle></Cyclic> — mirrors
+    CatalogLoaderService.java's parsing so simulator pacing matches the same
+    per-message cadence the backend's integrity analyzer expects."""
+    cyclic_el = msg_el.find("Cyclic")
+    if cyclic_el is None:
+        return None
+    status_el = cyclic_el.find("status")
+    status_text = (status_el.text or "").strip().lower() if status_el is not None else ""
+    if status_text != "true":
+        return None
+    cycle_el = cyclic_el.find("cycle")
+    cycle_text = (cycle_el.text or "").strip() if cycle_el is not None else ""
+    if not cycle_text:
+        return None
+    try:
+        return int(cycle_text)
+    except ValueError:
+        return None
 
 
 def _parse_bit_pattern(pattern: str) -> tuple[int, int]:
@@ -31,10 +56,22 @@ def _parse_bit_pattern(pattern: str) -> tuple[int, int]:
     return mask, shift
 
 
-def load_catalog(catalogue_dir: Path) -> dict[str, MessageDefinition]:
-    """Load all XML files from catalogue_dir and merge into one message catalog."""
+def load_catalog(
+    catalogue_dir: Path,
+    only_files: set[str] | None = None,
+) -> dict[str, MessageDefinition]:
+    """Load XML files from catalogue_dir and merge into one message catalog.
+
+    Args:
+        catalogue_dir: directory containing the bus XML files.
+        only_files: optional set of basenames (e.g. {"powertrain_can.xml"}); when
+            given, only those files are loaded — used for per-car catalog subsets.
+    """
     catalog: dict[str, MessageDefinition] = {}
+    wanted = {f.strip().lower() for f in only_files} if only_files else None
     for path in sorted(Path(catalogue_dir).glob("*.xml")):
+        if wanted is not None and path.name.lower() not in wanted:
+            continue
         try:
             tree = ET.parse(path)
         except ET.ParseError as e:
@@ -54,6 +91,7 @@ def load_catalog(catalogue_dir: Path) -> dict[str, MessageDefinition]:
                 raw_id = msg_el.get("id", "").strip()
                 msg_name = msg_el.get("name", "").strip()
                 key = _msg_id_key(raw_id)
+                cycle_ms = _parse_cycle_ms(msg_el)
                 signals_out: list[SignalDefinition] = []
                 for byte_el in msg_el.findall("Byte"):
                     num_el = byte_el.find("Num")
@@ -95,14 +133,30 @@ def load_catalog(catalogue_dir: Path) -> dict[str, MessageDefinition]:
                                 value_map=value_map,
                             )
                         )
-                if key in catalog:
-                    catalog[key].signals.extend(signals_out)
+                existing = catalog.get(key)
+                if existing is not None:
+                    # Merge only a continuation of the SAME message (same bus and
+                    # name, e.g. split across files). Two different messages that
+                    # collide on an ID must not be silently merged — that corrupts
+                    # both layouts. Keep the first definition and log the conflict.
+                    if existing.bus_name == bus_name and existing.msg_name == msg_name:
+                        existing.signals.extend(signals_out)
+                        if existing.cycle_ms is None:
+                            existing.cycle_ms = cycle_ms
+                    else:
+                        logging.error(
+                            "Catalog ID collision: %s already defined as %s/%s, "
+                            "ignoring conflicting definition %s/%s in %s",
+                            key, existing.bus_name, existing.msg_name,
+                            bus_name, msg_name, path.name,
+                        )
                 else:
                     catalog[key] = MessageDefinition(
                         msg_id=key,
                         msg_name=msg_name,
                         bus_name=bus_name,
                         signals=list(signals_out),
+                        cycle_ms=cycle_ms,
                     )
     return catalog
 

@@ -70,6 +70,8 @@ docker-compose.override.yml
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+python_parser/_sim*.txt
+python_parser/_sim*.err
 
 # ─── Test & Coverage ──────────────────────────────────────
 coverage/
@@ -77,3 +79,49 @@ coverage/
 htmlcov/
 .coverage
 .pytest_cache/
+
+
+# This .gitignore file should be placed at the root of your Unity project directory
+
+# [Builds]
+*.apk
+*.aab
+*.unitypackage
+*.exe
+*.app
+
+# [Generics]
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# [Unity Generated Folders]
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Aa]ssets/Plugins/Editor/JetBrains*
+
+# [Project Settings]
+# If you want to keep your project settings in version control (recommended),
+# remove the lines below. Otherwise, keep them to ignore local user settings.
+/[Pp]roject[Ss]ettings/ProjectVersion.txt
+/[Pp]roject[Ss]ettings/ProjectSettings.asset
+
+# [Visual Studio / VS Code]
+.vs/
+.vscode/
+*.sln
+*.csproj
+*.unityproj
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd

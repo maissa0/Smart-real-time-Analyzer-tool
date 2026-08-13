@@ -3,16 +3,17 @@ import {
   Component,
   inject,
   signal,
-  HostListener,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { AuthStore } from '../../../store/auth.store';
+import { AuthStore } from '../../../core/store/auth.store';
 import { SidebarStateService } from '../../../core/services/sidebar-state.service';
+import { NlPaletteComponent } from '../../components/nl-ask/nl-palette.component';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, NlPaletteComponent],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,16 +55,11 @@ export class NavbarComponent {
     this.router.navigateByUrl('/auth/login');
   }
 
-  focusSearch(): void {
-    const input = document.querySelector<HTMLInputElement>('[data-global-search]');
-    input?.focus();
-  }
+  /** Ctrl+K itself is handled inside NlPaletteComponent; this backs the
+   *  navbar search box, which now opens the ask-your-data palette. */
+  private readonly palette = viewChild(NlPaletteComponent);
 
-  @HostListener('document:keydown', ['$event'])
-  onKeydown(event: KeyboardEvent): void {
-    if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-      event.preventDefault();
-      this.focusSearch();
-    }
+  openAsk(): void {
+    this.palette()?.open.set(true);
   }
 }

@@ -34,7 +34,10 @@ public class DataInitializer implements CommandLineRunner {
             "user:read", "user:write", "user:create", "audit:view", "billing:view",
             "car:read", "car:write", "car:delete",
             "simulation:start", "simulation:stop",
-            "session:read", "log:upload", "log:export"
+            "session:read", "log:upload", "log:export",
+            "catalog:read", "catalog:write",
+            "requirement:read", "requirement:write",
+            "diagnostics:read", "diagnostics:write"
     );
 
     private static final String ADMIN_EMAIL = "admin@ablepro.com";
@@ -76,7 +79,10 @@ public class DataInitializer implements CommandLineRunner {
                 "View audit logs", "View billing",
                 "View vehicles", "Add and edit vehicles", "Delete vehicles",
                 "Start CAN simulator", "Stop CAN simulator",
-                "View CAN sessions", "Upload log files", "Export frames as CSV"
+                "View CAN sessions", "Upload log files", "Export frames as CSV",
+                "View ECU catalogs", "Upload, delete, and reload ECU catalogs",
+                "View requirement sets", "Upload, edit, and delete requirement sets",
+                "View diagnostic knowledge base", "Edit diagnostic knowledge base"
         );
         var result = new java.util.ArrayList<PermissionEntity>();
         for (int i = 0; i < PERMISSION_SLUGS.size(); i++) {
@@ -104,12 +110,15 @@ public class DataInitializer implements CommandLineRunner {
     private RoleEntity seedRole(String name, String description, List<PermissionEntity> permissions) {
         return roleRepository.findByName(name)
                 .orElseGet(() -> {
+                    var permIds = permissions.stream()
+                            .map(PermissionEntity::getId)
+                            .collect(java.util.stream.Collectors.toCollection(HashSet::new));
                     var r = RoleEntity.builder()
                             .name(name)
                             .description(description)
                             .createdAt(Instant.now())
                             .updatedAt(Instant.now())
-                            .permissions(new HashSet<>(permissions))
+                            .permissionIds(permIds)
                             .build();
                     r.setId(UUID.randomUUID());
                     return roleRepository.save(r);
@@ -133,7 +142,7 @@ public class DataInitializer implements CommandLineRunner {
                 .isActive(true)
                 .mfaEnabled(false)
                 .verified(true)
-                .roles(Set.of(adminRole))
+                .roleIds(new HashSet<>(Set.of(adminRole.getId())))
                 .build();
         userRepository.save(admin);
     }
@@ -155,7 +164,7 @@ public class DataInitializer implements CommandLineRunner {
                 .isActive(true)
                 .mfaEnabled(false)
                 .verified(true)
-                .roles(Set.of(userRole))
+                .roleIds(new HashSet<>(Set.of(userRole.getId())))
                 .build();
         userRepository.save(user);
     }

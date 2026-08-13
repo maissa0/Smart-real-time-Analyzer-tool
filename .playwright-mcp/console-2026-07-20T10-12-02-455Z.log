@@ -1,0 +1,122 @@
+[     185ms] [LOG] Angular is running in development mode. @ http://localhost:4200/@fs/C:/tools/Kpit_c/Frontend_angular/.angular/cache/21.2.13/user-management-platform/vite/deps/chunk-TWCEFUUT.js?v=ecbc87ab:11236
+[     314ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/sessions | Auth: ✅ @ http://localhost:4200/main.js:346
+[   15147ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/sessions | Auth: ✅ @ http://localhost:4200/main.js:346
+[   15149ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/sessions/e906be37-1bc9-48b5-9153-2c0e2951b338/metadata | Auth: ✅ @ http://localhost:4200/main.js:346
+[   15172ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/sessions | Auth: ✅ @ http://localhost:4200/main.js:346
+[   15178ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/sessions | Auth: ✅ @ http://localhost:4200/main.js:346
+[   15182ms] [LOG] [AUTH INTERCEPTOR] GET /api/cars | Auth: ✅ @ http://localhost:4200/main.js:346
+[   15249ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/sessions/e906be37-1bc9-48b5-9153-2c0e2951b338/frames | Auth: ✅ @ http://localhost:4200/main.js:346
+[   15252ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/integrity/sessions/e906be37-1bc9-48b5-9153-2c0e2951b338/summary | Auth: ✅ @ http://localhost:4200/main.js:346
+[   15254ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/integrity/sessions/e906be37-1bc9-48b5-9153-2c0e2951b338/faults | Auth: ✅ @ http://localhost:4200/main.js:346
+[   15256ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/sessions/e906be37-1bc9-48b5-9153-2c0e2951b338/metadata | Auth: ✅ @ http://localhost:4200/main.js:346
+[   15650ms] [LOG] [AUTH INTERCEPTOR] POST /api/playback/start | Auth: ✅ @ http://localhost:4200/main.js:346
+[   29333ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/integrity/sessions/e906be37-1bc9-48b5-9153-2c0e2951b338/summary | Auth: ✅ @ http://localhost:4200/main.js:346
+[   29334ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/integrity/sessions/e906be37-1bc9-48b5-9153-2c0e2951b338/faults | Auth: ✅ @ http://localhost:4200/main.js:346
+[   56497ms] [LOG] [AUTH INTERCEPTOR] GET /api/diagnostics/rules/13 | Auth: ✅ @ http://localhost:4200/main.js:346
+[   87082ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/integrity/sessions/e906be37-1bc9-48b5-9153-2c0e2951b338/faults | Auth: ✅ @ http://localhost:4200/main.js:346
+[   87085ms] [LOG] [AUTH INTERCEPTOR] POST /api/playback/start | Auth: ✅ @ http://localhost:4200/main.js:346
+[   88125ms] [LOG] [UnityMemory] Configuration Parameters - Can be set up in boot.config
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88126ms] [LOG]     "memorysetup-allocator-temp-initial-block-size-main=262144"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88127ms] [LOG]     "memorysetup-allocator-temp-initial-block-size-worker=262144"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88129ms] [LOG]     "memorysetup-temp-allocator-size-audio-worker=65536"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88129ms] [LOG]     "memorysetup-temp-allocator-size-background-worker=32768"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88129ms] [LOG]     "memorysetup-bucket-allocator-granularity=16"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88129ms] [LOG]     "memorysetup-bucket-allocator-bucket-count=8"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88130ms] [LOG]     "memorysetup-bucket-allocator-block-size=4194304"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88130ms] [LOG]     "memorysetup-bucket-allocator-block-count=1"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88131ms] [LOG]     "memorysetup-main-allocator-block-size=16777216"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88131ms] [LOG]     "memorysetup-thread-allocator-block-size=16777216"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88131ms] [LOG]     "memorysetup-gfx-main-allocator-block-size=16777216"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88131ms] [LOG]     "memorysetup-gfx-thread-allocator-block-size=16777216"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88131ms] [LOG]     "memorysetup-cache-allocator-block-size=4194304"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88131ms] [LOG]     "memorysetup-typetree-allocator-block-size=2097152"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88131ms] [LOG]     "memorysetup-profiler-bucket-allocator-granularity=16"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88132ms] [LOG]     "memorysetup-profiler-bucket-allocator-bucket-count=8"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88132ms] [LOG]     "memorysetup-profiler-bucket-allocator-block-size=4194304"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88132ms] [LOG]     "memorysetup-profiler-bucket-allocator-block-count=1"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88132ms] [LOG]     "memorysetup-profiler-allocator-block-size=16777216"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88132ms] [LOG]     "memorysetup-profiler-editor-allocator-block-size=1048576"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88132ms] [LOG]     "memorysetup-temp-allocator-size-main=4194304"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88132ms] [LOG]     "memorysetup-job-temp-allocator-block-size=2097152"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88132ms] [LOG]     "memorysetup-job-temp-allocator-block-size-background=1048576"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88133ms] [LOG]     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88365ms] [LOG] Input System module state changed to: Initialized.
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88370ms] [LOG] [Physics::Module] Initialized fallback backend.
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88370ms] [LOG] [Physics::Module] Id: 0xdecafbad
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88373ms] [LOG] Loading player data from data.unity3d
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88390ms] [LOG] Initialize engine version: 6000.0.42f1 (feb9a7235030)
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88391ms] [LOG] [Subsystems] Discovering subsystems at path UnitySubsystems
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88396ms] [LOG] Creating WebGL 2.0 context. @ http://localhost:4200/assets/car-twin/Build/car-twin-build.loader.js:0
+[   88470ms] [LOG] Renderer: WebKit WebGL
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88470ms] [LOG] Vendor:   WebKit
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88470ms] [LOG] Version:  OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88471ms] [LOG] GLES:     3
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88471ms] [LOG]  EXT_clip_control EXT_color_buffer_float EXT_color_buffer_half_float EXT_conservative_depth EXT_depth_clamp EXT_disjoint_timer_query_webgl2 EXT_float_blend EXT_polygon_offset_clamp EXT_render_snorm EXT_texture_compression_bptc EXT_texture_compression_rgtc EXT_texture_filter_anisotropic EXT_texture_mirror_clamp_to_edge EXT_texture_norm16 KHR_parallel_shader_compile NV_shader_noperspective_interpolation OES_draw_buffers_indexed OES_sample_variables OES_shader_multisample_interpolation OES_texture_float_linear OVR_multiview2 WEBGL_blend_func_extended WEBGL_clip_cull_distance WEBGL_compressed_texture_s3tc WEBGL_compressed_texture_s3tc_srgb WEBGL_debug_renderer_info WEBGL_debug_shaders WEBGL_lose_context WEBGL_multi_draw WEBGL_polygon_mode WEBGL_provoking_vertex WEBGL_stencil_texturing GL_EXT_clip_control GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_conservative_depth GL_EXT_depth_clamp GL_EXT_disjoint_timer_query_webgl2 GL_EXT_float_blend GL_EXT_polygon_offset_clamp GL_EXT_render_snorm GL_EXT_
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88471ms] [LOG] texture_compression_bptc GL_EXT_texture_compression_rgtc GL_EXT_texture_filter_anisotropic GL_EXT_texture_mirror_clamp_to_edge GL_EXT_texture_norm16 GL_KHR_parallel_shader_compile GL_NV_shader_noperspective_interpolation GL_OES_draw_buffers_indexed GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_texture_float_linear GL_OVR_multiview2 GL_WEBGL_blend_func_extended GL_WEBGL_clip_cull_distance GL_WEBGL_compressed_texture_s3tc GL_WEBGL_compressed_texture_s3tc_srgb GL_WEBGL_debug_renderer_info GL_WEBGL_debug_shaders GL_WEBGL_lose_context GL_WEBGL_multi_draw GL_WEBGL_polygon_mode GL_WEBGL_provoking_vertex GL_WEBGL_stencil_texturing
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88478ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88478ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88479ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88480ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88481ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88481ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88493ms] [LOG] OPENGL LOG: Creating OpenGL ES 3.0 graphics device ; Context level  <OpenGL ES 3.0> ; Context handle 1
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88663ms] [LOG] [Physics::Module] Selected backend.
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88664ms] [LOG] [Physics::Module] Name: PhysX
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88664ms] [LOG] [Physics::Module] Id: 0xf2b8ea05
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88664ms] [LOG] [Physics::Module] SDK Version: 4.1.2
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88664ms] [LOG] [Physics::Module] Integration Version: 1.0.0
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88664ms] [LOG] [Physics::Module] Threading Mode: Single-Threaded
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88833ms] [LOG] Input Manager initialize...
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   88834ms] [LOG] Input System initialize...
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   91299ms] [LOG] UnloadTime: 0.700000 ms
+ @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   91381ms] [LOG] Audio context resumed after 2.823 seconds. @ http://localhost:4200/assets/car-twin/Build/car-twin-build.framework.js:8
+[   91702ms] [LOG] [UnityCache] 'http://localhost:4200/assets/car-twin/Build/car-twin-build.data' successfully downloaded and stored in the browser cache @ http://localhost:4200/assets/car-twin/Build/car-twin-build.loader.js:0
+[  156574ms] [LOG] [AUTH INTERCEPTOR] GET /api/sessions/e906be37-1bc9-48b5-9153-2c0e2951b338/summary | Auth: ✅ @ http://localhost:4200/main.js:346
+[  156575ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/integrity/sessions/e906be37-1bc9-48b5-9153-2c0e2951b338/diagnostic-report | Auth: ✅ @ http://localhost:4200/main.js:346

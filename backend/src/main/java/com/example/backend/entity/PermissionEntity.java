@@ -3,8 +3,6 @@ package com.example.backend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -31,10 +29,6 @@ public class PermissionEntity {
 
     @Column(name = "updated_at", nullable = false)
     private java.time.Instant updatedAt;
-
-    @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
-    @Builder.Default
-    private Set<RoleEntity> roles = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {

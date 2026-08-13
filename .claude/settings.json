@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd c:\\\\tools\\\\Kpit_c\\\\backend; .\\\\mvnw.cmd compile \"-DskipTests\" 2>&1 | Out-String | Select-String -Pattern \"\\\\[ERROR\\\\]\" -AllMatches | ForEach-Object { $_.Line })",
+      "PowerShell(cd c:\\\\tools\\\\Kpit_c\\\\backend; $result = .\\\\mvnw.cmd compile \"-DskipTests\" 2>&1; $result | Out-File -FilePath \"C:\\\\Users\\\\maiss\\\\compile_output.txt\" -Encoding utf8; Write-Host \"Exit code: $LASTEXITCODE\"; Get-Content \"C:\\\\Users\\\\maiss\\\\compile_output.txt\" | Select-String \"ERROR|error:|BUILD\" | Select-Object -Last 40)",
+      "PowerShell(cd c:\\\\tools\\\\Kpit_c\\\\backend; cmd /c \"mvnw.cmd compile -DskipTests 2>&1\" | Out-File -FilePath \"C:\\\\Users\\\\maiss\\\\compile_out.txt\" -Encoding utf8 -Force; Write-Host \"Written\"; Get-Content \"C:\\\\Users\\\\maiss\\\\compile_out.txt\" | Where-Object { $_ -match \"\\\\[ERROR\\\\]|\\\\[WARNING\\\\]|BUILD SUCCESS|BUILD FAILURE\" } | Select-Object -Last 30)",
+      "Read(//c/Users/maiss/**)",
+      "PowerShell($javaBin = \\(Get-Command java -ErrorAction SilentlyContinue\\); if \\($javaBin\\) { Write-Host $javaBin.Source } else { Write-Host \"Not found\" }; Get-ChildItem \"C:\\\\Program Files\\\\Eclipse Adoptium\", \"C:\\\\Program Files\\\\Java\" -ErrorAction SilentlyContinue | Select-Object FullName)",
+      "Bash(sed -i \"s|'../../data/types/api.types'|'../types/api.types'|g\" c:/tools/Kpit_c/Frontend_angular/src/app/core/interceptors/error.interceptor.ts)",
+      "Bash(sed -i \"s|'../../data/models'|'../models'|g\" c:/tools/Kpit_c/Frontend_angular/src/app/core/services/audit.service.ts)",
+      "Bash(sed -i \"s|'../../data/types/api.types'|'../types/api.types'|g\" c:/tools/Kpit_c/Frontend_angular/src/app/core/services/audit.service.ts)",
+      "Bash(sed -i \"s|'../../data/models'|'../models'|g\" c:/tools/Kpit_c/Frontend_angular/src/app/core/services/auth.service.ts)",
+      "Bash(sed -i \"s|'../../data/models/can.model'|'../models/can.model'|g\" c:/tools/Kpit_c/Frontend_angular/src/app/core/services/can.service.ts)",
+      "Bash(sed -i \"s|'../../data/models/can.model'|'../../core/models/can.model'|g\" c:/tools/Kpit_c/Frontend_angular/src/app/features/analyser/can-workspace.component.ts)",
+      "Bash(sed -i \"s|'../../../data/models/audit-log.model'|'../../../core/models/audit-log.model'|g\" c:/tools/Kpit_c/Frontend_angular/src/app/features/settings/audit-log/audit-log.component.ts)",
+      "Bash(sed -i \"s|'../../../../data/models/audit-log.model'|'../../../../core/models/audit-log.model'|g\" c:/tools/Kpit_c/Frontend_angular/src/app/features/settings/security-center/active-sessions/active-sessions.component.ts)",
+      "Bash(sed -i \"s|'../../../data/models/can.model'|'../../../core/models/can.model'|g\" c:/tools/Kpit_c/Frontend_angular/src/app/features/sniffer/frame-table/frame-table.component.ts)",
+      "Bash(sed -i \"s|'../../../data/models/can.model'|'../../../core/models/can.model'|g\" c:/tools/Kpit_c/Frontend_angular/src/app/features/sniffer/session-list/session-list.component.ts)",
+      "Bash(npx ng *)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/ -v)",
+      "Bash(c:/tools/Kpit_c/python_parser/.venv/Scripts/python.exe -c \"import sklearn; print\\(sklearn.__version__\\)\")",
+      "Bash(c:/tools/Kpit_c/python_parser/.venv/Scripts/python.exe -c \"from sklearn.ensemble import IsolationForest; print\\('IsolationForest OK'\\)\")",
+      "Bash(c:/tools/Kpit_c/python_parser/.venv/Scripts/pip.exe install *)",
+      "Bash(c:/tools/Kpit_c/python_parser/.venv/Scripts/python.exe -c \"from sklearn.ensemble import IsolationForest; print\\('sklearn OK:', IsolationForest.__module__\\)\")",
+      "Bash(c:/tools/Kpit_c/python_parser/.venv/Scripts/python.exe -c \"import sys; sys.path.insert\\(0,'c:/tools/Kpit_c/python_parser'\\); import anomaly_scorer; print\\('anomaly_scorer imports OK'\\)\")",
+      "Bash(grep -v \"base-url\\\\|@Value\\\\|comment\\\\|//\")",
+      "Bash(npx tsc *)",
+      "Bash(grep -v \"//\\\\|faultsOnly\\\\|faultFilter\\\\|anomaly\")",
+      "PowerShell(& \"c:\\\\tools\\\\Kpit_c\\\\python_parser\\\\.venv\\\\Scripts\\\\python.exe\" -c \"import pandas, matplotlib, numpy; print\\('OK'\\)\" 2>&1)",
+      "Bash(python -m pytest tests/ -q)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(JAVA_HOME=\"/c/Program Files/Eclipse Adoptium/jdk-22.0.2.9-hotspot\" ./mvnw compile -DskipTests -q)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('file_worker.py'\\).read\\(\\)\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('can_simulator.py'\\).read\\(\\)\\)\")",
+      "Bash(python -c \"import defusedxml; print\\(defusedxml.__version__\\)\")",
+      "Bash(python -m pip install defusedxml)"
+    ]
+  }
+}

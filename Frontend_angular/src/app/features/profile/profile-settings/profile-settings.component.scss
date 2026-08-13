@@ -1,0 +1,443 @@
+:host {
+  display: block;
+}
+
+.ps-page {
+  background: #06080d;
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+.ps-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e8eef6;
+  margin: 0;
+}
+
+.ps-title-row {
+  margin: 1rem 0 1.5rem;
+}
+
+.ps-shell {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #0f1828;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+
+.ps-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background: #07090f;
+  border-right: 1px solid #0f1828;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ps-profile-card {
+  text-align: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #0f1828;
+}
+
+.ps-avatar-wrap {
+  position: relative;
+  width: 76px;
+  margin: 0 auto 12px;
+}
+
+.ps-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: #0f1828;
+  border: 2px solid #b5c927;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #b5c927;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.ps-avatar-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #b5c927;
+  border: 2px solid #07090f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  i {
+    font-size: 11px;
+    color: #06080d;
+  }
+
+  input[type='file'] {
+    display: none;
+  }
+}
+
+.ps-name {
+  color: #e8eef6;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+
+.ps-email {
+  color: #3a4a62;
+  font-size: 11px;
+  margin: 0 0 10px;
+}
+
+.ps-role-badge {
+  display: inline-block;
+  background: #0f2010;
+  border: 1px solid #264020;
+  color: #b5c927;
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.ps-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.ps-meta-cell {
+  background: #0c1020;
+  border: 1px solid #0f1828;
+  border-radius: 6px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.ps-meta-label {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #2a3a52;
+  margin: 0 0 4px;
+}
+
+.ps-meta-value {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7a8a9a;
+
+  &.is-active { color: #26d9a0; }
+  &.is-off { color: #e05555; }
+  &.is-accent { color: #b5c927; }
+}
+
+/* ── Vertical nav ────────────────────────────────────────────────────── */
+
+.ps-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ps-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  color: #3a4a62;
+  background: none;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+
+  i {
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  &:hover:not(.is-active) {
+    background: #0c1020;
+  }
+
+  &.is-active {
+    background: #0d1e0d;
+    border-color: #1e3a1e;
+    color: #b5c927;
+  }
+}
+
+/* ── Content column ──────────────────────────────────────────────────── */
+
+.ps-content {
+  flex: 1;
+  min-width: 0;
+  background: #08090e;
+  display: flex;
+  flex-direction: column;
+}
+
+.ps-content-header {
+  background: #080c14;
+  border-bottom: 1px solid #0f1828;
+  padding: 20px 28px 0;
+}
+
+.ps-content-title {
+  color: #e8eef6;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.ps-content-subtitle {
+  color: #3a4a62;
+  font-size: 12px;
+  margin: 4px 0 16px;
+}
+
+.ps-panel {
+  padding: 24px 28px;
+}
+
+/* ── Section headings / dividers ─────────────────────────────────────── */
+
+.ps-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #2a3a52;
+  font-weight: 600;
+  margin: 0 0 16px;
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #0f1828;
+  }
+}
+
+.ps-divider {
+  height: 1px;
+  background: #0f1828;
+  margin: 24px 0;
+}
+
+/* ── Forms ───────────────────────────────────────────────────────────── */
+
+.ps-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.ps-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.ps-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #3a4a62;
+  font-weight: 600;
+  margin-bottom: 6px;
+
+  .ps-label-hint {
+    text-transform: none;
+    color: #2a3a52;
+    font-weight: 400;
+    letter-spacing: normal;
+  }
+}
+
+.ps-input {
+  width: 100%;
+  background: #0c1020;
+  border: 1px solid #141e30;
+  border-radius: 7px;
+  color: #c8d8e8;
+  font-size: 12px;
+  padding: 10px 13px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  font-family: inherit;
+
+  &:focus {
+    border-color: #b5c927;
+  }
+}
+
+.ps-input-static {
+  margin: 0;
+  color: #2a3a52;
+  cursor: default;
+  background: #0c1020;
+  border: 1px solid #141e30;
+  border-radius: 7px;
+  font-size: 12px;
+  padding: 10px 13px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+
+.ps-btn-primary {
+  background: #b5c927;
+  border: none;
+  border-radius: 7px;
+  padding: 10px 20px;
+  color: #06080d;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.ps-btn-ghost {
+  background: transparent;
+  border: 1px solid #141e30;
+  border-radius: 7px;
+  padding: 10px 16px;
+  color: #3a4a62;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background: #0c1020;
+  }
+}
+
+/* ── Settings panel ──────────────────────────────────────────────────── */
+
+.ps-setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: #0c1020;
+  border: 1px solid #0f1828;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.ps-setting-title {
+  color: #c8d8e8;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+
+.ps-setting-desc {
+  color: #3a4a62;
+  font-size: 11px;
+  margin: 0;
+}
+
+.ps-toggle {
+  width: 40px;
+  height: 22px;
+  border-radius: 20px;
+  position: relative;
+  cursor: pointer;
+  background: #1a2535;
+  transition: background 0.2s;
+  border: none;
+  flex-shrink: 0;
+  padding: 0;
+
+  .ps-toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #06080d;
+    transition: left 0.2s;
+  }
+
+  &.is-on {
+    background: #b5c927;
+
+    .ps-toggle-knob {
+      left: 21px;
+    }
+  }
+}
+
+.ps-select {
+  background: #0f1828;
+  border: 1px solid #141e30;
+  border-radius: 7px;
+  padding: 7px 12px;
+  color: #7a8a9a;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* ── Password strength ───────────────────────────────────────────────── */
+
+.ps-strength-bar {
+  height: 4px;
+  background: #0f1828;
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.ps-strength-fill {
+  height: 100%;
+  background: #e6a817;
+  border-radius: 2px;
+  transition: width 0.2s;
+}
+
+.ps-strength-hint {
+  font-size: 10px;
+  color: #e6a817;
+  margin-top: 6px;
+}

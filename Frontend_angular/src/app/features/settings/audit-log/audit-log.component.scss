@@ -1,0 +1,222 @@
+:host {
+  display: block;
+}
+
+.al-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.al-input {
+  flex: 1;
+  min-width: 180px;
+  background: #0c1020;
+  border: 1px solid #141e30;
+  border-radius: 7px;
+  color: #c8d8e8;
+  font-size: 12px;
+  padding: 7px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+
+  &:focus {
+    border-color: #b5c927;
+  }
+}
+
+.al-select {
+  background: #0f1828;
+  border: 1px solid #141e30;
+  border-radius: 7px;
+  color: #7a8a9a;
+  font-size: 12px;
+  padding: 7px 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+.al-clear-btn {
+  background: transparent;
+  border: 1px solid #141e30;
+  border-radius: 7px;
+  padding: 7px 12px;
+  color: #3a4a62;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #0c1020;
+  }
+}
+
+.al-count {
+  font-size: 11px;
+  color: #3a4a62;
+  white-space: nowrap;
+}
+
+.al-table-wrap {
+  background: #08090e;
+  border: 1px solid #0f1828;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.al-spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #0f1828;
+  border-top-color: #b5c927;
+  animation: al-spin 0.8s linear infinite;
+}
+
+@keyframes al-spin {
+  to { transform: rotate(360deg); }
+}
+
+.al-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 11px;
+}
+
+.al-th {
+  padding: 10px 12px;
+  text-align: left;
+  color: #2a3a52;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #0f1828;
+  white-space: nowrap;
+}
+
+.al-row {
+  border-bottom: 1px solid #0a0d14;
+  transition: background 0.15s;
+
+  &:hover {
+    background: #0c1020;
+  }
+}
+
+.al-td {
+  padding: 10px 12px;
+  font-size: 11px;
+  color: #7a8a9a;
+}
+
+.al-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+
+  &--login-success {
+    background: #0a1e0a;
+    color: #26d9a0;
+    border: 1px solid #1a3a1a;
+  }
+
+  &--sim-start {
+    background: #0a1420;
+    color: #4a9eff;
+    border: 1px solid #142030;
+  }
+
+  &--sim-stop {
+    background: #1e0a0a;
+    color: #e05555;
+    border: 1px solid #2a1010;
+  }
+
+  &--default {
+    background: #0f1828;
+    color: #7a8a9a;
+    border: 1px solid #141e30;
+  }
+}
+
+.al-view-json-btn {
+  background: none;
+  border: none;
+  color: #b5c927;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.al-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 1rem;
+}
+
+.al-modal {
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  background: #08090e;
+  border: 1px solid #0f1828;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.al-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #0f1828;
+}
+
+.al-modal-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e8eef6;
+  margin: 0;
+}
+
+.al-modal-action {
+  color: #b5c927;
+  font-family: monospace;
+}
+
+.al-modal-close {
+  background: none;
+  border: none;
+  color: #3a4a62;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.al-modal-body {
+  overflow: auto;
+  padding: 1.5rem;
+}
+
+.al-modal-pre {
+  background: #0c1020;
+  border: 1px solid #0f1828;
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 0.78rem;
+  color: #c8d8e8;
+  overflow-x: auto;
+  margin: 0;
+}

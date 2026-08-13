@@ -1,0 +1,117 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - button "Toggle sidebar" [ref=e7] [cursor=pointer]:
+        - img [ref=e8]
+      - generic [ref=e9]: KPIT ANALYSER
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - img [ref=e13]
+          - searchbox "Search..." [ref=e15]
+        - generic [ref=e16]: Ctrl+K
+      - button "Layout" [ref=e17] [cursor=pointer]:
+        - img [ref=e18]
+      - button "Language" [ref=e21] [cursor=pointer]:
+        - img [ref=e22]
+      - button "Notifications" [ref=e24] [cursor=pointer]:
+        - img [ref=e25]
+      - button "A" [ref=e29] [cursor=pointer]:
+        - generic [ref=e31]: A
+  - navigation [ref=e32]:
+    - generic [ref=e33]:
+      - generic [ref=e34]: KPIT ANALYSER
+      - button "Close sidebar" [ref=e35] [cursor=pointer]: ✕
+    - generic [ref=e36]:
+      - link "Dashboard" [ref=e37] [cursor=pointer]:
+        - /url: /admin
+        - img [ref=e38]
+        - text: Dashboard
+      - link "CAN Workspace" [ref=e43] [cursor=pointer]:
+        - /url: /admin/workspace
+        - img [ref=e44]
+        - text: CAN Workspace
+      - link "ECU Catalogs" [ref=e46] [cursor=pointer]:
+        - /url: /admin/catalogs
+        - img [ref=e47]
+        - text: ECU Catalogs
+      - link "Diagnostics" [ref=e50] [cursor=pointer]:
+        - /url: /admin/diagnostics
+        - img [ref=e51]
+        - text: Diagnostics
+      - link "Fleet" [ref=e54] [cursor=pointer]:
+        - /url: /admin/fleet
+        - img [ref=e55]
+        - text: Fleet
+      - link "Users" [ref=e60] [cursor=pointer]:
+        - /url: /admin/users/list
+        - img [ref=e61]
+        - text: Users
+      - link "Session Compare" [ref=e66] [cursor=pointer]:
+        - /url: /admin/compare
+        - img [ref=e67]
+        - text: Session Compare
+      - link "Settings" [ref=e69] [cursor=pointer]:
+        - /url: /admin/settings
+        - img [ref=e70]
+        - text: Settings
+  - main [ref=e73]:
+    - generic [ref=e323]:
+      - generic [ref=e324]:
+        - button "← Sessions" [ref=e325] [cursor=pointer]
+        - generic [ref=e326]: /
+        - generic [ref=e327]: test_diagnostic_faults.log
+        - generic [ref=e328]: COMPLETE
+        - button "▶ Replay View" [ref=e330] [cursor=pointer]
+      - generic [ref=e339]:
+        - button "Table" [ref=e340] [cursor=pointer]
+        - button "Charts" [ref=e341] [cursor=pointer]
+        - button "Integrity" [ref=e342] [cursor=pointer]
+        - button "Report" [ref=e343] [cursor=pointer]
+        - button "3D Twin" [active] [ref=e344] [cursor=pointer]
+      - generic [ref=e1661]:
+        - generic [ref=e1662]:
+          - generic [ref=e1663]:
+            - generic [ref=e1667]: Frame 0 / 84
+            - generic [ref=e1668]:
+              - button "⤓ Export Report" [ref=e1669] [cursor=pointer]
+              - button "Show Steering" [ref=e1670] [cursor=pointer]
+          - generic [ref=e1671]:
+            - generic [ref=e1672]:
+              - generic [ref=e1673]:
+                - generic [ref=e1674]: DOORS
+                - generic [ref=e1677]: All closed
+              - generic [ref=e1678]:
+                - generic [ref=e1679]: STEERING SENSOR
+                - generic [ref=e1682]: —
+              - generic [ref=e1683]:
+                - generic [ref=e1684]: WIPERS
+                - generic [ref=e1687]: —
+              - generic [ref=e1688]:
+                - generic [ref=e1689]: WHEEL SPEED
+                - generic [ref=e1692]: —
+            - generic [ref=e1693]:
+              - generic [ref=e1694]: SIGNALS
+              - generic [ref=e1695]:
+                - generic [ref=e1696]: SIGNAL
+                - generic [ref=e1697]: VALUE
+                - generic [ref=e1698]: STATUS
+              - generic [ref=e1700]: Loading session signals…
+            - generic [ref=e1701]:
+              - generic [ref=e1702]: UNDECODED SIGNALS
+              - generic [ref=e1703]:
+                - generic [ref=e1704]: SIGNAL
+                - generic [ref=e1705]: VALUE
+                - generic [ref=e1706]: STATUS
+              - generic [ref=e1708]: Loading session signals…
+        - generic [ref=e1709]:
+          - slider [disabled] [ref=e1711]: "0"
+          - generic [ref=e1712]:
+            - button "▶" [disabled] [ref=e1713]
+            - generic [ref=e1714]: 0:00.00 / 0:00.00
+            - generic [ref=e1715]: Loading session data…
+            - generic [ref=e1716]:
+              - button "0.5x" [ref=e1717] [cursor=pointer]
+              - button "1x" [ref=e1718] [cursor=pointer]
+              - button "2x" [ref=e1719] [cursor=pointer]
+            - generic [ref=e1720]: Frame 0 / 84

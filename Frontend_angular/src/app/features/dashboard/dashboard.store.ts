@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { API_BASE_URL } from '../../core/config/api.config';
@@ -57,33 +57,14 @@ export const DashboardStore = signalStore(
       loadStats(): void {
         patchState(store, { isLoading: true, error: null });
 
-        const token = localStorage.getItem('access_token');
-        const headers = token
-          ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-          : new HttpHeaders();
-
-        // Load stats
-        http.get<DashboardStats>(
-          `${API_BASE_URL}/api/dashboard/stats`,
-          { headers }
-        ).subscribe({
+        http.get<DashboardStats>(`${API_BASE_URL}/api/dashboard/stats`).subscribe({
           next: (stats) => patchState(store, { stats, isLoading: false }),
-          error: (err) => {
-            patchState(store, {
-              error: 'Failed to load dashboard stats',
-              isLoading: false,
-            });
-            console.error('[DashboardStore] stats error:', err);
-          },
+          error: () => patchState(store, { error: 'Failed to load dashboard stats', isLoading: false }),
         });
 
-        // Load recent sessions
-        http.get<RecentSession[]>(
-          `${API_BASE_URL}/api/dashboard/recent-sessions?size=5`,
-          { headers }
-        ).subscribe({
+        http.get<RecentSession[]>(`${API_BASE_URL}/api/dashboard/recent-sessions?size=5`).subscribe({
           next: (recentSessions) => patchState(store, { recentSessions }),
-          error: (err) => console.error('[DashboardStore] recent-sessions error:', err),
+          error: () => {},
         });
       },
     };

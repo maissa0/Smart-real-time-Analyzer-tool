@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Bus Name="E2E_Body_CAN">
+          
+  
+  
+  <!-- Cyclic body-state broadcast: doors (incl. OPENING state), lock, trunk, hood -->
+          
+  
+  
+  <massage id="0x500" name="Door_Status">
+                    
+    
+    
+    <sender>body ECU</sender>
+                    
+    
+    
+    <reciver>body gateway</reciver>
+                    
+        
+        
+    
+    
+    
+    
+  
+    
+    
+    
+  
+    <Cyclic>
+      <status>true</status>
+      <cycle>500</cycle>
+    </Cyclic>
+    <Byte>
+      <Num>0</Num>
+      <Signal Bit="00000111">
+        <signal_name>E2E_Door_FL_State</signal_name>
+        <values>
+          <value>0</value>
+          <name>Closed</name>
+        </values>
+        <values>
+          <value>1</value>
+          <name>Opening</name>
+        </values>
+        <values>
+          <value>2</value>
+          <name>Open</name>
+        </values>
+        <values>
+          <value>3</value>
+          <name>Closing</name>
+        </values>
+        <values>
+          <value>4</value>
+          <name>Ajar</name>
+        </values>
+      </Signal>
+      <Signal Bit="00111000">
+        <signal_name>E2E_Door_FR_State</signal_name>
+        <values>
+          <value>0</value>
+          <name>Closed</name>
+        </values>
+        <values>
+          <value>1</value>
+          <name>Opening</name>
+        </values>
+        <values>
+          <value>2</value>
+          <name>Open</name>
+        </values>
+        <values>
+          <value>3</value>
+          <name>Closing</name>
+        </values>
+        <values>
+          <value>4</value>
+          <name>Ajar</name>
+        </values>
+      </Signal>
+    </Byte>
+    <Byte>
+      <Num>1</Num>
+      <Signal Bit="00000011">
+        <signal_name>E2E_Door_Lock_State</signal_name>
+        <values>
+          <value>0</value>
+          <name>Unlocked</name>
+        </values>
+        <values>
+          <value>1</value>
+          <name>Locked</name>
+        </values>
+        <values>
+          <value>2</value>
+          <name>Secure</name>
+        </values>
+        <values>
+          <value>3</value>
+          <name>Selective_Unlock</name>
+        </values>
+      </Signal>
+      <Signal Bit="00011100">
+        <signal_name>E2E_Trunk_State</signal_name>
+        <values>
+          <value>0</value>
+          <name>Closed</name>
+        </values>
+        <values>
+          <value>1</value>
+          <name>Opening</name>
+        </values>
+        <values>
+          <value>2</value>
+          <name>Open</name>
+        </values>
+        <values>
+          <value>3</value>
+          <name>Closing</name>
+        </values>
+      </Signal>
+      <Signal Bit="01100000">
+        <signal_name>E2E_Hood_State</signal_name>
+        <values>
+          <value>0</value>
+          <name>Closed</name>
+        </values>
+        <values>
+          <value>1</value>
+          <name>Open</name>
+        </values>
+        <values>
+          <value>2</value>
+          <name>Ajar</name>
+        </values>
+      </Signal>
+    </Byte>
+  </massage>
+          
+  
+  
+  <!-- Cyclic window positions: numeric 0-100 (% open), deliberately no enum
+         so the integrity range check does not apply to positions -->
+          
+  
+  
+  <massage id="0x501" name="Window_Status">
+                    
+    
+    
+    <sender>door ECU</sender>
+                    
+    
+    
+    <reciver>body gateway</reciver>
+                    
+        
+        
+        
+    
+    
+    
+    
+    
+  
+    
+    
+    
+    
+  
+    <Cyclic>
+      <status>true</status>
+      <cycle>1000</cycle>
+    </Cyclic>
+    <Byte>
+      <Num>0</Num>
+      <Signal Bit="11111111">
+        <signal_name>E2E_Window_FL_Pos</signal_name>
+      </Signal>
+    </Byte>
+    <Byte>
+      <Num>1</Num>
+      <Signal Bit="11111111">
+        <signal_name>E2E_Window_FR_Pos</signal_name>
+      </Signal>
+    </Byte>
+    <Byte>
+      <Num>2</Num>
+      <Signal Bit="00000011">
+        <signal_name>E2E_Window_Motion</signal_name>
+        <values>
+          <value>0</value>
+          <name>Idle</name>
+        </values>
+        <values>
+          <value>1</value>
+          <name>Moving_Up</name>
+        </values>
+        <values>
+          <value>2</value>
+          <name>Moving_Down</name>
+        </values>
+        <values>
+          <value>3</value>
+          <name>Blocked</name>
+        </values>
+      </Signal>
+    </Byte>
+  </massage>
+          
+  
+  
+  <!-- Fast cyclic wiper + rain sensor status -->
+          
+  
+  
+  <massage id="0x502" name="Wiper_Rain_Status">
+                    
+    
+    
+    <sender>rain sensor ECU</sender>
+                    
+    
+    
+    <reciver>body gateway</reciver>
+                    
+        
+    
+    
+    
+  
+    
+    
+  
+    <Cyclic>
+      <status>true</status>
+      <cycle>200</cycle>
+    </Cyclic>
+    <Byte>
+      <Num>0</Num>
+      <Signal Bit="00000111">
+        <signal_name>E2E_Wiper_Mode</signal_name>
+        <values>
+          <value>0</value>
+          <name>Off</name>
+        </values>
+        <values>
+          <value>1</value>
+          <name>Intermittent</name>
+        </values>
+        <values>
+          <value>2</value>
+          <name>Low</name>
+        </values>
+        <values>
+          <value>3</value>
+          <name>High</name>
+        </values>
+        <values>
+          <value>4</value>
+          <name>Auto</name>
+        </values>
+      </Signal>
+      <Signal Bit="00010000">
+        <signal_name>E2E_Rain_Detected</signal_name>
+        <values>
+          <value>0</value>
+          <name>No_Rain</name>
+        </values>
+        <values>
+          <value>1</value>
+          <name>Raining</name>
+        </values>
+      </Signal>
+    </Byte>
+  </massage>
+          
+  
+  
+  <!-- Event message (non-cyclic): key-fob / body commands -->
+          
+  
+  
+  <massage id="0x503" name="Body_Command">
+                    
+    
+    
+    <sender>key fob receiver</sender>
+                    
+    
+    
+    <reciver>body ECU</reciver>
+                    
+        
+    
+    
+    
+  
+    
+    
+  
+    <Cyclic>
+      <status>false</status>
+    </Cyclic>
+    <Byte>
+      <Num>0</Num>
+      <Signal Bit="00000011">
+        <signal_name>E2E_Lock_Request</signal_name>
+        <values>
+          <value>0</value>
+          <name>None</name>
+        </values>
+        <values>
+          <value>1</value>
+          <name>Lock_Pressed</name>
+        </values>
+        <values>
+          <value>2</value>
+          <name>Unlock_Pressed</name>
+        </values>
+        <values>
+          <value>3</value>
+          <name>Trunk_Release</name>
+        </values>
+      </Signal>
+    </Byte>
+  </massage>
+      
+
+  
+
+</Bus>

@@ -37,13 +37,8 @@ public class S3StorageServiceImpl implements ImageStorageService {
 
     @Override
     public String storeImage(UUID userId, MultipartFile file) throws IOException {
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("File is empty");
-        }
+        ImageFileValidator.validate(file);
         String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new IllegalArgumentException("File must be an image");
-        }
         String extension = getExtension(contentType);
         String key = prefix + "/" + userId + "_" + System.currentTimeMillis() + extension;
 

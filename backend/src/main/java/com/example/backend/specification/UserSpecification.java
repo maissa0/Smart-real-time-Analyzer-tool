@@ -49,7 +49,7 @@ public final class UserSpecification {
 
             if (roleId != null) {
                 predicates.add(cb.equal(
-                        root.join("roles", JoinType.INNER).get("id"),
+                        root.join("roleIds", JoinType.INNER),
                         roleId
                 ));
             }

@@ -28,13 +28,17 @@
         </svg>
         <input
           type="search"
-          placeholder="Search..."
+          placeholder="Ask your data — sessions, cars, faults…"
           data-global-search
           class="kpit-nav-search-input"
+          readonly
+          (click)="openAsk()"
+          (focus)="openAsk()"
         />
       </div>
       <kbd class="kpit-kbd">Ctrl+K</kbd>
     </div>
+    <app-nl-palette />
     <button type="button" class="kpit-icon-btn" title="Layout">
       <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
@@ -95,7 +99,7 @@
         <div class="kpit-dropdown" (click)="$event.stopPropagation()">
           <div class="kpit-dropdown-header">
             <p class="kpit-dropdown-name">{{ authStore.user()?.fullName ?? 'User' }}</p>
-            <p class="kpit-dropdown-role">UI/UX Designer</p>
+            <p class="kpit-dropdown-role">{{ authStore.user()?.department ?? '—' }}</p>
           </div>
           <div class="py-1">
             <a routerLink="/admin/profile" (click)="closeProfile()" class="kpit-dropdown-link"> Profile </a>

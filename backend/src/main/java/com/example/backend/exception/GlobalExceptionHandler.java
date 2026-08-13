@@ -2,6 +2,7 @@ package com.example.backend.exception;
 
 import com.example.backend.dto.common.ApiError;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +44,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        log.warn("403 AccessDeniedException on {} {}: {}",
+                request.getMethod(), request.getRequestURI(), ex.getMessage());
         ApiError apiError = ApiError.builder()
                 .message("Access denied. You do not have permission to perform this action.")
                 .status(HttpStatus.FORBIDDEN.value())
@@ -53,6 +56,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({BadCredentialsException.class, AuthenticationException.class})
     public ResponseEntity<ApiError> handleAuthException(AuthenticationException ex, HttpServletRequest request) {
+        log.warn("401 {} on {} {}: {}",
+                ex.getClass().getSimpleName(), request.getMethod(), request.getRequestURI(),
+                ex.getMessage());
         String msg = ex.getMessage();
         String message = (msg != null && msg.contains("Account Disabled"))
                 ? "Account Disabled"
@@ -67,15 +73,22 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
-        int status = ex.getMessage() != null && ex.getMessage().contains("already")
-                ? HttpStatus.UNPROCESSABLE_ENTITY.value()
-                : HttpStatus.BAD_REQUEST.value();
         ApiError apiError = ApiError.builder()
                 .message(ex.getMessage())
-                .status(status)
+                .status(HttpStatus.BAD_REQUEST.value())
                 .path(request.getRequestURI())
                 .build();
-        return ResponseEntity.status(status).body(apiError);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiError);
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiError> handleConflict(ConflictException ex, HttpServletRequest request) {
+        ApiError apiError = ApiError.builder()
+                .message(ex.getMessage())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .path(request.getRequestURI())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(apiError);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -89,7 +102,12 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleGeneric(Exception ex, HttpServletRequest request) {
+    public ResponseEntity<ApiError> handleGeneric(Exception ex, HttpServletRequest request,
+                                                  HttpServletResponse response) {
+        if (response.isCommitted()) {
+            log.debug("Response already committed, skipping error body: {}", ex.getMessage());
+            return null;
+        }
         log.error("Unexpected error", ex);
         ApiError apiError = ApiError.builder()
                 .message("An unexpected error occurred. Please try again later.")

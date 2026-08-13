@@ -2,6 +2,7 @@ package com.example.backend.service;
 
 import com.example.backend.entity.MfaRecoveryCodeEntity;
 import com.example.backend.entity.UserEntity;
+import com.example.backend.exception.ConflictException;
 import com.example.backend.repository.MfaRecoveryCodeRepository;
 import com.example.backend.repository.UserRepository;
 import com.warrenstrange.googleauth.GoogleAuthenticator;
@@ -53,7 +54,7 @@ public class MfaTotpService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         if (Boolean.TRUE.equals(user.getMfaEnabled())) {
-            throw new IllegalArgumentException("MFA is already enabled");
+            throw new ConflictException("MFA is already enabled");
         }
 
         GoogleAuthenticatorKey key = googleAuthenticator.createCredentials();
@@ -80,7 +81,7 @@ public class MfaTotpService {
             throw new IllegalArgumentException("MFA setup not started. Call /mfa/enable first.");
         }
         if (Boolean.TRUE.equals(user.getMfaEnabled())) {
-            throw new IllegalArgumentException("MFA is already enabled");
+            throw new ConflictException("MFA is already enabled");
         }
 
         boolean valid = googleAuthenticator.authorize(secret, code);

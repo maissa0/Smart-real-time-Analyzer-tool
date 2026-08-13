@@ -11,10 +11,11 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { interval } from 'rxjs';
-import { CanSession } from '../../../data/models/can.model';
+import { CanSession } from '../../../core/models/can.model';
 import { API_BASE_URL } from '../../../core/config/api.config';
+import { SessionStateService } from '../../../core/services/session-state.service';
 
 /**
  * Standalone session list panel extracted from SnifferComponent.
@@ -113,13 +114,13 @@ import { API_BASE_URL } from '../../../core/config/api.config';
             [class.active]="selectedId() === s.sessionId"
             (click)="select(s)">
             <div class="sl-item-header">
-              <span class="sl-name">{{ s.sourceFilename ?? s.sessionId }}</span>
+              <span class="sl-name">{{ s.sourceFilename || s.sessionId }}</span>
               @if (s.sourceFilename === 'live_simulation') {
                 <span class="sl-live-dot" title="Live"></span>
               }
             </div>
             <div class="sl-frames">
-              {{ (s.frameCount ?? 0).toLocaleString() }} frames
+              {{ s.frameCount > 0 ? s.frameCount.toLocaleString() + ' frames' : '—' }}
             </div>
             <div class="sl-date">
               {{ formatDate(s.createdAt) }}
@@ -147,8 +148,9 @@ export class SessionListComponent implements OnInit {
   readonly sessionSelected = output<CanSession>();
 
   // ── Private deps ──────────────────────────────────────────────────────────
-  private readonly http       = inject(HttpClient);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly http              = inject(HttpClient);
+  private readonly destroyRef        = inject(DestroyRef);
+  private readonly sessionState      = inject(SessionStateService);
 
   // ── State ─────────────────────────────────────────────────────────────────
   readonly sessions   = signal<CanSession[]>([]);
@@ -206,17 +208,11 @@ export class SessionListComponent implements OnInit {
       ? `${API_BASE_URL}/api/cars/${carId}/sessions`
       : `${API_BASE_URL}/api/can/sessions?page=${this.page}&size=${this.pageSize}`;
 
-    const token = localStorage.getItem('access_token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : new HttpHeaders();
-
     this.http
-      .get<any>(url, { headers })
+      .get<any>(url)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
-          // Handle both array response and paginated {content, hasMore} response
           let items: CanSession[];
           if (Array.isArray(res)) {
             items = res;
@@ -226,15 +222,7 @@ export class SessionListComponent implements OnInit {
             this.hasMore.set(res.hasMore ?? false);
           }
 
-          // Sort: live first, then by createdAt DESC
-          items.sort((a, b) => {
-            const aLive = a.sourceFilename === 'live_simulation' ? 1 : 0;
-            const bLive = b.sourceFilename === 'live_simulation' ? 1 : 0;
-            if (aLive !== bLive) return bLive - aLive;
-            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return dateB - dateA;
-          });
+          items = this.sessionState.sortByLiveThenDate(items);
 
           if (append) {
             this.sessions.update(existing => [...existing, ...items]);
@@ -243,10 +231,7 @@ export class SessionListComponent implements OnInit {
           }
           this.loading.set(false);
         },
-        error: (err) => {
-          console.error('[SessionListComponent] load error:', err);
-          this.loading.set(false);
-        },
+        error: () => { this.loading.set(false); },
       });
   }
 }

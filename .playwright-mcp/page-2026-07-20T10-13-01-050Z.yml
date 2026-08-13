@@ -1,0 +1,205 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - button "Toggle sidebar" [ref=e7] [cursor=pointer]:
+        - img [ref=e8]
+      - generic [ref=e9]: KPIT ANALYSER
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - img [ref=e13]
+          - searchbox "Search..." [ref=e15]
+        - generic [ref=e16]: Ctrl+K
+      - button "Layout" [ref=e17] [cursor=pointer]:
+        - img [ref=e18]
+      - button "Language" [ref=e21] [cursor=pointer]:
+        - img [ref=e22]
+      - button "Notifications" [ref=e24] [cursor=pointer]:
+        - img [ref=e25]
+      - button "A" [ref=e29] [cursor=pointer]:
+        - generic [ref=e31]: A
+  - navigation [ref=e32]:
+    - generic [ref=e33]:
+      - generic [ref=e34]: KPIT ANALYSER
+      - button "Close sidebar" [ref=e35] [cursor=pointer]: ✕
+    - generic [ref=e36]:
+      - link "Dashboard" [ref=e37] [cursor=pointer]:
+        - /url: /admin
+        - img [ref=e38]
+        - text: Dashboard
+      - link "CAN Workspace" [ref=e43] [cursor=pointer]:
+        - /url: /admin/workspace
+        - img [ref=e44]
+        - text: CAN Workspace
+      - link "ECU Catalogs" [ref=e46] [cursor=pointer]:
+        - /url: /admin/catalogs
+        - img [ref=e47]
+        - text: ECU Catalogs
+      - link "Diagnostics" [ref=e50] [cursor=pointer]:
+        - /url: /admin/diagnostics
+        - img [ref=e51]
+        - text: Diagnostics
+      - link "Fleet" [ref=e54] [cursor=pointer]:
+        - /url: /admin/fleet
+        - img [ref=e55]
+        - text: Fleet
+      - link "Users" [ref=e60] [cursor=pointer]:
+        - /url: /admin/users/list
+        - img [ref=e61]
+        - text: Users
+      - link "Session Compare" [ref=e66] [cursor=pointer]:
+        - /url: /admin/compare
+        - img [ref=e67]
+        - text: Session Compare
+      - link "Settings" [ref=e69] [cursor=pointer]:
+        - /url: /admin/settings
+        - img [ref=e70]
+        - text: Settings
+  - main [ref=e73]:
+    - generic [ref=e323]:
+      - generic [ref=e324]:
+        - button "← Sessions" [ref=e325] [cursor=pointer]
+        - generic [ref=e326]: /
+        - generic [ref=e327]: test_diagnostic_faults.log
+        - generic [ref=e328]: COMPLETE
+        - button "▶ Replay View" [ref=e330] [cursor=pointer]
+      - generic [ref=e331]:
+        - generic [ref=e332]:
+          - strong [ref=e333]: "84"
+          - text: frames
+        - generic [ref=e335]:
+          - text: Duration
+          - strong [ref=e336]: 23.30s
+        - generic [ref=e338]: 20 Jul 2026, 10:44
+      - generic [ref=e339]:
+        - button "Table" [ref=e340] [cursor=pointer]
+        - button "Charts" [ref=e341] [cursor=pointer]
+        - button "Integrity" [ref=e342] [cursor=pointer]
+        - button "Report" [ref=e343] [cursor=pointer]
+        - button "3D Twin" [ref=e344] [cursor=pointer]
+      - generic [ref=e345]:
+        - combobox [ref=e346] [cursor=pointer]:
+          - option "All Buses" [selected]
+          - option "Car_CAN"
+          - option "Chassis_CAN"
+          - option "Powertrain_CAN"
+        - combobox [ref=e347] [cursor=pointer]:
+          - option "All Msg IDs" [selected]
+          - option "0x102"
+          - option "0x200"
+          - option "0x203"
+          - option "0x2FC"
+        - button "⚠ Faults" [ref=e349] [cursor=pointer]
+        - button "● Anomalies" [ref=e350] [cursor=pointer]
+        - textbox "Ask AI to filter… e.g. EngineSpeed > 4000" [ref=e352]
+        - button "Ask" [ref=e353] [cursor=pointer]
+      - generic [ref=e356]:
+        - generic [ref=e1556]:
+          - generic [ref=e1557]:
+            - generic [ref=e1558]:
+              - generic [ref=e1559]: "84"
+              - generic [ref=e1560]: Total Frames
+            - generic [ref=e1561]:
+              - generic [ref=e1562]: "5"
+              - generic [ref=e1563]: Total Faults
+            - generic [ref=e1564]:
+              - generic [ref=e1565]: "3"
+              - generic [ref=e1566]: Duplicates
+            - generic [ref=e1567]:
+              - generic [ref=e1568]: "1"
+              - generic [ref=e1569]: Timing Gaps
+            - generic [ref=e1570]:
+              - generic [ref=e1571]: "1"
+              - generic [ref=e1572]: Range Violations
+            - generic [ref=e1574]: ⚠ 5 Issues Detected
+          - generic [ref=e1575]:
+            - button "All (5)" [ref=e1576] [cursor=pointer]
+            - button "⧉ Duplicate (3)" [ref=e1577] [cursor=pointer]
+            - button "⏱ Timing Gap (1)" [ref=e1578] [cursor=pointer]
+            - button "⚠ Range Violation (1)" [ref=e1579] [cursor=pointer]
+            - textbox "Search msg ID, name, description…" [ref=e1580]
+          - generic [ref=e1581]:
+            - generic [ref=e1582]:
+              - generic [ref=e1583]: ⧉
+              - generic [ref=e1584]: Duplicate
+              - generic [ref=e1585]: "0x200"
+              - generic [ref=e1586]: 2.100s
+              - generic "Chassis & Braking" [ref=e1587]
+              - generic "Identical Chassis & Braking frames were transmitted back-to-back with no change, which normally should not happen for a live signal." [ref=e1588]: Chassis & Braking — Duplicate frames
+              - generic "Check for a misbehaving Chassis & Braking ECU or bus echo, and review the ECU firmware/config." [ref=e1589]: "Check: Check for a misbehaving Chassis & Braking ECU or bus echo, and review the ECU firmware/config."
+              - button "✎" [ref=e1590] [cursor=pointer]
+            - generic [ref=e1591]:
+              - generic [ref=e1592]: ⧉
+              - generic [ref=e1593]: Duplicate
+              - generic [ref=e1594]: "0x102"
+              - generic [ref=e1595]: 3.300s
+              - generic "Powertrain" [ref=e1596]
+              - generic "Identical Powertrain frames were transmitted back-to-back with no change, which normally should not happen for a live signal." [ref=e1597]: Powertrain — Duplicate frames
+              - generic "Check for a misbehaving Powertrain ECU or bus echo, and review the ECU firmware/config." [ref=e1598]: "Check: Check for a misbehaving Powertrain ECU or bus echo, and review the ECU firmware/config."
+              - button "✎" [ref=e1599] [cursor=pointer]
+            - generic [ref=e1600]:
+              - generic [ref=e1601]: ⚠
+              - generic [ref=e1602]: Range Violation
+              - generic [ref=e1603]: "0x2FC"
+              - generic [ref=e1604]: 5.000s
+              - generic "Body & Comfort" [ref=e1605]
+              - generic "A signal in the Body & Comfort subsystem reported a value outside its defined valid range, so the ECU is publishing data the catalogue does not consider legal." [ref=e1606]: Body & Comfort — Out-of-range signal value
+              - generic "Inspect the Body & Comfort sensor(s) and their connectors, read stored DTCs, and verify calibration and supply voltage." [ref=e1607]: "Check: Inspect the Body & Comfort sensor(s) and their connectors, read stored DTCs, and verify calibration and supply voltage."
+              - button "✎" [active] [ref=e1608] [cursor=pointer]
+            - generic [ref=e1609]:
+              - generic [ref=e1610]: ⧉
+              - generic [ref=e1611]: Duplicate
+              - generic [ref=e1612]: "0x2FC"
+              - generic [ref=e1613]: 6.000s
+              - generic "Body & Comfort" [ref=e1614]
+              - generic "Identical Body & Comfort frames were transmitted back-to-back with no change, which normally should not happen for a live signal." [ref=e1615]: Body & Comfort — Duplicate frames
+              - generic "Check for a misbehaving Body & Comfort ECU or bus echo, and review the ECU firmware/config." [ref=e1616]: "Check: Check for a misbehaving Body & Comfort ECU or bus echo, and review the ECU firmware/config."
+              - button "✎" [ref=e1617] [cursor=pointer]
+            - generic [ref=e1618]:
+              - generic [ref=e1619]: ⏱
+              - generic [ref=e1620]: Timing Gap
+              - generic [ref=e1621]: "0x2FC"
+              - generic [ref=e1622]: 22.000s
+              - generic "Body & Comfort" [ref=e1623]
+              - generic "A Body & Comfort message arrived later than its defined cycle time allows, so the subsystem briefly stopped reporting on schedule." [ref=e1624]: Body & Comfort — Late / missed message
+              - generic "Confirm the Body & Comfort ECU is powered and transmitting, and check bus load and termination resistance." [ref=e1625]: "Check: Confirm the Body & Comfort ECU is powered and transmitting, and check bus load and termination resistance."
+              - button "✎" [ref=e1626] [cursor=pointer]
+        - dialog [ref=e1629]:
+          - generic [ref=e1630]:
+            - generic [ref=e1631]:
+              - generic [ref=e1632]: Edit Diagnostic
+              - generic [ref=e1633]: Body & Comfort
+              - generic [ref=e1634]: door_latche_status · SIGNAL_RANGE
+            - button "Close" [ref=e1635] [cursor=pointer]: ✕
+          - generic [ref=e1636]:
+            - generic [ref=e1637]:
+              - generic [ref=e1638]: Title
+              - textbox "Title" [ref=e1639]:
+                - /placeholder: Short plain-English fault title
+                - text: Body & Comfort — Out-of-range signal value
+            - generic [ref=e1640]:
+              - generic [ref=e1641]: What it means
+              - textbox "What it means" [ref=e1642]:
+                - /placeholder: Plain-English meaning for a car owner
+                - text: A signal in the Body & Comfort subsystem reported a value outside its defined valid range, so the ECU is publishing data the catalogue does not consider legal.
+            - generic [ref=e1643]:
+              - generic [ref=e1644]: Likely cause
+              - textbox "Likely cause" [ref=e1645]: A failing sensor, a wiring/connector fault, or an ECU producing corrupt data.
+            - generic [ref=e1646]:
+              - generic [ref=e1647]: What to check
+              - textbox "What to check" [ref=e1648]: Inspect the Body & Comfort sensor(s) and their connectors, read stored DTCs, and verify calibration and supply voltage.
+            - generic [ref=e1649]:
+              - generic [ref=e1650]:
+                - generic [ref=e1651]: Severity weight
+                - spinbutton "Severity weight" [ref=e1652]: "4"
+              - generic [ref=e1653]:
+                - checkbox "Enabled" [checked] [ref=e1654]
+                - text: Enabled
+            - generic [ref=e1655]:
+              - checkbox "Save as a new rule specific to door_latche_status (instead of editing the shared subsystem rule)" [ref=e1656]
+              - text: Save as a new rule specific to
+              - generic [ref=e1657]: door_latche_status
+              - text: (instead of editing the shared subsystem rule)
+            - generic [ref=e1658]:
+              - button "Cancel" [ref=e1659] [cursor=pointer]
+              - button "Save" [ref=e1660] [cursor=pointer]

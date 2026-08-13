@@ -19,22 +19,35 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Rate limits sensitive auth endpoints: login, forgot-password, verify-otp.
- * Limit: 5 attempts per minute per IP address.
+ * Rate limits sensitive auth endpoints (login, forgot-password, verify-otp, mfa/verify)
+ * at 5 attempts/minute/IP, and the LLM-backed NL-query endpoint at a separate, more
+ * generous 20 requests/minute/IP — bucketed independently per category so a user
+ * exercising one endpoint never exhausts the other's quota.
  */
 @Component
 @Slf4j
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final int CAPACITY = 5;
+    private static final int AUTH_CAPACITY = 5;
+    private static final int NL_QUERY_CAPACITY = 20;
     private static final Duration REFILL_DURATION = Duration.ofMinutes(1);
-    private static final String[] RATE_LIMITED_PATHS = {
+
+    private static final String[] AUTH_RATE_LIMITED_PATHS = {
             "/api/auth/login",
             "/api/auth/forgot-password",
-            "/api/auth/verify-otp"
+            "/api/auth/verify-otp",
+            "/api/auth/mfa/verify"
+    };
+    private static final String[] NL_QUERY_RATE_LIMITED_PATHS = {
+            "/api/nl-query"
     };
 
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final ClientIpResolver clientIpResolver;
+
+    public RateLimitFilter(ClientIpResolver clientIpResolver) {
+        this.clientIpResolver = clientIpResolver;
+    }
 
     @Override
     protected void doFilterInternal(
@@ -42,13 +55,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-        if (!isRateLimitedPath(request.getRequestURI())) {
+        RateLimitCategory category = categorize(request.getRequestURI());
+        if (category == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String clientIp = getClientIp(request);
-        Bucket bucket = buckets.computeIfAbsent(clientIp, k -> createBucket());
+        String clientIp = clientIpResolver.resolve(request);
+        String bucketKey = category.name() + "|" + clientIp;
+        Bucket bucket = buckets.computeIfAbsent(bucketKey, k -> createBucket(category));
 
         if (bucket.tryConsume(1)) {
             filterChain.doFilter(request, response);
@@ -59,25 +74,31 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
     }
 
-    private boolean isRateLimitedPath(String uri) {
-        for (String path : RATE_LIMITED_PATHS) {
-            if (uri != null && uri.startsWith(path)) {
-                return true;
+    private RateLimitCategory categorize(String uri) {
+        if (uri == null) {
+            return null;
+        }
+        for (String path : AUTH_RATE_LIMITED_PATHS) {
+            if (uri.startsWith(path)) {
+                return RateLimitCategory.AUTH;
             }
         }
-        return false;
+        for (String path : NL_QUERY_RATE_LIMITED_PATHS) {
+            if (uri.startsWith(path)) {
+                return RateLimitCategory.NL_QUERY;
+            }
+        }
+        return null;
     }
 
-    private Bucket createBucket() {
-        Bandwidth limit = Bandwidth.classic(CAPACITY, Refill.greedy(CAPACITY, REFILL_DURATION));
+    private Bucket createBucket(RateLimitCategory category) {
+        int capacity = category == RateLimitCategory.NL_QUERY ? NL_QUERY_CAPACITY : AUTH_CAPACITY;
+        Bandwidth limit = Bandwidth.classic(capacity, Refill.greedy(capacity, REFILL_DURATION));
         return Bucket.builder().addLimit(limit).build();
     }
 
-    private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+    private enum RateLimitCategory {
+        AUTH,
+        NL_QUERY
     }
 }

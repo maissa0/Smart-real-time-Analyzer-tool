@@ -27,12 +27,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -46,12 +48,22 @@ public class SecurityConfig {
     private final SecurityHardeningFilter securityHardeningFilter;
     private final UserDetailsService userDetailsService;
 
+    @Value("${app.cors.allowed-origins}")
+    private String corsAllowedOrigins;
+
     /**
      * Public paths — accessible without authentication.
      * Auth endpoints: login, register, password reset, MFA verification.
      * WebSocket endpoint: /ws-ecu-gateway (JWT is validated at STOMP CONNECT level
      *   by WebSocketConfig.configureClientInboundChannel — not at HTTP level).
      * API docs: Swagger UI (development only — restrict in production).
+     * /error: Spring Boot's BasicErrorController. Must be public so that when a filter
+     *   throws an unhandled exception, Tomcat's ERROR dispatch to /error is not blocked
+     *   by anyRequest().authenticated() — which would produce a 401 instead of the real
+     *   error body, masking the underlying cause entirely.
+     * CSV export (/frames/export.csv) is intentionally NOT here — it requires a valid JWT
+     *   like every other endpoint; JwtAuthenticationFilter accepts that JWT via a ?token=
+     *   query param for this one path since it's a direct browser download link.
      * All other paths require a valid JWT — see anyRequest().authenticated() below.
      */
     private static final String[] PUBLIC_PATHS = {
@@ -68,9 +80,9 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/ws-ecu-gateway/**",
             "/ws-ecu-gateway",
-            "/api/can/sessions/*/frames/export.csv",
             "/uploads/avatars/**",
-            "/actuator/health"
+            "/actuator/health",
+            "/error"
     };
 
     @Bean
@@ -98,13 +110,33 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Bypass Spring Security's filter chain entirely for WebSocket paths.
+     * WebSocketConfig.setAllowedOriginPatterns("*") handles origin checks at the
+     * protocol level; JWT is validated at STOMP CONNECT level by the channel interceptor.
+     * Bypassing here prevents the Security CorsFilter from interfering with Tomcat's
+     * HTTP→WebSocket upgrade handshake.
+     */
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return web -> web.ignoring()
+                .requestMatchers(new AntPathRequestMatcher("/ws-ecu-gateway/**"));
+    }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:4200"));
+        config.setAllowedOrigins(Arrays.asList(corsAllowedOrigins.split(",")));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+
+        // THE FIX: Instead of hardcoding, mirror the requested headers back to the browser
+        config.setAllowedHeaders(Arrays.asList("*"));
+
+        // Expose these so the frontend can read them
+        config.setExposedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+
         config.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;

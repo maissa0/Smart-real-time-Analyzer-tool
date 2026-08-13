@@ -9,7 +9,9 @@ import {
   QueryList,
   SimpleChanges,
   ViewChildren,
+  inject,
 } from '@angular/core';
+import { ChartUpdateService } from '../../../core/services/chart-update.service';
 
 import {
   Chart,
@@ -38,12 +40,25 @@ export interface ChartDataset {
   points: { x: number; y: number; label: string }[];
 }
 
+/**
+ * A finding marker drawn over every mini chart (plan §3.2): a dashed vertical
+ * line at `time`, plus a shaded band up to `endTime` for violation windows.
+ * Times are in the chart's x-domain (seconds relative to session start).
+ */
+export interface FindingMarker {
+  time: number;
+  endTime?: number;
+  color: string;
+  label: string;
+}
+
 interface MiniChart {
   signalName: string;
   color: string;
   chart: any;
   allLabels: Record<number, string>;
 }
+
 
 @Component({
   selector: 'app-signal-chart',
@@ -86,22 +101,77 @@ export class SignalChartComponent implements AfterViewInit, OnChanges, OnDestroy
   @Input() miniChartHeight = 60; // height of each mini chart except last
   @Input() miniChartHeightBottom = 80; // height of bottom chart (more visible x axis)
   @Input() playheadTime = 0;
+  @Input() maxTime = 0;
+  @Input() findingMarkers: FindingMarker[] = [];
+  /** When set, all mini charts clamp their x axis to this window (click-to-zoom). */
+  @Input() zoomRange: { min: number; max: number } | null = null;
 
+  private readonly chartUpdate = inject(ChartUpdateService);
   private miniCharts: MiniChart[] = [];
+  private afterViewInit = false;
 
   ngAfterViewInit(): void {
+    this.afterViewInit = true;
     this.initAllCharts();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (!this.miniCharts.length) return;
+    if (!this.afterViewInit) return;
     if (changes['datasets']) {
       this.updateAllCharts();
     }
     if (changes['playheadTime']) {
-      this.miniCharts.forEach((mc) => mc.chart?.update('none'));
+      this.miniCharts.forEach((mc) => {
+        if (!mc.chart) return;
+        const ds = this.datasets.find(d => d.signalName === mc.signalName);
+        if (ds) {
+          mc.chart.data.datasets[0].data = this.playheadTime > 0
+            ? ds.points.filter(p => p.x <= this.playheadTime).map(p => ({ ...p }))
+            : ds.points.map(p => ({ ...p }));
+        }
+        this.chartUpdate.schedule(mc.chart, 'none');
+      });
+    }
+    if (changes['maxTime'] && this.maxTime > 0 && !this.zoomRange) {
+      this.miniCharts.forEach((mc) => {
+        if (!mc.chart) return;
+        (mc.chart.options.scales as any)['x'].max = this.maxTime;
+        this.chartUpdate.schedule(mc.chart, 'none');
+      });
+    }
+    if (changes['findingMarkers']) {
+      this.miniCharts.forEach((mc) => {
+        if (mc.chart) this.chartUpdate.schedule(mc.chart, 'none');
+      });
+    }
+    if (changes['zoomRange']) {
+      this.miniCharts.forEach((mc) => {
+        if (!mc.chart) return;
+        const xScale = (mc.chart.options.scales as any)['x'];
+        if (this.zoomRange) {
+          xScale.min = this.zoomRange.min;
+          xScale.max = this.zoomRange.max;
+        } else {
+          xScale.min = 0;
+          xScale.max = this.maxTime > 0 ? this.maxTime : undefined;
+        }
+        this.chartUpdate.schedule(mc.chart, 'none');
+      });
     }
   }
+
+  /**
+   * Chart.js inline plugin for finding markers — intentionally a no-op:
+   * findings are surfaced through the findings list and the zoom-to-finding
+   * jump (which frames the violation window and filters to the involved
+   * signals), so the plot area stays pure data. The plugin registration and
+   * the FindingMarker plumbing stay so a marker style can be reintroduced
+   * without touching the callers.
+   */
+  private readonly markerPlugin = {
+    id: 'findingMarkers',
+    afterDatasetsDraw: (_chart: any) => {},
+  };
 
   ngOnDestroy(): void {
     this.miniCharts.forEach((mc) => mc.chart?.destroy());
@@ -117,7 +187,16 @@ export class SignalChartComponent implements AfterViewInit, OnChanges, OnDestroy
 
   updatePlayhead(time: number): void {
     this.playheadTime = time;
-    this.miniCharts.forEach((mc) => mc.chart?.update('none'));
+    this.miniCharts.forEach((mc) => {
+      if (!mc.chart) return;
+      const ds = this.datasets.find(d => d.signalName === mc.signalName);
+      if (ds) {
+        mc.chart.data.datasets[0].data = time > 0
+          ? ds.points.filter(p => p.x <= time).map(p => ({ ...p }))
+          : ds.points.map(p => ({ ...p }));
+      }
+      this.chartUpdate.schedule(mc.chart, 'none');
+    });
   }
 
   appendPoint(signalName: string, point: { x: number; y: number; label: string }): void {
@@ -135,7 +214,7 @@ export class SignalChartComponent implements AfterViewInit, OnChanges, OnDestroy
   }
 
   flushUpdate(): void {
-    this.miniCharts.forEach((mc) => mc.chart?.update('none'));
+    this.miniCharts.forEach((mc) => { if (mc.chart) this.chartUpdate.schedule(mc.chart, 'none'); });
   }
 
   extendToTime(signalName: string, currentTime: number): void {
@@ -148,7 +227,7 @@ export class SignalChartComponent implements AfterViewInit, OnChanges, OnDestroy
     const lastReal = data[data.length - 1] as any;
     if (!lastReal) return;
     data.push({ x: currentTime, y: lastReal.y, label: lastReal.label, _phantom: true });
-    mc.chart.update('none');
+    this.chartUpdate.schedule(mc.chart, 'none');
   }
 
   clear(): void {
@@ -159,7 +238,7 @@ export class SignalChartComponent implements AfterViewInit, OnChanges, OnDestroy
       mc.allLabels = {};
       if (mc.chart) {
         mc.chart.data.datasets[0].data = [];
-        mc.chart.update();
+        this.chartUpdate.schedule(mc.chart, '');
       }
     });
   }
@@ -195,6 +274,13 @@ export class SignalChartComponent implements AfterViewInit, OnChanges, OnDestroy
     const canvases = this.canvasRefs.toArray();
     this.miniCharts = [];
 
+    // Compute shared X-axis max across all datasets so Chart.js doesn't auto-scale
+    // beyond actual data (e.g., rounding 3.04s up to 8s via nice-tick algorithm).
+    const maxX = this.datasets.reduce((m, ds) => {
+      for (const p of ds.points) { if (p.x > m) m = p.x; }
+      return m;
+    }, 0);
+
     this.datasets.forEach((ds, i) => {
       const canvas = canvases[i];
       if (!canvas) return;
@@ -206,12 +292,14 @@ export class SignalChartComponent implements AfterViewInit, OnChanges, OnDestroy
 
       const chart = new Chart(ctx, {
         type: 'line',
-        
+        plugins: [this.markerPlugin],
         data: {
           datasets: [
             {
               label: ds.signalName,
-              data: ds.points.map((p) => ({ ...p })),
+              data: (this.playheadTime > 0
+                ? ds.points.filter(p => p.x <= this.playheadTime)
+                : ds.points).map((p) => ({ ...p })),
               borderColor: ds.color.length === 7 ? ds.color + 'CC' : ds.color,
               backgroundColor: ds.color + '20',
               borderWidth: 2,
@@ -252,7 +340,10 @@ export class SignalChartComponent implements AfterViewInit, OnChanges, OnDestroy
           scales: {
             x: {
               type: 'linear',
-              min: 0,
+              min: this.zoomRange ? this.zoomRange.min : 0,
+              max: this.zoomRange
+                ? this.zoomRange.max
+                : (this.maxTime > 0 ? this.maxTime : (maxX > 0 ? maxX : undefined)),
               ticks: {
                 color: isLast ? '#9ca3af' : '#374151',
                 font: { size: isLast ? 10 : 8 },
@@ -308,12 +399,23 @@ export class SignalChartComponent implements AfterViewInit, OnChanges, OnDestroy
       return;
     }
 
+    const maxX = this.datasets.reduce((m, ds) => {
+      for (const p of ds.points) { if (p.x > m) m = p.x; }
+      return m;
+    }, 0);
+
     this.datasets.forEach((ds, i) => {
       const mc = this.miniCharts[i];
       if (!mc?.chart) return;
       mc.allLabels = this.buildAllLabels(ds);
-      mc.chart.data.datasets[0].data = ds.points.map((p) => ({ ...p }));
-      mc.chart.update();
+      mc.chart.data.datasets[0].data = (this.playheadTime > 0
+        ? ds.points.filter(p => p.x <= this.playheadTime)
+        : ds.points).map((p) => ({ ...p }));
+      if (!this.zoomRange) {
+        const axisMax = this.maxTime > 0 ? this.maxTime : maxX;
+        if (axisMax > 0) (mc.chart.options.scales as any)['x'].max = axisMax;
+      }
+      this.chartUpdate.schedule(mc.chart, '');
     });
   }
 }

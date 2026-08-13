@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
-import type { User, Session } from '../../data/models';
+import type { User, Session } from '../models';
 
 export interface UserProfileUpdateRequest {
   fullName?: string;

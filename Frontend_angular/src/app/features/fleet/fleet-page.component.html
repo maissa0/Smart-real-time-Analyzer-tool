@@ -1,0 +1,980 @@
+<div class="fleet-root">
+
+  <!-- ══════════════ Page header row: title · mode tabs · add ══════════════ -->
+  <div class="fleet-topbar">
+    <div class="fleet-topbar-left">
+      <div>
+        <h1 class="fleet-topbar-title">Fleet Management</h1>
+        <p class="fleet-topbar-sub">Manage vehicles and view their CAN analysis history</p>
+      </div>
+    </div>
+    <div class="fleet-tabs" role="tablist" aria-label="Fleet mode">
+      <button class="fleet-tab" role="tab" [attr.aria-selected]="fleetMode() === 'registry'"
+        [class.fleet-tab--on]="fleetMode() === 'registry'" (click)="fleetMode.set('registry')">
+        Vehicle Registry
+      </button>
+      <button class="fleet-tab" role="tab" [attr.aria-selected]="fleetMode() === 'ai'"
+        [class.fleet-tab--on]="fleetMode() === 'ai'" (click)="fleetMode.set('ai')">
+        AI Query Mode
+      </button>
+    </div>
+    <button class="fleet-add-btn" (click)="openAddModal()">+ Add Vehicle</button>
+  </div>
+
+  <!-- ══════════════ AI mode panel (unchanged) ══════════════ -->
+  @if (fleetMode() === 'ai') {
+    <div class="fleet-ai-panel">
+      <div style="display:flex; gap:0.75rem; align-items:center;">
+        <div style="flex:1; position:relative;">
+          <input [(ngModel)]="nlQuestion" class="fleet-nl-input"
+            placeholder="Ask anything — e.g. &quot;sessions uploaded this week&quot; or &quot;show RPM spikes above 5000&quot;"
+            (keydown.enter)="runNlQuery()"/>
+        </div>
+        <button (click)="runNlQuery()" [disabled]="nlLoading()" class="fleet-nl-ask">
+          {{ nlLoading() ? 'Thinking...' : 'Ask AI' }}
+        </button>
+        @if (nlResult()) {
+          <button (click)="clearNlResult()" class="fleet-nl-clear" aria-label="Clear result">✕</button>
+        }
+      </div>
+
+      @if (nlError()) {
+        <p style="color:var(--kpit-error); font-size:0.75rem; margin:0.5rem 0 0;">{{ nlError() }}</p>
+      }
+
+      @if (nlResult()) {
+        <div style="margin-top:1rem; background:var(--kpit-card); border:1px solid var(--kpit-hairline);
+          border-radius:8px; overflow:hidden;">
+          <div style="padding:0.75rem 1rem; background:var(--kpit-raised); border-bottom:1px solid var(--kpit-hairline);
+            display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+            <div>
+              <span style="font-size:0.65rem; font-weight:700; letter-spacing:0.14em; color:var(--kpit-dim); text-transform:uppercase;">
+                {{ nlResult()!.queryType === 'flux' ? 'InfluxDB Flux' : 'MySQL' }}
+              </span>
+              <span style="margin-left:0.75rem; font-size:0.75rem; color:var(--kpit-muted);">{{ nlResult()!.explanation }}</span>
+            </div>
+            <span style="font-size:0.68rem; color:var(--kpit-dim); font-family:var(--kpit-font-mono);">
+              {{ nlResult()!.rowCount }} rows &bull; {{ nlResult()!.executionMs }}ms
+            </span>
+          </div>
+          <div style="padding:0.6rem 1rem; background:var(--kpit-card); border-bottom:1px solid var(--kpit-hairline);">
+            <code style="font-size:0.68rem; color:var(--kpit-accent); word-break:break-all; white-space:pre-wrap; font-family:var(--kpit-font-mono);">{{ nlResult()!.generatedQuery }}</code>
+          </div>
+          @if (nlResult()!.results.length === 0) {
+            <p style="padding:1rem; color:var(--kpit-dim); font-size:0.78rem; text-align:center;">No results found.</p>
+
+          } @else if (nlResultType() === 'sessions') {
+            @for (group of nlSessionGroups(); track group.status) {
+              <div style="border-bottom:1px solid var(--kpit-hairline);">
+                <div style="display:flex; align-items:center; justify-content:space-between;
+                  padding:8px 14px; cursor:pointer; background:var(--kpit-raised);"
+                  (click)="toggleGroup('s:' + group.status)">
+                  <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <span [style.transform]="!collapsedGroups().has('s:' + group.status) ? 'rotate(90deg)' : 'rotate(0)'"
+                      style="font-size:0.6rem; display:inline-block; transition:transform 0.15s; color:var(--kpit-dim);">▶</span>
+                    <span [style.color]="group.status === 'COMPLETE' ? 'var(--kpit-success)' : group.status === 'ERROR' ? 'var(--kpit-error)' : 'var(--kpit-warning)'"
+                      style="font-size:0.72rem; font-weight:700;">{{ group.status }}</span>
+                    <span style="font-size:0.68rem; color:var(--kpit-dim);">{{ group.rows.length }} session{{ group.rows.length !== 1 ? 's' : '' }}</span>
+                  </div>
+                </div>
+                @if (!collapsedGroups().has('s:' + group.status)) {
+                  <div style="overflow-x:auto;">
+                  <table style="width:100%; border-collapse:collapse; font-size:0.75rem;">
+                    <thead>
+                      <tr style="border-bottom:1px solid var(--kpit-hairline);">
+                        <th style="padding:6px 10px 6px 24px; text-align:left; color:var(--kpit-dim); font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em;">Session ID</th>
+                        <th style="padding:6px 10px; text-align:left; color:var(--kpit-dim); font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em;">File</th>
+                        <th style="padding:6px 10px; text-align:left; color:var(--kpit-dim); font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em;">Frames</th>
+                        <th style="padding:6px 10px; text-align:left; color:var(--kpit-dim); font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em;">Date</th>
+                        <th style="padding:6px 10px;"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (s of group.rows; track s['session_id']) {
+                        <tr style="border-bottom:1px solid var(--kpit-hairline);">
+                          <td style="padding:8px 10px 8px 24px; font-family:var(--kpit-font-mono); font-size:0.68rem; color:var(--kpit-muted);">
+                            {{ (s['session_id'] ?? '').toString().slice(0,8) }}...
+                          </td>
+                          <td style="padding:8px 10px; color:var(--kpit-body); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ s['source_filename'] || '—' }}</td>
+                          <td style="padding:8px 10px; color:var(--kpit-body); font-family:var(--kpit-font-mono);">{{ s['frame_count'] }}</td>
+                          <td style="padding:8px 10px; color:var(--kpit-dim); font-family:var(--kpit-font-mono);">{{ (s['created_at'] ?? '').toString().slice(0,10) || '—' }}</td>
+                          <td style="padding:8px 10px; text-align:right;">
+                            <button class="fleet-sess-action"
+                              (click)="analyseSession('' + (s['session_id'] ?? ''))">Analyse →</button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                  </div>
+                }
+              </div>
+            }
+
+          } @else if (nlResultType() === 'vehicles') {
+            @for (group of nlVehicleGroups(); track group.make) {
+              <div style="border-bottom:1px solid var(--kpit-hairline);">
+                <div style="display:flex; align-items:center; gap:0.75rem;
+                  padding:8px 14px; cursor:pointer; background:var(--kpit-raised);"
+                  (click)="toggleGroup('v:' + group.make)">
+                  <span [style.transform]="!collapsedGroups().has('v:' + group.make) ? 'rotate(90deg)' : 'rotate(0)'"
+                    style="font-size:0.6rem; display:inline-block; transition:transform 0.15s; color:var(--kpit-dim);">▶</span>
+                  <span style="font-size:0.72rem; font-weight:700; color:var(--kpit-body);">{{ group.make }}</span>
+                  <span style="font-size:0.68rem; color:var(--kpit-dim);">{{ group.rows.length }} vehicle{{ group.rows.length !== 1 ? 's' : '' }}</span>
+                </div>
+                @if (!collapsedGroups().has('v:' + group.make)) {
+                  @for (v of group.rows; track v['id']) {
+                    <div style="display:flex; align-items:center; justify-content:space-between;
+                      padding:10px 14px 10px 36px; border-top:1px solid var(--kpit-hairline); gap:1rem; flex-wrap:wrap;">
+                      <div>
+                        <p style="color:var(--kpit-body); font-weight:600; margin:0; font-size:0.8rem;">{{ v['model'] }} {{ v['year'] }}</p>
+                        <p style="color:var(--kpit-dim); font-size:0.65rem; margin:0; font-family:var(--kpit-font-mono);">{{ v['car_uid'] || v['id'] }}</p>
+                      </div>
+                      <div style="display:flex; align-items:center; gap:0.5rem;">
+                        @if (v['is_virtual']) {
+                          <span class="fleet-badge fleet-badge--virt">Virtual</span>
+                        } @else {
+                          <span class="fleet-badge fleet-badge--phys">Physical</span>
+                        }
+                        @if (v['is_active']) {
+                          <span class="fleet-badge fleet-badge--active">● Active</span>
+                        } @else {
+                          <span class="fleet-badge fleet-badge--inactive">○ Inactive</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+            }
+
+          } @else if (nlResultType() === 'signals') {
+            <div>
+              @for (group of nlFrameGroups(); track group.msgId) {
+                <div style="border-bottom:1px solid var(--kpit-hairline);">
+                  <div style="display:flex; align-items:center; justify-content:space-between;
+                    padding:9px 14px; cursor:pointer;"
+                    (click)="toggleFrame(group.msgId)">
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                      <span [style.transform]="expandedFrames().has(group.msgId) ? 'rotate(90deg)' : 'rotate(0)'"
+                        [style.color]="expandedFrames().has(group.msgId) ? 'var(--kpit-accent)' : 'var(--kpit-dim)'"
+                        style="font-size:0.6rem; display:inline-block; transition:transform 0.15s;">▶</span>
+                      @if (group.sessionPrefix) {
+                        <span style="font-size:0.62rem; color:var(--kpit-dim); font-family:var(--kpit-font-mono);">{{ group.sessionPrefix }}...</span>
+                      }
+                      <span style="font-family:var(--kpit-font-mono); font-size:0.75rem; color:var(--kpit-accent); font-weight:600;">Frame 0x{{ group.msgId }}</span>
+                      <span style="font-size:0.68rem; color:var(--kpit-dim);">
+                        {{ group.rows.length }} signal{{ group.rows.length !== 1 ? 's' : '' }}
+                      </span>
+                    </div>
+                    @if (group.rows[0]?.['label'] === 'INJECTED_ERROR') {
+                      <span style="background:rgba(255,107,107,0.15); color:var(--kpit-error);
+                        border:1px solid rgba(255,107,107,0.3); border-radius:20px;
+                        padding:2px 10px; font-size:0.65rem; font-weight:700; white-space:nowrap;">INJECTED ERROR</span>
+                    }
+                  </div>
+                  @if (expandedFrames().has(group.msgId)) {
+                    <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.72rem;
+                      background:var(--kpit-bg); border-top:1px solid var(--kpit-hairline);">
+                      <thead>
+                        <tr style="border-bottom:1px solid var(--kpit-hairline);">
+                          <th style="padding:5px 24px; text-align:left; color:var(--kpit-dim); font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em;">Time</th>
+                          <th style="padding:5px 12px; text-align:left; color:var(--kpit-dim); font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em;">Signal</th>
+                          <th style="padding:5px 12px; text-align:left; color:var(--kpit-dim); font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em;">Value</th>
+                          <th style="padding:5px 12px; text-align:left; color:var(--kpit-dim); font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em;">Channel</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (row of group.rows; track $index) {
+                          <tr style="border-bottom:1px solid var(--kpit-hairline);">
+                            <td style="padding:5px 24px; font-family:var(--kpit-font-mono); font-size:0.65rem; color:var(--kpit-dim);">
+                              {{ (row['time'] ?? '').toString().replace('T', ' ').slice(0,19) || '—' }}
+                            </td>
+                            <td style="padding:5px 12px; color:var(--kpit-body);">{{ row['signal_name'] || '—' }}</td>
+                            <td style="padding:5px 12px; color:var(--kpit-accent); font-family:var(--kpit-font-mono); font-weight:600;">{{ row['value'] }}</td>
+                            <td style="padding:5px 12px; color:var(--kpit-dim); font-size:0.68rem;">{{ row['channel_name'] || '—' }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+          } @else {
+            <div style="overflow-x:auto;">
+              <table style="width:100%; border-collapse:collapse; font-size:0.72rem;">
+                <thead>
+                  <tr style="background:var(--kpit-raised); border-bottom:1px solid var(--kpit-hairline);">
+                    @for (col of nlColumns(); track col) {
+                      <th style="padding:8px 12px; text-align:left; color:var(--kpit-dim); font-size:0.62rem;
+                        font-weight:700; letter-spacing:0.08em; text-transform:uppercase; white-space:nowrap;">
+                        {{ col }}
+                      </th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of nlResult()!.results; track $index) {
+                    <tr style="border-bottom:1px solid var(--kpit-hairline);">
+                      @for (col of nlColumns(); track col) {
+                        <td style="padding:8px 12px; color:var(--kpit-body); white-space:nowrap; max-width:220px;
+                          overflow:hidden; text-overflow:ellipsis;">
+                          {{ row[col] ?? '—' }}
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ══════════════ Registry: single merged page — list + detail ══════════════ -->
+  @if (fleetMode() === 'registry') {
+    <div class="fl-split">
+
+      <!-- Left column: vehicle list -->
+      <aside class="fl-list" aria-label="Vehicles">
+        <div class="fleet-list-search">
+          <input
+            [value]="searchQuery()"
+            (input)="searchQuery.set($any($event.target).value)"
+            placeholder="Search vehicles…"
+            class="fleet-list-input"
+          />
+        </div>
+
+        <div class="fleet-list-stats">
+          <div class="fleet-list-stat">
+            <span class="fleet-list-stat-n">{{ cars().length }}</span>
+            <span class="fleet-list-stat-l">Total</span>
+          </div>
+          <div class="fleet-list-stat">
+            <span class="fleet-list-stat-n">{{ physicalCount() }}</span>
+            <span class="fleet-list-stat-l">Physical</span>
+          </div>
+          <div class="fleet-list-stat">
+            <span class="fleet-list-stat-n">{{ virtualCount() }}</span>
+            <span class="fleet-list-stat-l">Virtual</span>
+          </div>
+        </div>
+
+        <div class="fleet-list-items">
+          @if (loading()) {
+            <p class="fleet-list-empty">Loading vehicles...</p>
+          } @else if (filteredCars().length === 0) {
+            <p class="fleet-list-empty">{{ searchQuery() ? 'No vehicles match.' : 'No vehicles yet.' }}</p>
+          }
+          @for (car of filteredCars(); track car.carUid) {
+            <button class="fl-item"
+              [class.fl-item--on]="selectedCar()?.carUid === car.carUid"
+              [attr.aria-pressed]="selectedCar()?.carUid === car.carUid"
+              (click)="selectCar(car)">
+              <span class="fleet-li-dot" [class.fleet-li-dot--off]="!car.isActive"></span>
+              <span class="fleet-li-info">
+                <span class="fleet-li-name">{{ car.make }} {{ car.model }}</span>
+                <span class="fleet-li-meta">
+                  <span class="fleet-li-badge" [class.fleet-li-badge--virt]="car.isVirtual" [class.fleet-li-badge--phys]="!car.isVirtual">
+                    {{ car.isVirtual ? 'Virtual' : 'Physical' }}
+                  </span>
+                  <span class="fleet-li-year">{{ car.year }}{{ car.color ? ' · ' + car.color : '' }}</span>
+                </span>
+              </span>
+              <span class="fleet-li-open">→</span>
+            </button>
+          }
+        </div>
+      </aside>
+
+      <!-- Right column: vehicle detail -->
+      <section class="fl-detail">
+        @if (loading() && !selectedCar()) {
+          <div class="fl-detail-inner">
+            <div class="fl-skeleton fl-skeleton--card"></div>
+            <div class="fl-skeleton fl-skeleton--bar"></div>
+            <div class="fl-skeleton fl-skeleton--block"></div>
+          </div>
+        } @else if (!selectedCar()) {
+          <div class="fl-detail-inner">
+            <div class="vd-empty-state">
+              <p>No vehicles in the fleet yet.</p>
+              <p class="vd-empty-hint">Use "+ Add Vehicle" to register the first one.</p>
+            </div>
+          </div>
+        } @else {
+          <div class="fl-detail-inner">
+
+            <!-- Vehicle header card (replaces the old detail-page sidebar) -->
+            <section class="fl-head-card">
+              <div class="fl-head-main">
+                <div class="fl-head-titlerow">
+                  <h2 class="fl-head-title">{{ selectedCar()!.make }} {{ selectedCar()!.model }} {{ selectedCar()!.year }}</h2>
+                  <span class="vd-badge" [class.vd-badge--virt]="selectedCar()!.isVirtual">
+                    {{ selectedCar()!.isVirtual ? 'VIRTUAL' : 'PHYSICAL' }}
+                  </span>
+                  <span class="vd-badge" [class.vd-badge--on]="selectedCar()!.isActive" [class.vd-badge--off]="!selectedCar()!.isActive">
+                    {{ selectedCar()!.isActive ? '● ACTIVE' : '○ INACTIVE' }}
+                  </span>
+                </div>
+
+                <dl class="fl-specs">
+                  <div class="fl-spec">
+                    <dt>VIN</dt>
+                    <dd class="vd-mono">{{ selectedCar()!.vin || '—' }}</dd>
+                  </div>
+                  <div class="fl-spec">
+                    <dt>Year</dt>
+                    <dd class="vd-mono">{{ selectedCar()!.year }}</dd>
+                  </div>
+                  <div class="fl-spec">
+                    <dt>Colour</dt>
+                    <dd>{{ selectedCar()!.color || '—' }}</dd>
+                  </div>
+                  <div class="fl-spec">
+                    <dt>Buses</dt>
+                    <dd class="vd-mono">{{ carCatalogs().length }}</dd>
+                  </div>
+                </dl>
+
+                <p class="fl-inventory">
+                  {{ carCatalogs().length }} catalog{{ carCatalogs().length === 1 ? '' : 's' }} ·
+                  {{ totalSignals() }} signal{{ totalSignals() === 1 ? '' : 's' }} ·
+                  {{ carRequirements().length }} requirement set{{ carRequirements().length === 1 ? '' : 's' }}
+                </p>
+              </div>
+
+              <div class="fl-head-actions">
+                <button class="vd-cta" (click)="toggleUpload()">Upload log &amp; analyse</button>
+                <button class="fl-cta-outline" (click)="toggleSimulator()">Run simulator</button>
+                <div class="fl-head-links">
+                  <button class="vd-rail-link" (click)="openEditModal(selectedCar()!)">Edit vehicle →</button>
+                  <button class="vd-rail-link vd-rail-link--danger" (click)="deleteCar(selectedCar()!)">Delete</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Tab bar (unchanged in function) -->
+            <nav class="vd-tabs" role="tablist" aria-label="Vehicle sections">
+              <button class="vd-tab" role="tab" [attr.aria-selected]="activeTab() === 'overview'"
+                [class.vd-tab--on]="activeTab() === 'overview'" (click)="activeTab.set('overview')">
+                Overview
+              </button>
+              <button class="vd-tab" role="tab" [attr.aria-selected]="activeTab() === 'sessions'"
+                [class.vd-tab--on]="activeTab() === 'sessions'" (click)="activeTab.set('sessions')">
+                Sessions <span class="vd-tab-count">{{ sessionsNewestFirst().length }}</span>
+              </button>
+              <button class="vd-tab" role="tab" [attr.aria-selected]="activeTab() === 'catalogs'"
+                [class.vd-tab--on]="activeTab() === 'catalogs'" (click)="activeTab.set('catalogs')">
+                Catalogs <span class="vd-tab-count">{{ carCatalogs().length }}</span>
+              </button>
+              <button class="vd-tab" role="tab" [attr.aria-selected]="activeTab() === 'requirements'"
+                [class.vd-tab--on]="activeTab() === 'requirements'" (click)="activeTab.set('requirements')">
+                Requirements <span class="vd-tab-count">{{ carRequirements().length }}</span>
+              </button>
+            </nav>
+
+            <div class="vd-content">
+
+              <!-- ── Overview ─────────────────────────────────────────── -->
+              @if (activeTab() === 'overview') {
+
+                <section class="vd-fault-panel" [class.vd-fault-panel--over]="overTarget()">
+                  <div class="vd-fault-left">
+                    <span class="vd-sec-label">Fault rate</span>
+                    <div class="vd-fault-line">
+                      <span class="vd-fault-num" [class.vd-fault-num--over]="overTarget()">
+                        {{ formatRate(selectedCar()!.faultRate) }}
+                      </span>
+                      <span class="vd-fault-unit">faults / 1,000 frames</span>
+                    </div>
+                    <p class="vd-fault-verdict"
+                       [class.vd-fault-verdict--over]="overTarget()"
+                       [class.vd-fault-verdict--ok]="!overTarget() && selectedCar()!.faultRate != null">
+                      @if (selectedCar()!.faultRate == null) {
+                        No analysed sessions yet — upload a log or run the simulator.
+                      } @else if (overTarget()) {
+                        Above the {{ faultRateTarget.toFixed(1) }} target.
+                      } @else {
+                        Within the {{ faultRateTarget.toFixed(1) }} target.
+                      }
+                    </p>
+                    @if (dominantFault(); as df) {
+                      <p class="vd-fault-dominant">
+                        The dominant failure is <span class="vd-mono">{{ df.type }}</span>
+                        ({{ df.count }} occurrence{{ df.count === 1 ? '' : 's' }} in recent sessions)@if (df.rule) {, mapping to rule <span class="vd-mono">{{ df.rule }}</span>}.
+                      </p>
+                    } @else {
+                      <p class="vd-fault-dominant">No faults recorded across the scanned sessions.</p>
+                    }
+                  </div>
+
+                  <div class="vd-trend" role="img"
+                       [attr.aria-label]="'Fault-rate trend over the last ' + faultTrend().bars.length + ' sessions'">
+                    <div class="vd-trend-plot">
+                      <div class="vd-trend-target" [style.bottom.%]="faultTrend().targetPct"></div>
+                      @for (bar of faultTrend().bars; track bar.sessionId) {
+                        <div class="vd-trend-slot">
+                          <div class="vd-trend-bar"
+                            [class.vd-trend-bar--over]="bar.rate != null && bar.rate > faultRateTarget"
+                            [style.height.%]="bar.pct"
+                            [title]="bar.rate != null ? formatRate(bar.rate) + ' faults / 1k frames' : 'not analysed'"></div>
+                        </div>
+                      }
+                    </div>
+                    <div class="vd-trend-labels">
+                      @for (bar of faultTrend().bars; track bar.sessionId) {
+                        <span class="vd-mono">{{ bar.label }}</span>
+                      }
+                    </div>
+                  </div>
+                </section>
+
+                <section class="vd-cards">
+                  <div class="vd-card">
+                    <span class="vd-sec-label">Captured</span>
+                    <div class="vd-card-value vd-mono">{{ formatNum(selectedCar()!.totalFrames) }}</div>
+                    <div class="vd-card-sub">
+                      frames across {{ formatNum(selectedCar()!.sessionCount) }} session{{ selectedCar()!.sessionCount === 1 ? '' : 's' }}
+                    </div>
+                  </div>
+                  <div class="vd-card">
+                    <span class="vd-sec-label">Last analysed</span>
+                    <div class="vd-card-value vd-mono">
+                      {{ selectedCar()!.lastSessionAt ? (selectedCar()!.lastSessionAt | slice:0:10) : '—' }}
+                    </div>
+                    <div class="vd-card-sub">
+                      {{ selectedCar()!.lastSessionAt ? ('at ' + (selectedCar()!.lastSessionAt | slice:11:16)) : 'no sessions yet' }}
+                    </div>
+                  </div>
+                  <div class="vd-card">
+                    <span class="vd-sec-label">Ready to test</span>
+                    <div class="vd-ready-row">
+                      <span class="vd-dot" [class.vd-dot--off]="carCatalogs().length === 0"></span>
+                      <span class="vd-mono">{{ carCatalogs().length }}</span>&nbsp;catalog{{ carCatalogs().length === 1 ? '' : 's' }}
+                    </div>
+                    <div class="vd-ready-row">
+                      <span class="vd-dot" [class.vd-dot--off]="totalRules() === 0"></span>
+                      <span class="vd-mono">{{ totalRules() }}</span>&nbsp;rule{{ totalRules() === 1 ? '' : 's' }}
+                    </div>
+                  </div>
+                </section>
+
+                <section class="vd-recent">
+                  <div class="vd-sec-head">
+                    <span class="vd-sec-label">Recent sessions</span>
+                    <button class="vd-link" (click)="activeTab.set('sessions')">
+                      View all {{ sessionsNewestFirst().length }} →
+                    </button>
+                  </div>
+
+                  @if (sessionsLoading()) {
+                    <div class="fl-skeleton fl-skeleton--rows"></div>
+                  } @else if (recentSessions().length === 0) {
+                    <p class="vd-empty">No sessions yet — upload a log or run the simulator.</p>
+                  } @else {
+                    <div class="vd-recent-scroll">
+                      <div class="vd-recent-table">
+                        <div class="vd-recent-head">
+                          <span>File</span><span>Session</span><span>Frames</span><span>Result</span><span></span>
+                        </div>
+                        @for (s of recentSessions(); track s.sessionId) {
+                          <div class="vd-recent-row">
+                            <span class="vd-recent-file">{{ s.sourceFilename || '—' }}</span>
+                            <span class="vd-mono vd-recent-id">{{ s.sessionId | slice:0:8 }} · {{ s.createdAt | slice:0:10 }}</span>
+                            <span class="vd-mono">{{ formatNum(s.frameCount) }}</span>
+                            <span class="vd-outcome"
+                              [class.vd-outcome--fault]="sessionOutcome(s) === 'fault'"
+                              [class.vd-outcome--clean]="sessionOutcome(s) === 'clean'">
+                              @if (faultInfo(s.sessionId); as fi) {
+                                {{ fi.count > 0 ? fi.count + ' faults' : 'clean' }}
+                              } @else {
+                                {{ s.status || 'pending' }}
+                              }
+                            </span>
+                            <button class="vd-analyse" (click)="analyseSession(s.sessionId)">Analyse →</button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </section>
+              }
+
+              <!-- ── Sessions ─────────────────────────────────────────── -->
+              @if (activeTab() === 'sessions') {
+
+                <div class="vd-sess-toolbar">
+                  <div class="vd-chiprow" role="group" aria-label="Session filter">
+                    <button class="vd-chip" [class.vd-chip--on]="sessionFilter() === 'all'"
+                      (click)="sessionFilter.set('all')">
+                      All <span class="vd-mono">{{ sessionsNewestFirst().length }}</span>
+                    </button>
+                    <button class="vd-chip" [class.vd-chip--on]="sessionFilter() === 'faults'"
+                      (click)="sessionFilter.set('faults')">
+                      Faults found <span class="vd-mono">{{ faultSessionCount() }}</span>
+                    </button>
+                    <button class="vd-chip" [class.vd-chip--on]="sessionFilter() === 'clean'"
+                      (click)="sessionFilter.set('clean')">
+                      Within target <span class="vd-mono">{{ cleanSessionCount() }}</span>
+                    </button>
+                  </div>
+                  <input class="vd-filter-input" type="text"
+                    placeholder="Filter by session id or file name…"
+                    [value]="sessionQuery()"
+                    (input)="sessionQuery.set($any($event.target).value)" />
+                  <button class="vd-refresh" (click)="refreshSelectedCarSessions()">Refresh</button>
+                </div>
+
+                @if (sessionsLoading()) {
+                  <div class="fl-skeleton fl-skeleton--rows"></div>
+                } @else if (filteredSessions().length === 0) {
+                  <div class="vd-empty-state">
+                    @if (sessionsNewestFirst().length === 0) {
+                      <p>No sessions recorded for this vehicle yet.</p>
+                      <p class="vd-empty-hint">Upload a log or run the simulator to produce the first one.</p>
+                    } @else {
+                      <p>No sessions match the current filters.</p>
+                    }
+                  </div>
+                } @else {
+                  <div class="vd-sess-list">
+                    @for (s of filteredSessions(); track s.sessionId) {
+                      <div class="vd-sess-card"
+                        [class.vd-sess-card--fault]="sessionOutcome(s) === 'fault'"
+                        [class.vd-sess-card--clean]="sessionOutcome(s) === 'clean'"
+                        [class.vd-sess-card--pending]="sessionOutcome(s) === 'pending'">
+                        <div class="vd-sess-info">
+                          <div class="vd-sess-file">{{ s.sourceFilename || '(unnamed capture)' }}</div>
+                          <div class="vd-sess-meta vd-mono">
+                            {{ s.sessionId | slice:0:8 }} · {{ s.createdAt | slice:0:10 }} {{ s.createdAt | slice:11:16 }} · {{ formatNum(s.frameCount) }} frames
+                          </div>
+                          @if (faultInfo(s.sessionId); as fi) {
+                            @if (fi.count > 0) {
+                              <div class="vd-sess-faults">{{ fi.count }} fault{{ fi.count === 1 ? '' : 's' }} found</div>
+                              <div class="vd-sess-rules vd-mono">{{ fi.ruleIds.join(' · ') }}</div>
+                            } @else {
+                              <div class="vd-sess-clean">No faults — within target</div>
+                            }
+                          } @else {
+                            <div class="vd-sess-pending">{{ s.status || 'Processing' }}</div>
+                          }
+                        </div>
+                        <button class="vd-analyse"
+                          [class.vd-analyse--solid]="sessionOutcome(s) === 'fault'"
+                          (click)="analyseSession(s.sessionId)">Analyse →</button>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <button class="vd-dropzone" (click)="toggleUpload()">
+                  Drop a CAN log here — or click to upload &amp; analyse it against this vehicle
+                </button>
+              }
+
+              <!-- ── Catalogs ─────────────────────────────────────────── -->
+              @if (activeTab() === 'catalogs') {
+
+                <div class="vd-sec-head">
+                  <h3 class="vd-sec-title">ECU catalogs attached to this vehicle</h3>
+                  <button class="vd-attach" (click)="openCatalogModal()">+ Attach catalog</button>
+                </div>
+
+                @if (carCatalogs().length === 0) {
+                  <div class="vd-empty-state">
+                    <p>No catalogs attached.</p>
+                    <p class="vd-empty-hint">Without a catalog assignment the simulator falls back to every catalog on the server.</p>
+                  </div>
+                } @else {
+                  <div class="vd-asset-grid">
+                    @for (c of catalogCards(); track c.filename) {
+                      <button class="vd-asset-card"
+                        [class.vd-asset-card--on]="selectedCatalogFile() === c.filename"
+                        (click)="selectCatalog(c.filename)">
+                        <span class="vd-asset-top">
+                          <span class="vd-dot"></span>
+                          <span class="vd-asset-name">{{ c.busName || c.name || c.filename }}</span>
+                        </span>
+                        <span class="vd-asset-file vd-mono">{{ c.filename }}</span>
+                        <span class="vd-asset-counts vd-mono">
+                          @if (c.messageCount != null) {
+                            {{ c.messageCount }} messages · {{ c.signalCount }} signals
+                          } @else {
+                            —
+                          }
+                        </span>
+                      </button>
+                    }
+                  </div>
+
+                  @if (selectedCatalogFile(); as file) {
+                    <div class="vd-asset-actions">
+                      <span class="vd-asset-actions-file vd-mono">{{ file }}</span>
+                      <span class="vd-spacer"></span>
+                      <button class="vd-ghost-btn" title="Remove from this vehicle — the file is kept"
+                        (click)="removeCarCatalog(file)">✕ Remove from vehicle</button>
+                      <button class="vd-ghost-btn vd-ghost-btn--danger"
+                        title="Delete the catalog file permanently (every vehicle)"
+                        (click)="deleteCatalogFile(file)">Delete file</button>
+                    </div>
+
+                    <app-catalog-detail-page
+                      [embedded]="true"
+                      [fileOverride]="file"
+                      (saved)="onCatalogSaved()" />
+                  }
+                }
+              }
+
+              <!-- ── Requirements ─────────────────────────────────────── -->
+              @if (activeTab() === 'requirements') {
+
+                <div class="vd-sec-head">
+                  <h3 class="vd-sec-title">Requirement sets attached to this vehicle</h3>
+                  <button class="vd-attach" (click)="openRequirementModal()">+ Attach set</button>
+                </div>
+
+                @if (carRequirements().length === 0) {
+                  <div class="vd-empty-state">
+                    <p>No requirement sets attached.</p>
+                    <p class="vd-empty-hint">The requirements engine stays off for this vehicle until a set is attached.</p>
+                  </div>
+                } @else {
+                  <div class="vd-asset-grid">
+                    @for (r of requirementCards(); track r.filename) {
+                      <button class="vd-asset-card"
+                        [class.vd-asset-card--on]="selectedReqFile() === r.filename"
+                        (click)="selectRequirement(r.filename)">
+                        <span class="vd-asset-top">
+                          <span class="vd-dot"></span>
+                          <span class="vd-asset-name">{{ r.name || r.filename }}</span>
+                        </span>
+                        <span class="vd-asset-file vd-mono">{{ r.filename }}</span>
+                        <span class="vd-asset-counts vd-mono">
+                          v{{ r.version || '1' }}
+                          @if (r.ruleCount != null) {
+                            · {{ r.ruleCount }} rule{{ r.ruleCount === 1 ? '' : 's' }}
+                            @if (r.draftCount) { · {{ r.draftCount }} draft }
+                          }
+                        </span>
+                      </button>
+                    }
+                  </div>
+
+                  @if (selectedReqFile(); as file) {
+                    <div class="vd-asset-actions">
+                      <span class="vd-asset-actions-file vd-mono">{{ file }}</span>
+                      <span class="vd-spacer"></span>
+                      <button class="vd-ghost-btn" title="Remove from this vehicle — the file is kept"
+                        (click)="removeCarRequirement(file)">✕ Remove from vehicle</button>
+                      <button class="vd-ghost-btn vd-ghost-btn--danger"
+                        title="Delete the requirement file permanently (every vehicle)"
+                        (click)="deleteRequirementFile(file)">Delete file</button>
+                    </div>
+
+                    <app-requirement-detail-page
+                      [embedded]="true"
+                      [fileOverride]="file"
+                      (saved)="onRequirementSaved()" />
+                  }
+                }
+              }
+
+            </div>
+          </div>
+        }
+      </section>
+
+    </div>
+  }
+
+  <!-- ══════════════ Modals (unchanged in function) ══════════════ -->
+
+  <!-- Add/Edit Vehicle -->
+  @if (showModal()) {
+    <div class="fleet-modal-overlay" (click)="closeModal()">
+      <div class="fleet-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        <h2 class="fleet-modal-title">
+          {{ editingCar() ? 'Edit Vehicle' : 'Add Vehicle' }}
+        </h2>
+
+        <div style="display:flex; flex-direction:column; gap:0.875rem;">
+          <div class="fleet-modal-grid">
+            <div class="fleet-modal-field">
+              <label>Make *</label>
+              <input [(ngModel)]="form.make" placeholder="e.g. Toyota" class="fleet-modal-input"/>
+            </div>
+            <div class="fleet-modal-field">
+              <label>Model *</label>
+              <input [(ngModel)]="form.model" placeholder="e.g. Camry" class="fleet-modal-input"/>
+            </div>
+          </div>
+
+          <div class="fleet-modal-grid">
+            <div class="fleet-modal-field">
+              <label>Year *</label>
+              <input [(ngModel)]="form.year" type="number" placeholder="2024" min="1990" max="2030" class="fleet-modal-input"/>
+            </div>
+            <div class="fleet-modal-field">
+              <label>Color</label>
+              <input [(ngModel)]="form.color" placeholder="e.g. White" class="fleet-modal-input"/>
+            </div>
+          </div>
+
+          <div class="fleet-modal-field">
+            <label>VIN</label>
+            <input [(ngModel)]="form.vin" placeholder="17-character VIN (optional)" maxlength="17"
+              class="fleet-modal-input fleet-modal-input--mono"/>
+          </div>
+
+          <label class="fleet-modal-check">
+            <input type="checkbox" [(ngModel)]="form.isVirtual" id="isVirtual"/>
+            Virtual vehicle (simulator only — no physical VIN required)
+          </label>
+
+          <!-- ECU catalog assignment (file intake: browse / drag-drop / paste) -->
+          <div class="fleet-modal-field" (paste)="onCatalogPaste($event, 'form')">
+            <label>ECU catalogs</label>
+            <p class="fleet-modal-hint">
+              Add this car's catalog XML files. The simulator only generates traffic
+              from them; a car with no catalogs uses every catalog.
+            </p>
+            <button type="button" class="fleet-modal-drop"
+              (click)="vehCatInput.click()"
+              (dragover)="$event.preventDefault()"
+              (drop)="onCatalogDrop($event, 'form')">
+              Drag &amp; drop catalog .xml files here, click to browse, or paste a copied file
+            </button>
+            <input #vehCatInput type="file" accept=".xml" multiple hidden
+              (change)="onCatalogFileInput($event, 'form')"/>
+            @if (catalogUploading()) {
+              <p class="fleet-modal-uploading">Uploading…</p>
+            }
+            @if (formCatalogList().length > 0) {
+              <div class="fleet-modal-chips">
+                @for (f of formCatalogList(); track f) {
+                  <span class="fleet-file-chip">
+                    {{ f }}
+                    <button type="button" (click)="toggleFormCatalog(f)" [attr.aria-label]="'Remove ' + f">✕</button>
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (formError()) {
+          <p class="fleet-modal-error">{{ formError() }}</p>
+        }
+
+        <div class="fleet-modal-footer">
+          <button class="fleet-modal-cancel" (click)="closeModal()">Cancel</button>
+          <button class="fleet-modal-save" [disabled]="saving()" (click)="saveVehicle()">
+            {{ saving() ? 'Saving...' : (editingCar() ? 'Save Changes' : 'Add Vehicle') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Catalog Assignment -->
+  @if (showCatalogModal()) {
+    <div class="fleet-modal-overlay" (click)="closeCatalogModal()">
+      <div class="fleet-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        <h2 class="fleet-modal-title">
+          Attach ECU Catalogs
+          @if (selectedCar()) {
+            — {{ selectedCar()!.make }} {{ selectedCar()!.model }}
+          }
+        </h2>
+
+        <p class="fleet-modal-hint">
+          The simulator only generates traffic from this vehicle's catalogs —
+          an empty selection means every catalog.
+        </p>
+
+        @if (allCatalogs().length > 0) {
+          <span class="fleet-modal-subhead">In the system</span>
+          <div class="fleet-cat-list">
+            @for (cat of allCatalogs(); track cat.filename) {
+              <label class="fleet-cat-row"
+                [class.fleet-cat-row--on]="selectedFilenames().has(cat.filename)">
+                <input type="checkbox"
+                  [checked]="selectedFilenames().has(cat.filename)"
+                  (change)="toggleCatalogSelection(cat.filename)" />
+                <span class="fleet-cat-main">
+                  <span class="fleet-cat-name">{{ cat.busName || cat.filename }}</span>
+                  <span class="fleet-cat-file vd-mono">{{ cat.filename }}</span>
+                </span>
+                <span class="fleet-cat-counts vd-mono">
+                  {{ cat.messageCount }} msg · {{ cat.signalCount }} sig
+                </span>
+              </label>
+            }
+          </div>
+        }
+
+        <span class="fleet-modal-subhead">Add a new file</span>
+        <div (paste)="onCatalogPaste($event, 'assign')">
+          <button type="button" class="fleet-modal-drop"
+            (click)="assignCatInput.click()"
+            (dragover)="$event.preventDefault()"
+            (drop)="onCatalogDrop($event, 'assign')">
+            Drag &amp; drop catalog .xml files here, click to browse, or paste a copied file
+          </button>
+          <input #assignCatInput type="file" accept=".xml" multiple hidden
+            (change)="onCatalogFileInput($event, 'assign')"/>
+          @if (catalogUploading()) {
+            <p class="fleet-modal-uploading">Uploading…</p>
+          }
+          @if (pendingUploadChips().length > 0) {
+            <div class="fleet-modal-chips">
+              @for (f of pendingUploadChips(); track f) {
+                <span class="fleet-file-chip">
+                  {{ f }}
+                  <button type="button" (click)="toggleCatalogSelection(f)" [attr.aria-label]="'Remove ' + f">✕</button>
+                </span>
+              }
+            </div>
+          }
+        </div>
+
+        @if (catalogsError()) {
+          <p class="fleet-modal-error">{{ catalogsError() }}</p>
+        }
+
+        <div class="fleet-modal-footer">
+          <span class="fleet-modal-count">
+            @if (selectedFilenames().size > 0) {
+              {{ selectedFilenames().size }} catalog{{ selectedFilenames().size === 1 ? '' : 's' }} selected
+            } @else {
+              Nothing selected — all catalogs will be used
+            }
+          </span>
+          <button class="fleet-modal-cancel" (click)="closeCatalogModal()">Cancel</button>
+          <button class="fleet-modal-save" [disabled]="catalogsSaving()" (click)="saveCatalogs()">
+            {{ catalogsSaving() ? 'Saving...' : 'Save Assignment' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Requirement-Set Assignment -->
+  @if (showRequirementModal()) {
+    <div class="fleet-modal-overlay" (click)="closeRequirementModal()">
+      <div class="fleet-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        <h2 class="fleet-modal-title">
+          Attach Requirement Sets
+          @if (selectedCar()) {
+            — {{ selectedCar()!.make }} {{ selectedCar()!.model }}
+          }
+        </h2>
+
+        <p class="fleet-modal-hint">
+          The requirements engine checks this car's sessions only against the
+          selected sets. No selection = requirements engine off for this car.
+        </p>
+
+        <div style="display:flex; gap:0.5rem; margin:0 0 0.75rem; flex-wrap:wrap;">
+          <button class="fleet-modal-secondary" [disabled]="reqUploading()"
+            (click)="reqFileInput.click()">
+            {{ reqUploading() ? 'Uploading…' : 'Upload file (auto-assign)' }}
+          </button>
+          <button class="fleet-modal-secondary" (click)="createRequirementForCar()">
+            + Create new
+          </button>
+          <input #reqFileInput type="file" accept=".yaml,.yml" hidden
+            (change)="uploadRequirementForCar($event)" />
+        </div>
+
+        @if (allRequirementSets().length === 0) {
+          <p class="fleet-modal-hint">No requirement sets uploaded yet.</p>
+        } @else {
+          <div class="fleet-modal-checklist">
+            @for (set of allRequirementSets(); track set.filename) {
+              <label class="fleet-modal-checkrow">
+                <input type="checkbox"
+                  [checked]="selectedReqFilenames().has(set.filename)"
+                  (change)="toggleRequirementSelection(set.filename)" />
+                <span>{{ set.name }}</span>
+                <span class="fleet-modal-checkmeta">
+                  {{ set.filename }} · {{ set.ruleCount }} rules
+                </span>
+                @if (!set.active) {
+                  <span class="fleet-modal-invalid">INVALID</span>
+                }
+              </label>
+            }
+          </div>
+        }
+
+        @if (requirementsError()) {
+          <p class="fleet-modal-error">{{ requirementsError() }}</p>
+        }
+
+        <div class="fleet-modal-footer">
+          <button class="fleet-modal-cancel" (click)="closeRequirementModal()">Cancel</button>
+          <button class="fleet-modal-save" [disabled]="requirementsSaving()" (click)="saveRequirements()">
+            {{ requirementsSaving() ? 'Saving...' : 'Save Assignment' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Upload log & analyse -->
+  @if (showUpload() && selectedCar()) {
+    <div class="fleet-modal-overlay" (click)="showUpload.set(false)">
+      <div class="fleet-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        <h2 class="fleet-modal-title">Upload log &amp; analyse</h2>
+        <p class="fleet-modal-hint">
+          The log is linked to {{ selectedCar()!.make }} {{ selectedCar()!.model }} and
+          analysed automatically once processed.
+        </p>
+        <!-- No [cars] list on purpose: the vehicle selector stays hidden and
+             the upload is linked to the selected car. -->
+        <app-log-upload
+          [carUid]="selectedCar()!.carUid"
+          (uploadComplete)="onUploadComplete()" />
+        <div class="fleet-modal-footer">
+          <button class="fleet-modal-cancel" (click)="showUpload.set(false)">Cancel</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Run simulator -->
+  @if (showSimulator() && selectedCar()) {
+    <div class="fleet-modal-overlay" (click)="showSimulator.set(false)">
+      <div class="fleet-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        <h2 class="fleet-modal-title">Run simulator</h2>
+        <p class="fleet-modal-hint">{{ simulatorSubtitle() }}</p>
+        <app-simulator-control
+          [presetCarUid]="selectedCar()!.carUid"
+          [showCancel]="true"
+          (cancelled)="showSimulator.set(false)"
+          (simulatorStarted)="onSimulatorStarted()"
+          (simulatorStopped)="onSimulatorStopped()" />
+      </div>
+    </div>
+  }
+
+  <!-- Toasts -->
+  @if (toasts().length > 0) {
+    <div class="vd-toasts" aria-live="polite">
+      @for (t of toasts(); track t.id) {
+        <div class="vd-toast">{{ t.text }}</div>
+      }
+    </div>
+  }
+
+</div>

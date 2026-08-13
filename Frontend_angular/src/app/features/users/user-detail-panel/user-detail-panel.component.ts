@@ -13,7 +13,7 @@ import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../../../core/services/toast.service';
 import { UserService } from '../../../core/services/user.service';
-import type { User } from '../../../data/models';
+import type { User } from '../../../core/models';
 import { API_BASE_URL } from '../../../core/config/api.config';
 
 interface Permission {

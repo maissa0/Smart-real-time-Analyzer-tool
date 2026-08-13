@@ -36,7 +36,7 @@ public class AuditLogEntity {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "json")
-    private Map<String, Object> metadata;
+    private Map<String, String> metadata;
 
     @Column(name = "ip_address", length = 45)
     private String ipAddress;

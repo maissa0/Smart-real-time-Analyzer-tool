@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import type { User } from '../../../data/models';
+import type { User } from '../../../core/models';
 import { UserService } from '../../../core/services/user.service';
 
 @Component({

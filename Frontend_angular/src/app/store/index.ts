@@ -1,4 +1,4 @@
-export { AuthStore } from './auth.store';
-export type { AuthState } from './auth.store';
-export { UserStore } from './user.store';
-export type { UserStoreState } from './user.store';
+export { AuthStore } from '../core/store/auth.store';
+export type { AuthState } from '../core/store/auth.store';
+export { UserStore } from '../core/store/user.store';
+export type { UserStoreState } from '../core/store/user.store';

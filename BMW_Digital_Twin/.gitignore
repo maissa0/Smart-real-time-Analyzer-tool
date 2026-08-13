@@ -1,4 +1,19 @@
-# Unity generated
+# This .gitignore file should be placed at the root of your Unity project directory
+
+# [Builds]
+*.apk
+*.aab
+*.unitypackage
+*.exe
+*.app
+
+# [Generics]
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# [Unity Generated Folders]
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
@@ -7,24 +22,23 @@
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 /[Mm]emoryCaptures/
-/[Rr]ecordings/
+/[Aa]ssets/Plugins/Editor/JetBrains*
 
-# IDE / OS
-/.vs/
-/.vscode/
+# [Project Settings]
+# ProjectSettings/ (incl. ProjectSettings.asset and ProjectVersion.txt) is kept
+# in version control on purpose: it carries the WebGL build target, compression
+# format, input-handler mode and preloaded assets — a clone without it cannot
+# reproduce the car-twin build.
+
+# [Visual Studio / VS Code]
+.vs/
+.vscode/
+*.sln
 *.csproj
 *.unityproj
-*.sln
 *.suo
 *.user
 *.userprefs
 *.pidb
 *.booproj
 *.svd
-*.pdb
-*.mdb
-*.opendb
-*.VC.db
-
-.DS_Store
-Thumbs.db

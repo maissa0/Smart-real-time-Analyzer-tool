@@ -49,7 +49,7 @@ public class OtpService {
         try {
             emailService.sendForgotPasswordOtp(email, code);
         } catch (Exception e) {
-            log.warn("Failed to send OTP email to {}: {} (OTP: {})", email, e.getMessage(), code);
+            log.warn("Failed to send OTP email to {}: {}", email, e.getMessage());
         }
     }
 

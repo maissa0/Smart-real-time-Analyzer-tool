@@ -1,5 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { CanFrame } from '../../data/models/can.model';
+import { CanFrame } from '../models/can.model';
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused';
 

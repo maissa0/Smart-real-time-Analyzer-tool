@@ -1,0 +1,9 @@
+Body & chassis safety requirements — draft input for bulk conversion.
+
+1. When E2E_Lock_Request becomes Unlock_Pressed, E2E_Door_Lock_State must become Unlocked within 800 ms.
+2. E2E_Door_Lock_State must never become Unlocked while E2E_Gear_Position is Drive.
+3. E2E_Wiper_Mode must never become Off while E2E_Rain_Detected is Raining.
+4. E2E_Window_Motion must stay Blocked for 3000 ms.
+5. E2E_Hood_State is always Closed.
+6. When E2E_Lock_Request becomes Trunk_Release, E2E_Trunk_State must become Open within 2000 ms.
+7. E2E_Brake_Pedal must never become Released while E2E_Gear_Position is Reverse and E2E_Vehicle_Speed is 0.

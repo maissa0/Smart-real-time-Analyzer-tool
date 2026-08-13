@@ -3,14 +3,17 @@ package com.example.backend.can.service;
 import com.example.backend.can.entity.LogFileEntity;
 import com.example.backend.can.repository.CanSessionRepository;
 import com.example.backend.can.repository.LogFileRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.example.backend.can.dto.LogFileEventPayload;
+import com.example.backend.can.dto.LogFileHistoryDto;
+import com.example.backend.can.dto.LogFileStatusDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,29 +26,28 @@ public class LogFileService {
 
     public void saveLogFileEvent(String json) {
         try {
-            Map<String, Object> data = objectMapper.readValue(json, new TypeReference<>() {});
+            LogFileEventPayload data = objectMapper.readValue(json, LogFileEventPayload.class);
 
-            String sessionId = (String) data.get("session_id");
+            String sessionId = data.sessionId();
             if (sessionId == null) return;
 
-            String event = (String) data.getOrDefault("event", "metadata");
+            String event = data.event() != null ? data.event() : "metadata";
 
             if ("metadata".equals(event)) {
-                // Create or update log file record with metadata
                 LogFileEntity entity = logFileRepository
                         .findBySessionId(sessionId)
                         .orElse(LogFileEntity.builder()
                                 .sessionId(sessionId)
                                 .build());
 
-                entity.setFilename((String) data.getOrDefault("filename", "unknown"));
-                entity.setFileSize(toLong(data.get("file_size")));
-                entity.setFormat((String) data.get("format"));
-                entity.setChannelCount(toInteger(data.get("channel_count")));
-                entity.setFrameCount(toInteger(data.get("frame_count")));
-                entity.setStartTs(toDouble(data.get("start_ts")));
-                entity.setEndTs(toDouble(data.get("end_ts")));
-                entity.setDurationSeconds(toDouble(data.get("duration_seconds")));
+                entity.setFilename(data.filename() != null ? data.filename() : "unknown");
+                entity.setFileSize(data.fileSize());
+                entity.setFormat(data.format());
+                entity.setChannelCount(data.channelCount());
+                entity.setFrameCount(data.frameCount());
+                entity.setStartTs(data.startTs());
+                entity.setEndTs(data.endTs());
+                entity.setDurationSeconds(data.durationSeconds());
                 entity.setStatus("PROCESSING");
 
                 logFileRepository.save(entity);
@@ -56,17 +58,16 @@ public class LogFileService {
                 logFileRepository.findBySessionId(sessionId).ifPresent(entity -> {
                     entity.setStatus("COMPLETED");
                     entity.setCompletedAt(LocalDateTime.now());
-                    if (data.containsKey("frame_count")) {
-                        entity.setFrameCount(toInteger(data.get("frame_count")));
+                    if (data.frameCount() != null) {
+                        entity.setFrameCount(data.frameCount());
                     }
                     logFileRepository.save(entity);
                     log.info("Log file processing complete: session={}", sessionId);
                 });
-                // Also mark the CAN session as COMPLETE
                 canSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
                     session.setStatus("COMPLETE");
-                    if (data.containsKey("frame_count")) {
-                        session.setFrameCount(toInteger(data.get("frame_count")));
+                    if (data.frameCount() != null) {
+                        session.setFrameCount(data.frameCount());
                     }
                     canSessionRepository.save(session);
                     log.info("CAN session marked COMPLETE: session={}", sessionId);
@@ -75,13 +76,12 @@ public class LogFileService {
             } else if ("error".equals(event)) {
                 logFileRepository.findBySessionId(sessionId).ifPresent(entity -> {
                     entity.setStatus("FAILED");
-                    entity.setErrorMessage((String) data.getOrDefault("error", "Unknown error"));
+                    entity.setErrorMessage(data.error() != null ? data.error() : "Unknown error");
                     entity.setCompletedAt(LocalDateTime.now());
                     logFileRepository.save(entity);
                     log.error("Log file processing error: session={} error={}",
                             sessionId, entity.getErrorMessage());
                 });
-                // Also mark the CAN session as ERROR
                 canSessionRepository.findBySessionId(sessionId).ifPresent(session -> {
                     session.setStatus("ERROR");
                     canSessionRepository.save(session);
@@ -94,21 +94,42 @@ public class LogFileService {
         }
     }
 
-    private Long toLong(Object val) {
-        if (val instanceof Number n) return n.longValue();
-        if (val instanceof String s) { try { return Long.parseLong(s); } catch (Exception ignored) {} }
-        return null;
+    // ── Query methods ─────────────────────────────────────────────────────────
+
+    /**
+     * Returns the upload status record for a session, projected to a response map.
+     * Returns empty when no log file record exists yet for the session.
+     */
+    public Optional<LogFileStatusDto> getStatus(String sessionId) {
+        return logFileRepository.findBySessionId(sessionId).map(lf -> new LogFileStatusDto(
+                lf.getSessionId(),
+                lf.getFilename(),
+                lf.getStatus(),
+                lf.getFrameCount()      != null ? lf.getFrameCount()     : 0,
+                lf.getFileSize()        != null ? lf.getFileSize()        : 0L,
+                lf.getChannelCount()    != null ? lf.getChannelCount()    : 0,
+                lf.getDurationSeconds() != null ? lf.getDurationSeconds() : 0.0,
+                lf.getCreatedAt()       != null ? lf.getCreatedAt().toString() : ""
+        ));
     }
 
-    private Integer toInteger(Object val) {
-        if (val instanceof Number n) return n.intValue();
-        if (val instanceof String s) { try { return Integer.parseInt(s); } catch (Exception ignored) {} }
-        return null;
+    /**
+     * Returns the last {@code size} upload records ordered by createdAt DESC,
+     * projected to a list of response maps.
+     */
+    public List<LogFileHistoryDto> getHistory(int size) {
+        return logFileRepository.findTopNOrderByCreatedAtDesc(size)
+                .stream()
+                .map(lf -> new LogFileHistoryDto(
+                        lf.getId(),
+                        lf.getSessionId(),
+                        lf.getFilename(),
+                        lf.getStatus(),
+                        lf.getFrameCount() != null ? lf.getFrameCount() : 0,
+                        lf.getFileSize()   != null ? lf.getFileSize()   : 0L,
+                        lf.getCreatedAt()  != null ? lf.getCreatedAt().toString() : ""
+                ))
+                .toList();
     }
 
-    private Double toDouble(Object val) {
-        if (val instanceof Number n) return n.doubleValue();
-        if (val instanceof String s) { try { return Double.parseDouble(s); } catch (Exception ignored) {} }
-        return null;
-    }
 }

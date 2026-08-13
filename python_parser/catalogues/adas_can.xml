@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bus Name="ADAS_CAN">
+
+    <massage id="0x300" name="Collision_Warning">
+        <Cyclic>
+            <status>true</status>
+            <cycle>50</cycle>
+        </Cyclic>
+        <Byte Num="0">
+            <Signal Bit="00001111">
+                <signal_name>Forward_Collision_State</signal_name>
+                <values>
+                    <value>0</value><name>Clear</name>
+                    <value>1</value><name>Warning</name>
+                    <value>2</value><name>Critical</name>
+                    <value>3</value><name>Brake_Applied</name>
+                    <value>4</value><name>Fault</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Rear_Collision_State</signal_name>
+                <values>
+                    <value>0</value><name>Clear</name>
+                    <value>1</value><name>Warning</name>
+                    <value>2</value><name>Critical</name>
+                    <value>3</value><name>Fault</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="00001111">
+                <signal_name>Left_Blind_Spot_State</signal_name>
+                <values>
+                    <value>0</value><name>Clear</name>
+                    <value>1</value><name>Object_Detected</name>
+                    <value>2</value><name>Warning</name>
+                    <value>3</value><name>Fault</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Right_Blind_Spot_State</signal_name>
+                <values>
+                    <value>0</value><name>Clear</name>
+                    <value>1</value><name>Object_Detected</name>
+                    <value>2</value><name>Warning</name>
+                    <value>3</value><name>Fault</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="2">
+            <Signal Bit="11111111">
+                <signal_name>Collision_System_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Standby</name>
+                    <value>2</value><name>Active</name>
+                    <value>3</value><name>Override</name>
+                    <value>4</value><name>Fault</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <massage id="0x301" name="Lane_Assist">
+        <Cyclic>
+            <status>true</status>
+            <cycle>100</cycle>
+        </Cyclic>
+        <Byte Num="0">
+            <Signal Bit="00001111">
+                <signal_name>Lane_Departure_State</signal_name>
+                <values>
+                    <value>0</value><name>In_Lane</name>
+                    <value>1</value><name>Drifting_Left</name>
+                    <value>2</value><name>Drifting_Right</name>
+                    <value>3</value><name>Departed_Left</name>
+                    <value>4</value><name>Departed_Right</name>
+                    <value>5</value><name>Fault</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Lane_Keep_Assist_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Standby</name>
+                    <value>2</value><name>Active</name>
+                    <value>3</value><name>Intervening</name>
+                    <value>4</value><name>Fault</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="00001111">
+                <signal_name>Lane_Marking_Quality</signal_name>
+                <values>
+                    <value>0</value><name>Not_Detected</name>
+                    <value>1</value><name>Poor</name>
+                    <value>2</value><name>Good</name>
+                    <value>3</value><name>Excellent</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Driver_Hands_State</signal_name>
+                <values>
+                    <value>0</value><name>Hands_On</name>
+                    <value>1</value><name>Hands_Off_Warning</name>
+                    <value>2</value><name>Hands_Off_Alert</name>
+                    <value>3</value><name>Unknown</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="2">
+            <Signal Bit="11111111">
+                <signal_name>Lane_System_Validity</signal_name>
+                <values>
+                    <value>0</value><name>Invalid</name>
+                    <value>1</value><name>Valid</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <massage id="0x302" name="Adaptive_Cruise">
+        <Cyclic>
+            <status>true</status>
+            <cycle>100</cycle>
+        </Cyclic>
+        <Byte Num="0">
+            <Signal Bit="00001111">
+                <signal_name>ACC_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Standby</name>
+                    <value>2</value><name>Active</name>
+                    <value>3</value><name>Braking</name>
+                    <value>4</value><name>Following</name>
+                    <value>5</value><name>Override</name>
+                    <value>6</value><name>Fault</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>ACC_Target_State</signal_name>
+                <values>
+                    <value>0</value><name>No_Target</name>
+                    <value>1</value><name>Target_Acquired</name>
+                    <value>2</value><name>Target_Lost</name>
+                    <value>3</value><name>Cut_In</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="00001111">
+                <signal_name>Following_Distance</signal_name>
+                <values>
+                    <value>0</value><name>Too_Close</name>
+                    <value>1</value><name>Close</name>
+                    <value>2</value><name>Normal</name>
+                    <value>3</value><name>Far</name>
+                    <value>4</value><name>Very_Far</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>ACC_Comfort_Level</signal_name>
+                <values>
+                    <value>0</value><name>Eco</name>
+                    <value>1</value><name>Normal</name>
+                    <value>2</value><name>Sport</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="2">
+            <Signal Bit="11111111">
+                <signal_name>ACC_Validity</signal_name>
+                <values>
+                    <value>0</value><name>Invalid</name>
+                    <value>1</value><name>Valid</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <massage id="0x303" name="Parking_Assist">
+        <Cyclic>
+            <status>true</status>
+            <cycle>200</cycle>
+        </Cyclic>
+        <Byte Num="0">
+            <Signal Bit="00001111">
+                <signal_name>Front_Parking_Zone</signal_name>
+                <values>
+                    <value>0</value><name>Clear</name>
+                    <value>1</value><name>Far</name>
+                    <value>2</value><name>Medium</name>
+                    <value>3</value><name>Near</name>
+                    <value>4</value><name>Critical</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Rear_Parking_Zone</signal_name>
+                <values>
+                    <value>0</value><name>Clear</name>
+                    <value>1</value><name>Far</name>
+                    <value>2</value><name>Medium</name>
+                    <value>3</value><name>Near</name>
+                    <value>4</value><name>Critical</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="00001111">
+                <signal_name>Parking_Assist_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Standby</name>
+                    <value>2</value><name>Guiding</name>
+                    <value>3</value><name>Maneuvering</name>
+                    <value>4</value><name>Completed</name>
+                    <value>5</value><name>Fault</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Auto_Park_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Scanning</name>
+                    <value>2</value><name>Space_Found</name>
+                    <value>3</value><name>Parking</name>
+                    <value>4</value><name>Done</name>
+                    <value>5</value><name>Cancelled</name>
+                    <value>6</value><name>Fault</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="2">
+            <Signal Bit="11111111">
+                <signal_name>Parking_Validity</signal_name>
+                <values>
+                    <value>0</value><name>Invalid</name>
+                    <value>1</value><name>Valid</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <massage id="0x304" name="Driver_Monitor">
+        <Cyclic>
+            <status>true</status>
+            <cycle>200</cycle>
+        </Cyclic>
+        <Byte Num="0">
+            <Signal Bit="00001111">
+                <signal_name>Driver_Attention_State</signal_name>
+                <values>
+                    <value>0</value><name>Attentive</name>
+                    <value>1</value><name>Distracted</name>
+                    <value>2</value><name>Drowsy</name>
+                    <value>3</value><name>Asleep</name>
+                    <value>4</value><name>Not_Detected</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>Driver_Gaze_Direction</signal_name>
+                <values>
+                    <value>0</value><name>Forward</name>
+                    <value>1</value><name>Left</name>
+                    <value>2</value><name>Right</name>
+                    <value>3</value><name>Down</name>
+                    <value>4</value><name>Up</name>
+                    <value>5</value><name>Unknown</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="00001111">
+                <signal_name>Fatigue_Level</signal_name>
+                <values>
+                    <value>0</value><name>Alert</name>
+                    <value>1</value><name>Mild_Fatigue</name>
+                    <value>2</value><name>Moderate_Fatigue</name>
+                    <value>3</value><name>Severe_Fatigue</name>
+                </values>
+            </Signal>
+            <Signal Bit="11110000">
+                <signal_name>DMS_System_State</signal_name>
+                <values>
+                    <value>0</value><name>Off</name>
+                    <value>1</value><name>Initializing</name>
+                    <value>2</value><name>Active</name>
+                    <value>3</value><name>Fault</name>
+                </values>
+            </Signal>
+        </Byte>
+        <Byte Num="2">
+            <Signal Bit="11111111">
+                <signal_name>DMS_Validity</signal_name>
+                <values>
+                    <value>0</value><name>Invalid</name>
+                    <value>1</value><name>Valid</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+</Bus>

@@ -2,16 +2,15 @@ import {
   HttpInterceptorFn,
   HttpErrorResponse,
   HttpStatusCode,
+  HttpContextToken,
 } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { ToastService } from '../services/toast.service';
-import type { ApiError } from '../../data/types/api.types';
+import type { ApiError } from '../types/api.types';
 
-/**
- * Global Error Interceptor: catches API errors and displays them via Toast.
- * Maps ApiError fields (Section 5.1): message, errors (field validation).
- */
+export const SKIP_ERROR_TOAST = new HttpContextToken<boolean>(() => false);
+
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const toast = inject(ToastService);
 
@@ -39,7 +38,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       } else if (err.status === HttpStatusCode.Forbidden) {
         toast.error(body?.message ?? 'You do not have permission to perform this action.');
       } else if (err.status === HttpStatusCode.NotFound) {
-        toast.warning(body?.message ?? 'The requested resource was not found.');
+        if (!req.context.get(SKIP_ERROR_TOAST)) {
+          toast.warning(body?.message ?? 'The requested resource was not found.');
+        }
       } else if (err.status && err.status >= 400) {
         toast.error(body?.message ?? `Request failed (${err.status}).`);
       } else if (err.error instanceof ErrorEvent) {

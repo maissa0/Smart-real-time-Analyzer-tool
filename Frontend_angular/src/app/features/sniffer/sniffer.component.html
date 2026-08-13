@@ -1,8 +1,8 @@
-<div class="kpit-sniffer-content">
+<div class="flex flex-col h-full overflow-hidden bg-zinc-950">
 
   @if (!selectedSession()) {
-    <div class="kpit-no-session">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <div class="flex flex-col items-center justify-center flex-1 gap-3 text-slate-600 text-sm">
+      <svg class="opacity-30" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
       </svg>
       <p>Select a session to view frames</p>
@@ -11,78 +11,25 @@
 
   @if (selectedSession()) {
 
-    <!-- Session header bar -->
-    <div class="kpit-session-header">
-      <div class="kpit-session-header-left">
-        <span class="kpit-session-filename">{{ selectedSession()!.sourceFilename }}</span>
-        @if (isLiveSession()) {
-          <span class="kpit-live-badge" [class.connected]="liveTelemetry.connected()">
-            <span class="kpit-live-dot"></span>
-            {{ liveTelemetry.connected() ? 'LIVE' : 'connecting...' }}
-          </span>
-        }
-        <span class="kpit-frame-badge">
-          @if (isLiveSession()) {
-            {{ selectedSession()?.frameCount ?? liveTelemetry.frameCount() }} frames (live)
-          } @else {
-            {{ filteredVisibleFrames().length }} / {{ allFrames().length }} frames
-          }
-        </span>
-        <span class="kpit-duration">{{ durationSeconds() }}s duration</span>
-        @if (!isLiveSession()) {
-          <span class="kpit-session-date" style="
-            font-size:0.65rem; color:#484f58;
-            background:#161b22; border:1px solid #21262d;
-            border-radius:4px; padding:2px 8px;">
-            📅 Recorded: {{ recordingDate() }}
-          </span>
-          <span class="kpit-session-date" style="
-            font-size:0.65rem; color:#484f58;
-            background:#161b22; border:1px solid #21262d;
-            border-radius:4px; padding:2px 8px;">
-            ⬆ Uploaded: {{ selectedSession()!.createdAt | slice:0:10 }}
-          </span>
-        }
-      </div>
 
-      <!-- View tabs -->
-      <div class="kpit-view-tabs">
-        <button type="button" class="kpit-view-tab" [class.active]="activeTab() === 'table'" (click)="setTab('table')">
-          ■ TABLE
-        </button>
-        <button type="button" class="kpit-view-tab" [class.active]="activeTab() === 'charts'" (click)="setTab('charts')">
-          ■ CHARTS
-        </button>
-        <button type="button" class="kpit-view-tab" [class.active]="activeTab() === 'integrity'" (click)="setTab('integrity')">
-          🔍 INTEGRITY
-        </button>
-      </div>
-    </div>
-
-    <!-- Live pipeline status — shown only during live sessions -->
+    <!-- Live pipeline status -->
     @if (isLiveSession()) {
-      <app-live-pipeline
-        [sessionId]="selectedSession()!.sessionId">
-      </app-live-pipeline>
+      <app-live-pipeline [sessionId]="selectedSession()!.sessionId"></app-live-pipeline>
     }
 
-    <!-- Session complete message — only for completed live_simulation sessions -->
+    <!-- Session complete banner -->
     @if (selectedSession() && !isLiveSession() &&
          selectedSession()!.sourceFilename === 'live_simulation' &&
          selectedSession()!.status === 'COMPLETE') {
-      <div style="
-        padding: 0.5rem 1rem;
-        background: rgba(176,255,68,0.06);
-        border-bottom: 1px solid rgba(176,255,68,0.12);
-        display: flex; align-items: center; gap: 0.75rem;
-        font-size: 0.72rem; flex-shrink: 0;">
-        <span style="color:#b0ff44; font-weight:600;">✓ Session complete</span>
-        <span style="color:#484f58;">—</span>
-        <span style="color:#8a9ab0;">Click Play to replay signal charts</span>
+      <div class="px-4 py-2 bg-lime-400/[6%] border-b border-lime-400/[12%] flex items-center gap-3 text-[0.72rem] shrink-0">
+        <span class="text-lime-400 font-semibold">✓ Session complete</span>
+        <span class="text-zinc-500">—</span>
+        <span class="text-slate-400">Click Play to replay signal charts</span>
       </div>
     }
-    <!-- Unified Replay Bar — shown only for non-live completed sessions -->
-    @if (selectedSession() && !isLiveSession() &&
+
+    <!-- Replay bar -->
+    @if (activeTab() === 'charts' && selectedSession() && !isLiveSession() &&
          !(selectedSession()!.sourceFilename === 'live_simulation' &&
            selectedSession()!.status !== 'COMPLETE')) {
       <app-replay-bar
@@ -94,25 +41,49 @@
 
     <!-- TABLE TAB -->
     @if (activeTab() === 'table') {
-      <div class="kpit-table-wrap">
+      <div class="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
         <app-frame-table
           [frames]="filteredVisibleFrames()"
           [sessionStartTs]="sessionFirstTs()"
           [visibleSignalNames]="visibleSignalNames()"
-          [faultsByFrameId]="faultsByFrameId()">
+          [faultsByFrameId]="faultsByFrameId()"
+          [violationWindows]="violationWindows()">
         </app-frame-table>
       </div>
-      <div class="kpit-action-bar">
-        <a class="kpit-action-btn"
+      <div class="flex items-center gap-3 px-4 py-3 border-t border-lime-400/[8%] bg-gray-900">
+        @if (totalFramePages() > 0) {
+          <div class="flex items-center gap-1.5">
+            <button type="button"
+              class="inline-flex items-center px-2.5 py-1.5 rounded-md text-[0.78rem] font-medium border border-zinc-700 bg-zinc-900 text-slate-300 cursor-pointer transition-all duration-200 hover:border-lime-400/40 hover:text-lime-400 disabled:opacity-40 disabled:cursor-not-allowed"
+              [disabled]="currentFramePage() === 0 || loadingFrames()"
+              (click)="goToFramePage(currentFramePage() - 1)">
+              ← Prev
+            </button>
+            <span class="text-[0.72rem] text-slate-400 px-2 whitespace-nowrap">
+              Page {{ currentFramePage() + 1 }} / {{ totalFramePages() }}
+            </span>
+            <button type="button"
+              class="inline-flex items-center px-2.5 py-1.5 rounded-md text-[0.78rem] font-medium border border-zinc-700 bg-zinc-900 text-slate-300 cursor-pointer transition-all duration-200 hover:border-lime-400/40 hover:text-lime-400 disabled:opacity-40 disabled:cursor-not-allowed"
+              [disabled]="currentFramePage() >= totalFramePages() - 1 || loadingFrames()"
+              (click)="goToFramePage(currentFramePage() + 1)">
+              Next →
+            </button>
+          </div>
+        }
+        <a class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-[0.78rem] font-medium border border-zinc-700 bg-zinc-900 text-slate-300 no-underline transition-all duration-200 hover:border-lime-400/40 hover:text-lime-400"
           [href]="csvExportUrl()"
           [download]="'session-' + selectedSession()!.sessionId + '.csv'"
           target="_blank">
           ↓ Export CSV
         </a>
-        <button type="button" class="kpit-action-btn" (click)="setTab('charts')">
+        <button type="button"
+          class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-[0.78rem] font-medium border border-zinc-700 bg-zinc-900 text-slate-300 cursor-pointer transition-all duration-200 hover:border-lime-400/40 hover:text-lime-400"
+          (click)="setTab('charts')">
           📊 View Charts
         </button>
-        <button type="button" class="kpit-action-btn kpit-action-btn--ai" (click)="navigateToAi()">
+        <button type="button"
+          class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-[0.78rem] font-medium border border-lime-400/30 bg-lime-400/[6%] text-lime-400 cursor-pointer transition-all duration-200 hover:bg-lime-400/[12%]"
+          (click)="navigateToAi()">
           🤖 AI Analysis
         </button>
       </div>
@@ -120,42 +91,54 @@
 
     <!-- CHARTS TAB -->
     @if (activeTab() === 'charts') {
-      <div class="kpit-charts-area">
-        <div class="kpit-chart-toolbar">
-          <button type="button" class="kpit-cmt-btn" [class.active]="chartMode() === 'stacked'"
+      <div class="flex-1 min-h-0 overflow-y-auto p-4">
+        <div class="flex gap-1 mb-3">
+          <button type="button"
+            class="border rounded-[5px] cursor-pointer text-base w-7 h-7 transition-all duration-150"
+            [ngClass]="chartMode() === 'stacked'
+              ? 'bg-lime-400/[12%] border-lime-400 text-lime-400'
+              : 'bg-transparent border-lime-400/20 text-slate-400'"
             (click)="chartMode.set('stacked')" title="Stacked">⊟</button>
-          <button type="button" class="kpit-cmt-btn" [class.active]="chartMode() === 'combined'"
+          <button type="button"
+            class="border rounded-[5px] cursor-pointer text-base w-7 h-7 transition-all duration-150"
+            [ngClass]="chartMode() === 'combined'
+              ? 'bg-lime-400/[12%] border-lime-400 text-lime-400'
+              : 'bg-transparent border-lime-400/20 text-slate-400'"
             (click)="chartMode.set('combined')" title="Combined">⊞</button>
+          @if (chartZoomRange(); as zoom) {
+            <span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-1 rounded-md text-[0.7rem] font-semibold bg-red-400/10 text-red-400 border border-red-400/25">
+              Zoomed to {{ chartZoomLabel() }}
+              ({{ zoom.min.toFixed(1) }}s – {{ zoom.max.toFixed(1) }}s)
+              <button type="button" class="bg-transparent border-none text-inherit cursor-pointer p-0 text-[0.75rem]"
+                (click)="clearChartZoom()" title="Clear zoom">✕</button>
+            </span>
+          }
         </div>
-        @if (!chartJsLoaded()) {
-          <div class="kpit-loading">Loading charts...</div>
+        @if (playbackLoading() && liveSignalGroups().length === 0) {
+          <div class="flex items-center justify-center py-8 text-zinc-500 text-sm gap-2">
+            <span class="w-2 h-2 rounded-full bg-lime-400 animate-ping inline-block"></span>
+            Loading signal charts…
+          </div>
         }
         @if (chartJsLoaded()) {
-          <div class="kpit-charts-grid" [class.kpit-charts-combined]="chartMode() === 'combined'">
-            @if (isLiveSession()) {
-              @for (group of liveSignalGroups(); track group.groupTitle) {
-                <app-signal-chart
-                  [groupTitle]="group.groupTitle"
-                  [msgName]="group.msgName"
-                  [datasets]="group.datasets"
-                  [chartHeight]="90"
-                  [miniChartHeight]="60"
-                  [miniChartHeightBottom]="80"
-                  [playheadTime]="playheadRelativeTime()">
-                </app-signal-chart>
-              }
-            } @else {
-              @for (group of signalTimelines(); track group.groupTitle) {
-                <app-signal-chart
-                  [groupTitle]="group.groupTitle"
-                  [msgName]="group.msgName"
-                  [datasets]="group.datasets"
-                  [chartHeight]="90"
-                  [miniChartHeight]="60"
-                  [miniChartHeightBottom]="80"
-                  [playheadTime]="playheadRelativeTime()">
-                </app-signal-chart>
-              }
+          <div
+            [ngClass]="chartMode() === 'combined'
+              ? 'columns-2 gap-4'
+              : 'grid gap-4 grid-cols-[repeat(auto-fill,minmax(420px,1fr))] items-start'">
+            @for (group of activeChartGroups(); track group.groupTitle) {
+              <app-signal-chart
+                [ngClass]="chartMode() === 'combined' ? 'break-inside-avoid mb-4 block' : ''"
+                [groupTitle]="group.groupTitle"
+                [msgName]="group.msgName"
+                [datasets]="group.datasets"
+                [chartHeight]="90"
+                [miniChartHeight]="60"
+                [miniChartHeightBottom]="80"
+                [playheadTime]="chartPlayheadTime()"
+                [maxTime]="playbackDurationSec()"
+                [findingMarkers]="chartFindingMarkers()"
+                [zoomRange]="chartZoomRange()">
+              </app-signal-chart>
             }
           </div>
         }
@@ -164,36 +147,176 @@
 
     <!-- INTEGRITY TAB -->
     @if (activeTab() === 'integrity') {
-      <div class="kpit-integrity-area">
+      <div class="flex-1 min-h-0 overflow-y-auto p-4">
         @if (loadingIntegrity()) {
-          <div class="kpit-loading">Loading integrity data...</div>
-        }
-        @if (!loadingIntegrity() && integritySummary()) {
-          <div class="kpit-integrity-summary">
-            <div class="kpit-integrity-stat">
-              <span class="kpit-integrity-val">{{ allFrames().length }}</span>
-              <span class="kpit-integrity-label">Total Frames</span>
-            </div>
-            <div class="kpit-integrity-stat">
-              <span class="kpit-integrity-val warn">{{ integritySummary()!.totalFaults }}</span>
-              <span class="kpit-integrity-label">Faults</span>
-            </div>
+          <div class="flex items-center justify-center py-8 text-zinc-500 text-sm gap-2">
+            <span class="w-3.5 h-3.5 border-2 border-zinc-700 border-t-lime-400 rounded-full animate-spin"></span>
+            Loading integrity data…
           </div>
-          @if (integrityFaults().length > 0) {
-            <div class="kpit-faults-list">
-              @for (fault of integrityFaults(); track fault.id) {
-                <div class="kpit-fault-item">
-                  <span class="kpit-fault-type">{{ fault.faultType }}</span>
-                  <span class="kpit-fault-msg">{{ fault.msgId }}</span>
-                  <span class="kpit-fault-ts">{{ (fault.frameTimestamp - (selectedSession()?.startTs ?? 0)).toFixed(3) }}s</span>
-                  <span class="kpit-fault-desc">{{ fault.description }}</span>
-                </div>
+        }
+
+        @if (!loadingIntegrity() && integritySummary(); as summary) {
+
+          <!-- Session health header -->
+          <div class="flex items-center gap-4 mb-3 flex-wrap">
+            <div class="flex items-baseline gap-2">
+              <span class="text-2xl font-bold text-lime-400">{{ frameStats().total }}</span>
+              <span class="text-[0.68rem] text-slate-400 uppercase tracking-wide">Frames analysed</span>
+            </div>
+            <div class="w-px h-6 bg-zinc-800"></div>
+            <div class="flex items-baseline gap-2">
+              <span class="text-2xl font-bold" [class.text-lime-400]="summary.totalFaults === 0" [class.text-orange-400]="summary.totalFaults > 0">
+                {{ summary.totalFaults }}
+              </span>
+              <span class="text-[0.68rem] text-slate-400 uppercase tracking-wide">Findings</span>
+            </div>
+            @if (summary.totalFaults === 0) {
+              <span class="inline-flex items-center gap-1.5 text-[0.72rem] font-semibold text-lime-400 bg-lime-400/10 border border-lime-400/25 rounded-full px-3 py-1">
+                ✓ Healthy
+              </span>
+            } @else {
+              <span class="inline-flex items-center gap-1.5 text-[0.72rem] font-semibold text-orange-400 bg-orange-400/10 border border-orange-400/25 rounded-full px-3 py-1">
+                ⚠ {{ summary.totalFaults }} Issue{{ summary.totalFaults === 1 ? '' : 's' }} Detected
+              </span>
+              <input type="text"
+                class="ml-auto px-3 py-1 text-[0.72rem] bg-zinc-900 border border-zinc-700 rounded-full text-slate-200 placeholder-zinc-600 focus:outline-none focus:border-lime-400/40 w-[220px]"
+                placeholder="Search msg ID, name, description…"
+                [ngModel]="integritySearch()"
+                (ngModelChange)="integritySearch.set($event)" />
+            }
+          </div>
+
+          @if (summary.totalFaults === 0) {
+            <div class="flex flex-col items-center justify-center py-12 gap-2 text-center">
+              <span class="text-3xl">✓</span>
+              <span class="text-sm font-semibold text-slate-200">No integrity issues detected</span>
+              <span class="text-[0.72rem] text-slate-500">All frames passed duplicate, timing, signal range, and counter checks.</span>
+            </div>
+          } @else {
+
+            <!-- Check cards: count + what each check means. Click to filter. -->
+            <div class="flex flex-wrap gap-2 mb-4">
+              <button type="button"
+                class="flex flex-col items-start gap-0.5 px-3 py-2 rounded-lg border text-left transition-all duration-150 min-w-[150px] max-w-[220px] flex-1 cursor-pointer"
+                [ngClass]="integrityFilter() === 'all'
+                  ? 'bg-lime-400/[10%] border-lime-400'
+                  : 'bg-gray-900 border-zinc-800 hover:border-lime-400/40'"
+                (click)="setIntegrityFilter('all')">
+                <span class="text-lg font-bold text-lime-400 leading-none">{{ summary.totalFaults }}</span>
+                <span class="text-[0.68rem] font-semibold text-slate-200 uppercase tracking-wide">All findings</span>
+                <span class="text-[0.62rem] text-slate-500 leading-tight">Everything the integrity checks flagged</span>
+              </button>
+              @for (card of integrityTypeCards(); track card.type) {
+                <button type="button"
+                  class="flex flex-col items-start gap-0.5 px-3 py-2 rounded-lg border text-left transition-all duration-150 min-w-[150px] max-w-[220px] flex-1"
+                  [disabled]="card.count === 0"
+                  [ngClass]="[
+                    faultTextClass(card.type),
+                    integrityFilter() === card.type ? 'bg-zinc-800/70 border-current' : 'bg-gray-900 border-zinc-800',
+                    card.count === 0 ? 'opacity-40 cursor-default' : 'cursor-pointer hover:border-zinc-600'
+                  ]"
+                  (click)="card.count > 0 && setIntegrityFilter(card.type)">
+                  <span class="text-lg font-bold leading-none">{{ faultTypeIcon(card.type) }} {{ card.count }}</span>
+                  <span class="text-[0.68rem] font-semibold uppercase tracking-wide">{{ faultTypeLabel(card.type) }}</span>
+                  <span class="text-[0.62rem] text-slate-500 leading-tight">{{ faultTypeDescription(card.type) }}</span>
+                </button>
               }
             </div>
+
+            <!-- Findings: click a row for the full explanation -->
+            @if (filteredIntegrityFaults().length > 0) {
+              <div class="flex flex-col gap-1.5">
+                @for (fault of filteredIntegrityFaults(); track fault.id) {
+                  <div class="rounded-md border overflow-hidden" [ngClass]="faultRowClass(fault.faultType)">
+                    <div class="flex items-center gap-3 px-3 py-2 text-[0.72rem] cursor-pointer select-none"
+                      (click)="toggleFaultExpand(fault.id)">
+                      <span class="text-sm shrink-0" [ngClass]="faultTextClass(fault.faultType)">{{ faultTypeIcon(fault.faultType) }}</span>
+                      <span class="font-semibold uppercase tracking-wide text-[0.65rem] w-[110px] shrink-0"
+                        [ngClass]="faultTextClass(fault.faultType)">{{ faultTypeLabel(fault.faultType) }}</span>
+                      <span class="text-slate-200 font-semibold shrink-0">{{ fault.msgName }}</span>
+                      <span class="text-lime-400 font-mono shrink-0 text-[0.65rem]">{{ fault.msgId }}</span>
+                      <span class="text-zinc-300 flex-1 truncate">{{ fault.title || fault.description }}</span>
+                      @if ((fault.occurrences ?? 1) > 1) {
+                        <span class="shrink-0 px-1.5 py-[1px] rounded-full bg-zinc-800 text-slate-300 text-[0.62rem] font-semibold"
+                          title="This exact finding repeated — collapsed into one row">×{{ fault.occurrences }}</span>
+                      }
+                      <span class="text-slate-400 font-mono shrink-0" title="Seconds after session start">+{{ faultRelativeTime(fault) }}s</span>
+                      @if (canEditDiagnostics()) {
+                        <button type="button" title="Edit this diagnostic"
+                          class="shrink-0 text-zinc-500 hover:text-lime-400 text-xs px-1 leading-none"
+                          (click)="openFaultEditor(fault); $event.stopPropagation()">✎</button>
+                      }
+                      <span class="text-zinc-500 text-[0.6rem] shrink-0">{{ expandedFaultIds().has(fault.id) ? '▾' : '▸' }}</span>
+                    </div>
+
+                    @if (expandedFaultIds().has(fault.id)) {
+                      <div class="px-3 pb-3 pt-2 border-t border-white/5 flex flex-col gap-2.5 text-[0.7rem]">
+                        <div class="text-zinc-300 font-mono text-[0.68rem]">{{ fault.description }}</div>
+
+                        <div class="grid gap-2 md:grid-cols-3">
+                          <div class="bg-black/25 rounded-md p-2.5">
+                            <div class="text-[0.6rem] font-semibold uppercase tracking-wide text-slate-500 mb-1">What it means</div>
+                            <div class="text-zinc-300 leading-snug">{{ fault.meaning || faultTypeDescription(fault.faultType) }}</div>
+                          </div>
+                          @if (fault.likelyCause) {
+                            <div class="bg-black/25 rounded-md p-2.5">
+                              <div class="text-[0.6rem] font-semibold uppercase tracking-wide text-slate-500 mb-1">Likely cause</div>
+                              <div class="text-zinc-300 leading-snug">{{ fault.likelyCause }}</div>
+                            </div>
+                          }
+                          @if (fault.whatToCheck) {
+                            <div class="bg-black/25 rounded-md p-2.5">
+                              <div class="text-[0.6rem] font-semibold uppercase tracking-wide text-slate-500 mb-1">What to check</div>
+                              <div class="text-zinc-300 leading-snug">{{ fault.whatToCheck }}</div>
+                            </div>
+                          }
+                        </div>
+
+                        <div class="flex items-center gap-4 flex-wrap text-[0.65rem] text-slate-400">
+                          @if (fault.subsystem) {
+                            <span>Subsystem: <span class="text-slate-200 uppercase">{{ fault.subsystem }}</span></span>
+                          }
+                          <span>First seen <span class="font-mono text-slate-200">+{{ faultRelativeTime(fault) }}s</span></span>
+                          @if (faultLastSeenRelative(fault); as last) {
+                            <span>Last seen <span class="font-mono text-slate-200">+{{ last }}s</span></span>
+                            <span>Repeated <span class="text-slate-200 font-semibold">{{ fault.occurrences }}×</span></span>
+                          }
+                        </div>
+
+                        @if (fault.context && fault.context.length > 0) {
+                          <div>
+                            <div class="text-[0.6rem] font-semibold uppercase tracking-wide text-slate-500 mb-1">Vehicle state at detection</div>
+                            <div class="flex flex-wrap gap-1.5">
+                              @for (c of fault.context; track c.name) {
+                                <span class="px-1.5 py-[1px] rounded bg-zinc-800/80 text-[0.62rem] font-mono text-slate-400">
+                                  {{ c.name }}: <span class="text-slate-100">{{ c.label || c.value }}</span>
+                                </span>
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="flex flex-col items-center justify-center py-10 gap-1 text-center">
+                <span class="text-sm text-slate-400">No faults match this filter</span>
+                <button type="button" class="text-[0.7rem] text-lime-400 hover:underline" (click)="setIntegrityFilter('all'); integritySearch.set('')">
+                  Clear filters
+                </button>
+              </div>
+            }
           }
         }
       </div>
     }
 
+  }
+
+  @if (editingFault(); as fault) {
+    <app-fault-diagnostic-editor [fault]="fault"
+      (saved)="onEditorSaved()" (closed)="onEditorClosed()" />
   }
 </div>

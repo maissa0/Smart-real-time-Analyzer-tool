@@ -1,0 +1,3 @@
+[     106ms] [LOG] Angular is running in development mode. @ http://localhost:4200/@fs/C:/tools/Kpit_c/Frontend_angular/.angular/cache/21.2.13/user-management-platform/vite/deps/chunk-TWCEFUUT.js?v=ecbc87ab:11236
+[     468ms] [LOG] [AUTH INTERCEPTOR] GET /api/can/sessions | Auth: ✅ @ http://localhost:4200/main.js:346
+[     491ms] [LOG] [AUTH INTERCEPTOR] GET /api/cars | Auth: ✅ @ http://localhost:4200/main.js:346

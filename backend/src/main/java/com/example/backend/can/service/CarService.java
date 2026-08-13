@@ -1,12 +1,19 @@
 package com.example.backend.can.service;
 
+import com.example.backend.can.dto.CanSessionResponse;
+import com.example.backend.can.dto.CarCatalogDto;
 import com.example.backend.can.dto.CarCreateRequest;
 import com.example.backend.can.dto.CarDto;
 import com.example.backend.can.dto.CarUpdateRequest;
+import com.example.backend.can.dto.RequirementDtos.CarRequirementDto;
 import com.example.backend.can.entity.CarEntity;
+import com.example.backend.can.entity.EcuCatalogEntity;
+import com.example.backend.can.entity.RequirementSetEntity;
 import com.example.backend.can.repository.CanSessionRepository;
 import com.example.backend.can.repository.CarRepository;
+import com.example.backend.can.repository.EcuCatalogRepository;
 import com.example.backend.can.repository.IntegrityFaultRepository;
+import com.example.backend.can.repository.RequirementSetRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -29,6 +36,10 @@ public class CarService {
     private final CarRepository carRepository;
     private final CanSessionRepository canSessionRepository;
     private final IntegrityFaultRepository integrityFaultRepository;
+    private final CanSessionService canSessionService;
+    private final EcuCatalogRepository ecuCatalogRepository;
+    private final RequirementSetRepository requirementSetRepository;
+    private final RequirementService requirementService;
 
     // ── Create ────────────────────────────────────────────────────────────────
 
@@ -75,14 +86,19 @@ public class CarService {
     }
 
     /**
-     * Get all active non-deleted cars (admin view).
+     * Get all active non-deleted cars (admin view), with computed stats
+     * (sessionCount, totalFrames, lastSessionAt, faultRate) populated per car.
      *
      * @return list of CarDto ordered by creation date descending
      */
     public List<CarDto> getAllCars() {
         return carRepository.findAllActive()
                 .stream()
-                .map(this::toDto)
+                .map(car -> {
+                    CarDto dto = toDto(car);
+                    populateStats(dto, car.getId());
+                    return dto;
+                })
                 .toList();
     }
 
@@ -98,6 +114,140 @@ public class CarService {
         CarDto dto = toDto(car);
         populateStats(dto, car.getId());
         return dto;
+    }
+
+    // ── Sessions ──────────────────────────────────────────────────────────────
+
+    /**
+     * List all CAN sessions belonging to a car identified by its public UUID.
+     * Throws 404 if the car does not exist or is soft-deleted.
+     *
+     * @param carUid public UUID of the car
+     * @return sessions ordered by createdAt DESC
+     */
+    public List<CanSessionResponse> getSessionsByCarUid(String carUid) {
+        CarEntity car = findActiveByUid(carUid);
+        return canSessionService.getSessionsByCarId(car.getId());
+    }
+
+    // ── Catalog assignment ────────────────────────────────────────────────────
+
+    /**
+     * List the catalogs assigned to a car (empty = car uses all catalogs).
+     * Throws 404 if the car does not exist or is soft-deleted.
+     */
+    @Transactional(readOnly = true)
+    public List<CarCatalogDto> getCarCatalogs(String carUid) {
+        CarEntity car = findActiveByUidWithCatalogs(carUid);
+        return car.getCatalogs().stream()
+                .map(c -> new CarCatalogDto(c.getFilename(), c.getName(), c.getBusName()))
+                .sorted((a, b) -> a.filename().compareToIgnoreCase(b.filename()))
+                .toList();
+    }
+
+    /**
+     * Replace a car's assigned catalog set with the given catalog filenames.
+     * An empty list clears the assignment (car falls back to all catalogs).
+     *
+     * @throws ResponseStatusException 404 when the car is unknown,
+     *                                 400 when a filename has no catalog record
+     */
+    @Transactional
+    public List<CarCatalogDto> setCarCatalogs(String carUid, List<String> filenames) {
+        CarEntity car = findActiveByUidWithCatalogs(carUid);
+
+        java.util.Set<EcuCatalogEntity> resolved = new java.util.HashSet<>();
+        for (String filename : filenames) {
+            EcuCatalogEntity catalog = ecuCatalogRepository.findByFilename(filename)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST, "Unknown catalog: " + filename));
+            resolved.add(catalog);
+        }
+
+        car.getCatalogs().clear();
+        car.getCatalogs().addAll(resolved);
+        carRepository.save(car);
+        log.info("Car {} catalogs set to {}", carUid,
+                resolved.stream().map(EcuCatalogEntity::getFilename).toList());
+        return getCarCatalogs(carUid);
+    }
+
+    // ── Requirement-set assignment (mirror of catalog assignment) ─────────────
+
+    /**
+     * List the requirement sets assigned to a car (empty = requirements engine
+     * disabled for this car — no merged-global fallback, unlike catalogs).
+     */
+    @Transactional(readOnly = true)
+    public List<CarRequirementDto> getCarRequirements(String carUid) {
+        CarEntity car = findActiveByUidWithRequirements(carUid);
+        return car.getRequirementSets().stream()
+                .map(r -> new CarRequirementDto(r.getFilename(), r.getName(), r.getVersion()))
+                .sorted((a, b) -> a.filename().compareToIgnoreCase(b.filename()))
+                .toList();
+    }
+
+    /**
+     * Replace a car's assigned requirement-set list with the given filenames.
+     * An empty list clears the assignment (engine off for this car).
+     *
+     * @throws ResponseStatusException 404 when the car is unknown,
+     *                                 400 when a filename has no registry record
+     */
+    @Transactional
+    public List<CarRequirementDto> setCarRequirements(String carUid, List<String> filenames) {
+        CarEntity car = findActiveByUidWithRequirements(carUid);
+
+        java.util.Set<RequirementSetEntity> resolved = new java.util.HashSet<>();
+        for (String filename : filenames) {
+            // Registry rows are created on upload/save/reload — but a valid file
+            // already on disk (seeded, or predating the registry table) may have
+            // no row yet, so sync it from disk instead of rejecting it.
+            RequirementSetEntity set = requirementSetRepository.findByFilename(filename)
+                    .or(() -> requirementService.ensureRegistered(filename))
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST, "Unknown requirement set: " + filename));
+            resolved.add(set);
+        }
+
+        car.getRequirementSets().clear();
+        car.getRequirementSets().addAll(resolved);
+        carRepository.save(car);
+        log.info("Car {} requirement sets set to {}", carUid,
+                resolved.stream().map(RequirementSetEntity::getFilename).toList());
+        return getCarRequirements(carUid);
+    }
+
+    private CarEntity findActiveByUidWithRequirements(String carUid) {
+        return carRepository.findByCarUidWithRequirements(carUid)
+                .filter(c -> c.getDeletedAt() == null)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Car not found: " + carUid));
+    }
+
+    /**
+     * Catalog filenames assigned to a car, for the simulator start path.
+     * Returns an empty list when the car is unknown or has no assignment —
+     * in both cases the simulator uses all catalogs (legacy behaviour).
+     */
+    @Transactional(readOnly = true)
+    public List<String> getAssignedCatalogFilenames(String carUid) {
+        return carRepository.findByCarUidWithCatalogs(carUid)
+                .filter(c -> c.getDeletedAt() == null)
+                .map(c -> c.getCatalogs().stream()
+                        .map(EcuCatalogEntity::getFilename)
+                        .sorted()
+                        .toList())
+                .orElse(List.of());
+    }
+
+    private CarEntity findActiveByUidWithCatalogs(String carUid) {
+        return carRepository.findByCarUidWithCatalogs(carUid)
+                .filter(c -> c.getDeletedAt() == null)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Car not found: " + carUid
+                ));
     }
 
     // ── Stats ─────────────────────────────────────────────────────────────────

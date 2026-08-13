@@ -2,19 +2,27 @@ package com.example.backend.can.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -73,6 +81,37 @@ public class CarEntity {
      */
     @Column(name = "ecu_catalog_id")
     private Long ecuCatalogId;
+
+    /**
+     * ECU catalogs assigned to this car. The simulator restricts generated traffic
+     * to these catalog files; an empty set means "use all catalogs" (legacy behaviour).
+     * LAZY + excluded from toString/equals to avoid lazy-loading on every car fetch.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "car_catalogs",
+            joinColumns = @JoinColumn(name = "car_id"),
+            inverseJoinColumns = @JoinColumn(name = "catalog_id"))
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<EcuCatalogEntity> catalogs = new HashSet<>();
+
+    /**
+     * Requirement sets assigned to this car. The requirements engine evaluates a
+     * session ONLY against these files; an empty set disables requirement checks
+     * for the car (unlike catalogs there is no merged-global fallback — merging
+     * unrelated requirement sets would produce false violations).
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "car_requirement_sets",
+            joinColumns = @JoinColumn(name = "car_id"),
+            inverseJoinColumns = @JoinColumn(name = "requirement_set_id"))
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<RequirementSetEntity> requirementSets = new HashSet<>();
 
     /**
      * FK to users.id stored as BINARY(16).

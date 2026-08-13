@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { AuthStore } from '../../../store/auth.store';
+import { AuthStore } from '../../../core/store/auth.store';
 import { MfaStateService } from '../../../core/services/mfa-state.service';
 
 @Component({
@@ -75,6 +75,7 @@ export class MfaVerifyComponent {
     this.isSubmitting.set(true);
     this.authService.mfaVerify(token, code).subscribe({
       next: (res) => {
+        const returnUrl = this.mfaState.getReturnUrl() ?? '/admin';
         this.mfaState.clear();
         this.authStore.setAuth({
           user: res.user,
@@ -82,7 +83,7 @@ export class MfaVerifyComponent {
           refreshToken: res.refreshToken,
           permissions: res.permissions,
         });
-        this.router.navigateByUrl('/admin/users/list');
+        this.router.navigateByUrl(returnUrl);
       },
       error: (err) => {
         this.isSubmitting.set(false);

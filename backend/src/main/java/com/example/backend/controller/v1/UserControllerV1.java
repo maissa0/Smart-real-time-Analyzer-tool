@@ -132,7 +132,7 @@ public class UserControllerV1 {
     @GetMapping("/{id}/permissions")
     @Operation(summary = "Get all permissions for a user (role + extra)")
     @PreAuthorize("hasAuthority('user:read') or hasRole('ADMIN') or hasRole('Admin')")
-    public ResponseEntity<java.util.Map<String, Object>> getUserPermissions(
+    public ResponseEntity<com.example.backend.can.dto.UserPermissionsResponse> getUserPermissions(
             @PathVariable UUID id) {
         return ResponseEntity.ok(userService.getUserPermissions(id));
     }

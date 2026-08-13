@@ -41,7 +41,7 @@ public class DashboardStatsDto {
      * Top 5 message IDs by frame count.
      * Each entry: { "msgId": "0x123", "count": 45678 }
      */
-    private List<Map<String, Object>> topMessageIds;
+    private List<TopMessageIdDto> topMessageIds;
 
     /** Total number of registered vehicles (cars). */
     private Long totalCars;

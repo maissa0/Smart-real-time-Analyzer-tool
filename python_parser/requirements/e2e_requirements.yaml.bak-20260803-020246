@@ -1,0 +1,124 @@
+# E2E scenario requirement set — exercises every rule kind of the engine:
+#   response | absence | duration | invariant (predicate + transition forms)
+# plus signal_map aliases, one derived signal, and one draft rule.
+#
+# Written against test-data/e2e-scenario/e2e_body_can.xml and
+# e2e_chassis_can.xml. Upload via Requirements page, assign to the test car
+# together with both catalogs.
+meta:
+  name: E2E Body & Chassis requirements
+  version: 1
+  # Rule-local aliases -> real catalog signal names (per-file indirection).
+  signal_map:
+    DoorLock: E2E_Door_Lock_State
+    LockButton: E2E_Lock_Request
+    Speed: E2E_Vehicle_Speed
+    Wiper: E2E_Wiper_Mode
+    Rain: E2E_Rain_Detected
+    DoorFL: E2E_Door_FL_State
+    Trunk: E2E_Trunk_State
+  # Derived signal: not on the bus, computed from Speed (via the alias above).
+  derived_signals:
+    - name: vehicle_moving
+      from: [Speed]
+      cases:
+        - value: moving
+          when: ["Speed > 5"]
+        - value: stationary
+          when: ["Speed <= 5"]
+
+rules:
+  # ── RESPONSE: lock command must be honoured within a deadline ──────────────
+  - id: E2E_R1
+    title: Doors must lock within 500 ms of a lock button press
+    component: driver_door
+    severity: high
+    kind: response
+    preconditions:
+      - "DoorFL == 'Closed'"
+    trigger: { signal: LockButton, to: 'Lock_Pressed' }
+    expect: { signal: DoorLock, becomes: 'Locked' }
+    deadline_ms: 500
+    violation_title: "Doors did not lock (in time) after lock button press"
+    check_list:
+      - "Key fob battery / E2E_Lock_Request reaching the body ECU"
+      - "Door lock actuator wiring (E2E_Door_Lock_State)"
+      - "Body ECU <-> body gateway on E2E_Body_CAN"
+
+  # ── ABSENCE: never unlock while driving (uses the derived signal) ──────────
+  - id: E2E_A1
+    title: Doors must never unlock while the vehicle is moving
+    component: driver_door
+    severity: critical
+    kind: absence
+    while:
+      - "vehicle_moving == 'moving'"
+    forbidden: { signal: DoorLock, to: 'Unlocked' }
+    violation_title: "Doors unlocked while the vehicle was moving"
+    check_list:
+      - "Speed signal plausibility (E2E_Vehicle_Speed)"
+      - "Unexpected unlock source on E2E_Body_CAN"
+
+  # ── ABSENCE: wipers must never switch off while it is raining ──────────────
+  - id: E2E_A2
+    title: Wipers must never switch off while rain is detected
+    component: wiper_module
+    severity: medium
+    kind: absence
+    while:
+      - "Rain == 'Raining'"
+    forbidden: { signal: Wiper, to: 'Off' }
+    violation_title: "Wipers switched off while it was raining"
+
+  # ── DURATION: unlocked with doors closed must auto-relock within 5 s ───────
+  - id: E2E_D1
+    title: Unlocked car with closed doors must auto-relock within 5 s
+    component: body_ecu
+    severity: medium
+    kind: duration
+    state:
+      - "DoorLock == 'Unlocked'"
+      - "DoorFL == 'Closed'"
+    duration_ms: 5000
+    expect: { signal: DoorLock, becomes: 'Locked' }
+    violation_title: "Car stayed unlocked longer than the 5 s auto-relock window"
+
+  # ── INVARIANT (transition form): allowed door state machine ────────────────
+  - id: E2E_I1
+    title: Driver door state machine transitions
+    component: driver_door
+    severity: high
+    kind: invariant
+    state_signal: DoorFL
+    allowed_transitions:
+      - [Closed, Opening]
+      - [Opening, Open]
+      - [Open, Closing]
+      - [Closing, Closed]
+      - [Closed, Ajar]
+      - [Ajar, Closed]
+    violation_title: "Driver door made an illegal state transition"
+
+  # ── INVARIANT (predicate form): trunk & hood closed while moving ───────────
+  - id: E2E_I2
+    title: Trunk and hood must stay closed while the vehicle is moving
+    component: trunk
+    severity: high
+    kind: invariant
+    when:
+      - "vehicle_moving == 'moving'"
+    expect_all:
+      - "Trunk == 'Closed'"
+      - "E2E_Hood_State == 'Closed'"
+    violation_title: "Trunk or hood open while the vehicle was moving"
+
+  # ── DRAFT rule: tracked but never raises findings (always NOT_TESTED) ──────
+  - id: E2E_DR1
+    title: Trunk release must open the trunk within 2 s (draft)
+    component: trunk
+    severity: low
+    kind: response
+    draft: true
+    trigger: { signal: LockButton, to: 'Trunk_Release' }
+    expect: { signal: Trunk, becomes: 'Open' }
+    deadline_ms: 2000

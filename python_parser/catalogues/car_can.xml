@@ -110,8 +110,19 @@
 					<name>opened</name>
 				</values>
 				</Signal>
+				<Signal Bit="xxxx11xx">
+				<signal_name>Hood_Status</signal_name>
+				<values>
+					<value>0</value>
+					<name>Closed</name>
+					</values>
+					<values>
+					<value>1</value>
+					<name>opened</name>
+				</values>
+				</Signal>
 				<Signal Bit="11xxxxxx">
-				<signal_name>Rocker_switch_Status</signal_name> 
+				<signal_name>Rocker_switch_Status</signal_name>
 				<values>
 					<value>0</value>
 					<name>not_pressed</name>

@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -37,7 +36,8 @@ public class RoleService {
         List<PermissionEntity> permissions = permissionRepository.findAllById(
                 request.permissionIds().stream().map(UUID::fromString).collect(Collectors.toList())
         );
-        role.setPermissions(new HashSet<>(permissions));
+        role.getPermissionIds().clear();
+        permissions.forEach(p -> role.getPermissionIds().add(p.getId()));
         roleRepository.save(role);
 
         return toRoleWithPermissions(role);
@@ -54,12 +54,15 @@ public class RoleService {
     }
 
     private RoleWithPermissionsResponse toRoleWithPermissions(RoleEntity r) {
-        var perms = r.getPermissions() == null ? null : r.getPermissions().stream()
-                .map(p -> new com.example.backend.dto.permission.PermissionResponse(
-                        p.getId().toString(),
-                        p.getSlug(),
-                        p.getDescription()))
-                .collect(Collectors.toList());
+        List<com.example.backend.dto.permission.PermissionResponse> perms =
+                (r.getPermissionIds() == null || r.getPermissionIds().isEmpty())
+                        ? null
+                        : permissionRepository.findByIdIn(new java.util.ArrayList<>(r.getPermissionIds())).stream()
+                                .map(p -> new com.example.backend.dto.permission.PermissionResponse(
+                                        p.getId().toString(),
+                                        p.getSlug(),
+                                        p.getDescription()))
+                                .collect(Collectors.toList());
         return new RoleWithPermissionsResponse(
                 r.getId().toString(),
                 r.getName(),

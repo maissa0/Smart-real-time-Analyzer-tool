@@ -1,0 +1,182 @@
+<?xml version="1.0"?>
+	<Bus Name="Comfort_CAN">
+		<massage name="Seat_Control" id="0x400">
+			<sender>comfort ECU</sender>
+			<reciver>body gateway</reciver>
+			<Cyclic>
+				<status>true</status>
+				<cycle>2000</cycle>
+			</Cyclic>
+			<Byte>
+				<Num>0</Num>
+				<Signal Bit="xxxxx111">
+				<signal_name>seat_position</signal_name>
+				<values>
+					<value>0</value>
+					<name>Neutral</name>
+				</values>
+				<values>
+					<value>1</value>
+					<name>Forward</name>
+				</values>
+				<values>
+					<value>2</value>
+					<name>Backward</name>
+				</values>
+				<values>
+					<value>3</value>
+					<name>Up</name>
+				</values>
+				<values>
+					<value>4</value>
+					<name>Down</name>
+				</values>
+				<values>
+					<value>5</value>
+					<name>Memory_Recall</name>
+				</values>
+				</Signal>
+				<Signal Bit="xx11xxxx">
+				<signal_name>seat_heater_level</signal_name>
+				<values>
+					<value>0</value>
+					<name>Off</name>
+				</values>
+				<values>
+					<value>1</value>
+					<name>Low</name>
+				</values>
+				<values>
+					<value>2</value>
+					<name>Medium</name>
+				</values>
+				<values>
+					<value>3</value>
+					<name>High</name>
+				</values>
+				</Signal>
+				<Signal Bit="1xxxxxxx">
+				<signal_name>lumbar_support_active</signal_name>
+				<values>
+					<value>0</value>
+					<name>Inactive</name>
+				</values>
+				<values>
+					<value>1</value>
+					<name>Active</name>
+				</values>
+				</Signal>
+			</Byte>
+		</massage>
+		<massage name="Climate_Status" id="0x401">
+			<sender>hvac ECU</sender>
+			<reciver>body gateway</reciver>
+			<Cyclic>
+				<status>true</status>
+				<cycle>1000</cycle>
+			</Cyclic>
+			<Byte>
+				<Num>0</Num>
+				<Signal Bit="xxxx1111">
+				<signal_name>hvac_mode</signal_name>
+				<values>
+					<value>0</value>
+					<name>Off</name>
+				</values>
+				<values>
+					<value>1</value>
+					<name>Vent</name>
+				</values>
+				<values>
+					<value>2</value>
+					<name>Heat</name>
+				</values>
+				<values>
+					<value>3</value>
+					<name>Cool</name>
+				</values>
+				<values>
+					<value>4</value>
+					<name>Auto</name>
+				</values>
+				</Signal>
+				<Signal Bit="x111xxxx">
+				<signal_name>fan_speed</signal_name>
+				<values>
+					<value>0</value>
+					<name>Off</name>
+				</values>
+				<values>
+					<value>1</value>
+					<name>Speed_1</name>
+				</values>
+				<values>
+					<value>2</value>
+					<name>Speed_2</name>
+				</values>
+				<values>
+					<value>3</value>
+					<name>Speed_3</name>
+				</values>
+				<values>
+					<value>4</value>
+					<name>Speed_4</name>
+				</values>
+				<values>
+					<value>5</value>
+					<name>Turbo</name>
+				</values>
+				</Signal>
+			</Byte>
+			<Byte>
+				<Num>1</Num>
+				<Signal Bit="xxxxxxx1">
+				<signal_name>ac_compressor_on</signal_name>
+				<values>
+					<value>0</value>
+					<name>Off</name>
+				</values>
+				<values>
+					<value>1</value>
+					<name>On</name>
+				</values>
+				</Signal>
+			</Byte>
+		</massage>
+		<massage name="Mirror_Adjust" id="0x402">
+			<sender>door ECU</sender>
+			<reciver>body gateway</reciver>
+			<Cyclic>
+				<status>false</status>
+			</Cyclic>
+			<Byte>
+				<Num>0</Num>
+				<Signal Bit="xxxxxx11">
+				<signal_name>mirror_fold_status</signal_name>
+				<values>
+					<value>0</value>
+					<name>Unfolded</name>
+				</values>
+				<values>
+					<value>1</value>
+					<name>Folding</name>
+				</values>
+				<values>
+					<value>2</value>
+					<name>Folded</name>
+				</values>
+				</Signal>
+				<Signal Bit="xxxx1xxx">
+				<signal_name>mirror_heater_on</signal_name>
+				<values>
+					<value>0</value>
+					<name>Off</name>
+				</values>
+				<values>
+					<value>1</value>
+					<name>On</name>
+				</values>
+				</Signal>
+			</Byte>
+		</massage>
+	</Bus>

@@ -1,0 +1,48 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - img
+    - generic [ref=e6]: KPITAnalyser
+    - generic [ref=e7]:
+      - heading "Real-time CAN bus intelligence." [level=1] [ref=e9]
+      - paragraph [ref=e10]: Decode automotive signals, detect anomalies and replay sessions with full integrity checking.
+      - generic [ref=e11]:
+        - generic [ref=e14]: Live signal chart monitoring
+        - generic [ref=e17]: Fault injection & integrity analysis
+        - generic [ref=e20]: Digital twin vehicle simulation
+        - generic [ref=e23]: Multi-session log replay
+    - generic [ref=e24]: © 2026 KPIT Analyser · All rights reserved
+  - generic [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: 
+        - text: Secure sign-in
+      - heading "Sign in" [level=2] [ref=e30]
+      - paragraph [ref=e31]: Access your KPIT Analyser workspace
+    - generic [ref=e32]:
+      - generic [ref=e33]:
+        - generic [ref=e34]: Email Address
+        - textbox "Email Address" [ref=e35]:
+          - /placeholder: info@example.com
+      - generic [ref=e36]:
+        - generic [ref=e37]: Password
+        - generic [ref=e38]:
+          - textbox "Password" [ref=e39]:
+            - /placeholder: ••••••••
+          - button "Show password" [ref=e40] [cursor=pointer]:
+            - img [ref=e41]
+      - generic [ref=e44]:
+        - generic [ref=e45] [cursor=pointer]:
+          - checkbox "Keep me signed in" [ref=e46]
+          - text: Keep me signed in
+        - link "Forgot password?" [ref=e47] [cursor=pointer]:
+          - /url: /auth/forgot-password
+      - button " Continue to workspace" [disabled] [ref=e48]:
+        - generic [ref=e49]: 
+        - text: Continue to workspace
+      - generic [ref=e50]:
+        - generic [ref=e51]: 
+        - text: Your session is encrypted end-to-end. Contact your admin if you need access.
+    - paragraph [ref=e52]:
+      - text: Don't have an account?
+      - link "Sign up" [ref=e53] [cursor=pointer]:
+        - /url: /auth/register

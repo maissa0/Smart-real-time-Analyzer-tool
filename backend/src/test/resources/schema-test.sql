@@ -154,3 +154,34 @@ CREATE TABLE IF NOT EXISTS log_files (
     created_at DATETIME NOT NULL,
     completed_at DATETIME
 );
+
+-- V2 tables (mirrors db/migrations/V2__create_new_tables.sql)
+
+CREATE TABLE IF NOT EXISTS ecu_catalogs (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    filename VARCHAR(255) NOT NULL UNIQUE,
+    bus_name VARCHAR(64) NOT NULL,
+    version VARCHAR(20),
+    description VARCHAR(500),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cars (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    car_uid VARCHAR(36) NOT NULL UNIQUE,
+    vin VARCHAR(17) UNIQUE,
+    make VARCHAR(100) NOT NULL,
+    model VARCHAR(100) NOT NULL,
+    "year" SMALLINT NOT NULL,
+    color VARCHAR(50),
+    ecu_catalog_id BIGINT,
+    owner_user_id BINARY(16),
+    is_virtual BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    deleted_at DATETIME
+);

@@ -1,5 +1,7 @@
 package com.example.backend.can.service;
 
+import com.example.backend.can.config.KafkaTopicConfig;
+import com.example.backend.can.dto.ProcessingJobPayload;
 import com.example.backend.can.entity.LogFileEntity;
 import com.example.backend.can.repository.LogFileRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,8 +16,8 @@ import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -26,6 +28,7 @@ public class LogUploadService {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
     private final LogFileRepository logFileRepository;
+    private final CarService carService;
 
     @Value("${pipeline.uploads.dir}")
     private String uploadsDir;
@@ -65,17 +68,37 @@ public class LogUploadService {
 
     private void publishProcessingJob(String sessionId, Path filePath,
             String sourceFilename, String carUid) throws Exception {
-        Map<String, Object> job = new HashMap<>();
-        job.put("session_id", sessionId);
-        job.put("file_path", filePath.toAbsolutePath().toString());
-        job.put("source_filename", sourceFilename);
-        job.put("catalogues_dir", cataloguesDir);
+        // Scope decoding to the car's assigned catalogs (null = all catalogs)
+        java.util.List<String> catalogFiles = null;
         if (carUid != null && !carUid.isBlank()) {
-            job.put("car_uid", carUid);
+            java.util.List<String> assigned = carService.getAssignedCatalogFilenames(carUid);
+            if (!assigned.isEmpty()) {
+                catalogFiles = assigned;
+            }
         }
+        ProcessingJobPayload job = new ProcessingJobPayload(
+                sessionId,
+                filePath.toAbsolutePath().toString(),
+                sourceFilename,
+                cataloguesDir,
+                (carUid != null && !carUid.isBlank()) ? carUid : null,
+                catalogFiles
+        );
         String jobJson = objectMapper.writeValueAsString(job);
-        kafkaTemplate.send("file-processing-jobs", sessionId, jobJson);
+        kafkaTemplate.send(KafkaTopicConfig.TOPIC_FILE_PROCESSING_JOBS, sessionId, jobJson);
         log.info("Published file processing job for session {}", sessionId);
+    }
+
+    /**
+     * Retry by log file ID — looks up the record and delegates to retryProcessing.
+     * Returns empty when no record exists for the given ID so the controller
+     * can map to 404 without any repository access.
+     */
+    public Optional<Map<String, String>> retryById(Long logFileId) throws Exception {
+        LogFileEntity logFile = logFileRepository.findById(logFileId).orElse(null);
+        if (logFile == null) return Optional.empty();
+        String sessionId = retryProcessing(logFile);
+        return Optional.of(Map.of("sessionId", sessionId, "status", "PROCESSING"));
     }
 
     /**

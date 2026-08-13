@@ -1,13 +1,16 @@
 package com.example.backend.can.controller;
 
+import com.example.backend.can.dto.PlaybackStartRequest;
+import com.example.backend.can.dto.PlaybackStartResponse;
+import com.example.backend.can.dto.PlaybackStatusResponse;
 import com.example.backend.can.service.PlaybackService;
+import com.example.backend.exception.SafeErrorMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -22,43 +25,37 @@ public class PlaybackController {
      * Start a new playback session streaming from InfluxDB via WebSocket.
      * Client should subscribe to /topic/playback/{sessionId} before calling this.
      */
+    @PreAuthorize("hasAuthority('session:read') or hasRole('ADMIN')")
     @PostMapping("/start")
-    public ResponseEntity<Map<String, Object>> start(
-            @RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> start(@RequestBody PlaybackStartRequest request) {
         try {
-            String sessionId = (String) request.get("sessionId");
-            double startTs = ((Number) request.getOrDefault("startTs", 0.0)).doubleValue();
-            double endTs = ((Number) request.getOrDefault("endTs", 0.0)).doubleValue();
-            double speed = ((Number) request.getOrDefault("speed", 1.0)).doubleValue();
-
-            @SuppressWarnings("unchecked")
-            List<String> signals = (List<String>) request.get("signals");
-
-            if (sessionId == null || sessionId.isEmpty()) {
+            if (request.sessionId() == null || request.sessionId().isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "sessionId is required"));
             }
+            double startTs = request.startTs() != null ? request.startTs() : 0.0;
+            double endTs   = request.endTs()   != null ? request.endTs()   : 0.0;
+            double speed   = request.speed()   != null ? request.speed()   : 1.0;
 
             String playbackId = playbackService.startPlayback(
-                    sessionId, startTs, endTs, speed, signals);
+                    request.sessionId(), startTs, endTs, speed, request.signals(),
+                    Boolean.TRUE.equals(request.includeUndecoded()));
 
-            return ResponseEntity.ok(Map.of(
-                    "playbackId", playbackId,
-                    "sessionId", sessionId,
-                    "status", "started",
-                    "topic", "/topic/playback/" + sessionId
-            ));
+            return ResponseEntity.ok(new PlaybackStartResponse(
+                    playbackId, request.sessionId(), "started",
+                    "/topic/playback/" + request.sessionId()));
 
         } catch (Exception e) {
             log.error("Failed to start playback", e);
             return ResponseEntity.internalServerError()
-                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Unknown error"));
+                    .body(Map.of("error", SafeErrorMessage.of(e, "Failed to start playback")));
         }
     }
 
     /**
      * Stop an active playback.
      */
+    @PreAuthorize("hasAuthority('session:read') or hasRole('ADMIN')")
     @PostMapping("/stop/{playbackId}")
     public ResponseEntity<Map<String, String>> stop(
             @PathVariable String playbackId) {
@@ -75,13 +72,10 @@ public class PlaybackController {
     /**
      * Check if a playback is currently active.
      */
+    @PreAuthorize("hasAuthority('session:read') or hasRole('ADMIN')")
     @GetMapping("/status/{playbackId}")
-    public ResponseEntity<Map<String, Object>> status(
-            @PathVariable String playbackId) {
-        boolean active = playbackService.isActive(playbackId);
-        Map<String, Object> body = new HashMap<>();
-        body.put("playbackId", playbackId);
-        body.put("active", active);
-        return ResponseEntity.ok(body);
+    public ResponseEntity<PlaybackStatusResponse> status(@PathVariable String playbackId) {
+        return ResponseEntity.ok(
+                new PlaybackStatusResponse(playbackId, playbackService.isActive(playbackId)));
     }
 }

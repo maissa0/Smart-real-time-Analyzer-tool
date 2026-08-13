@@ -15,11 +15,12 @@ import { DashboardStore } from './dashboard.store';
 import { KpiCardComponent } from './kpi-card/kpi-card.component';
 import { MessageFrequencyChartComponent } from './message-frequency-chart/message-frequency-chart.component';
 import { FaultDonutChartComponent, FaultEntry } from './fault-donut-chart/fault-donut-chart.component';
+import { NlAskComponent } from '../../shared/components/nl-ask/nl-ask.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DecimalPipe, HttpClientModule, KpiCardComponent, MessageFrequencyChartComponent, FaultDonutChartComponent],
+  imports: [CommonModule, DecimalPipe, HttpClientModule, KpiCardComponent, MessageFrequencyChartComponent, FaultDonutChartComponent, NlAskComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
   <div style="background:#07090b; min-height:100vh; padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem;">
@@ -68,6 +69,14 @@ import { FaultDonutChartComponent, FaultEntry } from './fault-donut-chart/fault-
         <app-kpi-card label="Total Frames"  [value]="stats.totalFrames"   sub="CAN frames in DB"                  [isLive]="liveTelemetry.connected()" />
         <app-kpi-card label="Integrity Faults" [value]="stats.totalFaults" sub="across all sessions"             [isLive]="false" />
         <app-kpi-card label="Vehicles"      [value]="stats.totalCars"     sub="registered in fleet"               [isLive]="false" />
+      </div>
+
+      <!-- Ask your data -->
+      <div style="background:#0d1117; border:1px solid rgba(176,255,68,0.12); border-radius:12px; padding:1.1rem 1.25rem;">
+        <div style="font-size:0.72rem; font-weight:700; color:#8a9ab0; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.6rem;">
+          Ask your data
+        </div>
+        <app-nl-ask placeholder="e.g. 'fault breakdown by type' or 'which car has the most sessions?'" />
       </div>
 
       <!-- Charts row -->
@@ -162,7 +171,9 @@ export class DashboardComponent implements OnInit {
   }
 
   openSession(sessionId: string): void {
-    this.router.navigate(['/admin/sniffer'], { queryParams: { sessionId } });
+    this.router.navigate(['/admin/workspace/session', sessionId], {
+      queryParams: { returnUrl: this.router.url },
+    });
   }
 
   formatDate(iso: string): string {

@@ -80,27 +80,17 @@ public class UserEntity extends AbstractAuditingEntity {
     @Builder.Default
     private String status = "ACTIVE";
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "role_id", columnDefinition = "BINARY(16)")
     @Builder.Default
-    private Set<RoleEntity> roles = new HashSet<>();
+    private Set<UUID> roleIds = new HashSet<>();
 
-    /**
-     * Per-user permission overrides — granted in addition to role permissions.
-     * Stored in user_permissions join table.
-     */
-    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(
-            name = "user_permissions",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "permission_id")
-    )
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "user_permissions", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "permission_id", columnDefinition = "BINARY(16)")
     @Builder.Default
-    private Set<PermissionEntity> extraPermissions = new HashSet<>();
+    private Set<UUID> extraPermissionIds = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {

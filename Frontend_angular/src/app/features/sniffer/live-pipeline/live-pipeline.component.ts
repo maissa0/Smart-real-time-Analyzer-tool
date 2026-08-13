@@ -3,7 +3,7 @@ import {
   signal, computed, OnInit, OnDestroy, input,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { LiveTelemetryService } from '../../../core/services/live-telemetry.service';
 import { API_BASE_URL } from '../../../core/config/api.config';
 
@@ -11,159 +11,68 @@ import { API_BASE_URL } from '../../../core/config/api.config';
   selector: 'app-live-pipeline',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, HttpClientModule],
-  styles: [`
-    .pipeline {
-      padding: 0.6rem 1rem;
-      background: #0d1117;
-      border-bottom: 1px solid rgba(176,255,68,0.08);
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-    .pipeline-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.2rem;
-    }
-    .live-dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: #b0ff44;
-      animation: pulse 1.4s ease-in-out infinite;
-      flex-shrink: 0;
-    }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .pipeline-title {
-      font-size: 0.62rem; font-weight: 700;
-      letter-spacing: 0.15em; color: #b0ff44;
-      text-transform: uppercase;
-    }
-    .timer {
-      font-family: monospace; font-size: 0.68rem;
-      color: #484f58; margin-left: auto;
-    }
-    .pipeline-rows {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.5rem;
-    }
-    .pipeline-stage {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      background: #161b22;
-      border: 1px solid #21262d;
-      border-radius: 6px;
-      padding: 0.4rem 0.6rem;
-    }
-    .stage-header {
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-    .stage-icon { font-size: 0.7rem; }
-    .stage-label {
-      font-size: 0.6rem;
-      color: #484f58;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-    .stage-count {
-      font-size: 0.82rem;
-      font-weight: 700;
-      font-family: monospace;
-      color: #e6edf3;
-    }
-    .stage-bar-wrap {
-      height: 3px;
-      background: #21262d;
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .stage-bar {
-      height: 100%;
-      border-radius: 2px;
-      transition: width 0.3s ease;
-    }
-    .stage-rate {
-      font-size: 0.58rem;
-      color: #484f58;
-    }
-  `],
+  imports: [CommonModule],
   template: `
-    <div class="pipeline">
-      <div class="pipeline-header">
-        <span class="live-dot"></span>
-        <span class="pipeline-title">Live Pipeline</span>
-        <span class="timer">{{ elapsedTime() }}</span>
+    <div class="px-4 py-2.5 bg-gray-900 border-b border-lime-400/[8%] flex flex-col gap-1.5">
+
+      <div class="flex items-center gap-2 mb-1">
+        <span class="w-[7px] h-[7px] rounded-full bg-lime-400 animate-pulse shrink-0"></span>
+        <span class="text-[0.62rem] font-bold tracking-[0.15em] text-lime-400 uppercase">Live Pipeline</span>
+        <span class="font-mono text-[0.68rem] text-zinc-500 ml-auto">{{ elapsedTime() }}</span>
       </div>
 
-      <div class="pipeline-rows">
+      <div class="grid grid-cols-4 gap-2">
 
         <!-- Simulator generated -->
-        <div class="pipeline-stage">
-          <div class="stage-header">
-            <span class="stage-icon">🎯</span>
-            <span class="stage-label">Simulator</span>
+        <div class="flex flex-col gap-1 bg-zinc-900 border border-zinc-800 rounded-md px-2.5 py-1.5">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[0.7rem]">🎯</span>
+            <span class="text-[0.6rem] text-zinc-500 uppercase tracking-[0.08em]">Simulator</span>
           </div>
-          <span class="stage-count">{{ wsFrames() | number }}</span>
-          <div class="stage-bar-wrap">
-            <div class="stage-bar"
-              style="background:#b0ff44"
-              [style.width]="'100%'">
-            </div>
+          <span class="text-[0.82rem] font-bold font-mono text-slate-100">{{ wsFrames() | number }}</span>
+          <div class="h-[3px] bg-zinc-800 rounded-sm overflow-hidden">
+            <div class="h-full rounded-sm transition-[width] duration-300 bg-lime-400" style="width:100%"></div>
           </div>
-          <span class="stage-rate">{{ fps() }} fps</span>
+          <span class="text-[0.58rem] text-zinc-500">{{ fps() }} fps</span>
         </div>
 
         <!-- WebSocket received -->
-        <div class="pipeline-stage">
-          <div class="stage-header">
-            <span class="stage-icon">📡</span>
-            <span class="stage-label">WS Received</span>
+        <div class="flex flex-col gap-1 bg-zinc-900 border border-zinc-800 rounded-md px-2.5 py-1.5">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[0.7rem]">📡</span>
+            <span class="text-[0.6rem] text-zinc-500 uppercase tracking-[0.08em]">WS Received</span>
           </div>
-          <span class="stage-count">{{ wsFrames() | number }}</span>
-          <div class="stage-bar-wrap">
-            <div class="stage-bar"
-              style="background:#3b82f6"
-              [style.width]="wsPercent() + '%'">
-            </div>
+          <span class="text-[0.82rem] font-bold font-mono text-slate-100">{{ wsFrames() | number }}</span>
+          <div class="h-[3px] bg-zinc-800 rounded-sm overflow-hidden">
+            <div class="h-full rounded-sm transition-[width] duration-300 bg-blue-500" [style.width]="wsPercent() + '%'"></div>
           </div>
-          <span class="stage-rate">real-time</span>
+          <span class="text-[0.58rem] text-zinc-500">real-time</span>
         </div>
 
         <!-- MySQL saved -->
-        <div class="pipeline-stage">
-          <div class="stage-header">
-            <span class="stage-icon">🗄️</span>
-            <span class="stage-label">MySQL Saved</span>
+        <div class="flex flex-col gap-1 bg-zinc-900 border border-zinc-800 rounded-md px-2.5 py-1.5">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[0.7rem]">🗄️</span>
+            <span class="text-[0.6rem] text-zinc-500 uppercase tracking-[0.08em]">MySQL Saved</span>
           </div>
-          <span class="stage-count">{{ mysqlFrames() | number }}</span>
-          <div class="stage-bar-wrap">
-            <div class="stage-bar"
-              style="background:#10b981"
-              [style.width]="mysqlPercent() + '%'">
-            </div>
+          <span class="text-[0.82rem] font-bold font-mono text-slate-100">{{ mysqlFrames() | number }}</span>
+          <div class="h-[3px] bg-zinc-800 rounded-sm overflow-hidden">
+            <div class="h-full rounded-sm transition-[width] duration-300 bg-emerald-500" [style.width]="mysqlPercent() + '%'"></div>
           </div>
-          <span class="stage-rate">~2s delay</span>
+          <span class="text-[0.58rem] text-zinc-500">~2s delay</span>
         </div>
 
         <!-- InfluxDB signals -->
-        <div class="pipeline-stage">
-          <div class="stage-header">
-            <span class="stage-icon">📈</span>
-            <span class="stage-label">InfluxDB Pts</span>
+        <div class="flex flex-col gap-1 bg-zinc-900 border border-zinc-800 rounded-md px-2.5 py-1.5">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[0.7rem]">📈</span>
+            <span class="text-[0.6rem] text-zinc-500 uppercase tracking-[0.08em]">InfluxDB Pts</span>
           </div>
-          <span class="stage-count">{{ influxPoints() | number }}</span>
-          <div class="stage-bar-wrap">
-            <div class="stage-bar"
-              style="background:#8b5cf6"
-              [style.width]="influxPercent() + '%'">
-            </div>
+          <span class="text-[0.82rem] font-bold font-mono text-slate-100">{{ influxPoints() | number }}</span>
+          <div class="h-[3px] bg-zinc-800 rounded-sm overflow-hidden">
+            <div class="h-full rounded-sm transition-[width] duration-300 bg-violet-500" [style.width]="influxPercent() + '%'"></div>
           </div>
-          <span class="stage-rate">real-time</span>
+          <span class="text-[0.58rem] text-zinc-500">real-time</span>
         </div>
 
       </div>
@@ -216,46 +125,31 @@ export class LivePipelineComponent implements OnInit, OnDestroy {
   private _animTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
-    // Poll real pipeline stats every 3s
     this._pollTimer = setInterval(() => {
       const sid = this.sessionId();
       if (!sid) return;
-      const token = localStorage.getItem('access_token');
-      const headers = token
-        ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-        : new HttpHeaders();
-      this.http.get<any>(
-        `${API_BASE_URL}/api/can/sessions/${sid}/pipeline-stats`,
-        { headers }
-      ).subscribe({
+      this.http.get<any>(`${API_BASE_URL}/api/can/sessions/${sid}/pipeline-stats`).subscribe({
         next: s => {
           this.mysqlFrames.set(s.mysqlFrames ?? 0);
           if ((s.influxPoints ?? -1) >= 0) {
             this.influxPoints.set(s.influxPoints);
           }
         },
-        error: () => {}
+        error: () => {},
       });
     }, 3000);
 
-    // Increment elapsed time every second
     this._clockTimer = setInterval(() => {
       this.elapsedSeconds.update(n => n + 1);
     }, 1000);
 
-    // Animate counters smoothly toward their real values
     this._animTimer = setInterval(() => {
       const wsTarget = this._wsFramesTarget();
       const wsCurrent = this.wsFrames();
       if (wsCurrent < wsTarget) {
-        // Step toward target — move at most 3 per tick (60ms interval)
-        // so visually it increments fast but smoothly
         const step = Math.ceil((wsTarget - wsCurrent) / 4);
         this.wsFrames.set(Math.min(wsTarget, wsCurrent + step));
       }
-      const mysqlTarget = this.mysqlFrames();
-      // mysqlFrames is already polled — no animation needed,
-      // it updates every 2s which is acceptable
     }, 60);
   }
 

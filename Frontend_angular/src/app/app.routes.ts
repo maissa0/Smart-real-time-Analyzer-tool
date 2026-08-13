@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { adminGuard } from './core/auth/admin.guard';
+import { permissionGuard } from './core/auth/permission.guard';
 
 export const appRoutes: Routes = [
   { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
@@ -18,6 +20,7 @@ export const appRoutes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then(
             (m) => m.DashboardComponent
@@ -25,6 +28,7 @@ export const appRoutes: Routes = [
       },
       {
         path: 'sniffer',
+        canActivate: [authGuard],
         loadChildren: () =>
           import('./features/sniffer/sniffer.routes').then(
             (m) => m.SNIFFER_ROUTES
@@ -32,20 +36,42 @@ export const appRoutes: Routes = [
       },
       {
         path: 'workspace',
-        loadComponent: () =>
-          import('./features/analyser/can-workspace.component').then(
-            (m) => m.CanWorkspaceComponent
+        canActivate: [authGuard],
+        loadChildren: () =>
+          import('./features/analyser/analyser.routes').then(
+            (m) => m.ANALYSER_ROUTES
+          ),
+      },
+      {
+        path: 'catalogs',
+        canActivate: [permissionGuard],
+        data: { permission: 'catalog:read' },
+        loadChildren: () =>
+          import('./features/catalogs/catalogs.routes').then(
+            (m) => m.CATALOGS_ROUTES
+          ),
+      },
+      {
+        path: 'requirements',
+        canActivate: [permissionGuard],
+        data: { permission: 'requirement:read' },
+        loadChildren: () =>
+          import('./features/requirements/requirements.routes').then(
+            (m) => m.REQUIREMENTS_ROUTES
           ),
       },
       {
         path: 'fleet',
-        loadComponent: () =>
-          import('./features/fleet/fleet-page.component').then(
-            (m) => m.FleetPageComponent
+        canActivate: [permissionGuard],
+        data: { permission: 'car:read' },
+        loadChildren: () =>
+          import('./features/fleet/fleet.routes').then(
+            (m) => m.FLEET_ROUTES
           ),
       },
       {
         path: 'users',
+        canActivate: [adminGuard],
         loadChildren: () =>
           import('./features/users/users.routes').then((m) => m.usersRoutes),
       },
@@ -57,7 +83,16 @@ export const appRoutes: Routes = [
           ),
       },
       {
+        path: 'compare',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/compare/session-compare-page.component').then(
+            (m) => m.SessionComparePageComponent
+          ),
+      },
+      {
         path: 'profile',
+        canActivate: [authGuard],
         loadChildren: () =>
           import('./features/profile/profile.routes').then(
             (m) => m.profileRoutes

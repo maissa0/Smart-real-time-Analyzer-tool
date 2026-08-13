@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthStore } from '../../../store/auth.store';
+import { AuthStore } from '../../../core/store/auth.store';
 import { SidebarStateService } from '../../../core/services/sidebar-state.service';
 
 @Component({

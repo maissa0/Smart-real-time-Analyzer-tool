@@ -1,9 +1,13 @@
 package com.example.backend.can.controller;
 
+import com.example.backend.can.dto.SignalTimelinePoint;
 import com.example.backend.can.service.InfluxQueryService;
 import com.example.backend.can.service.InfluxWriteService;
+import com.example.backend.exception.SafeErrorMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,12 +21,14 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/can/influx")
 @RequiredArgsConstructor
+@Slf4j
 public class InfluxController {
 
     private final InfluxQueryService influxQueryService;
     private final InfluxWriteService influxWriteService;
 
     /** Lists signal names stored in Influx for the session. */
+    @PreAuthorize("hasAuthority('session:read') or hasRole('ADMIN')")
     @GetMapping("/sessions/{sessionId}/signals")
     public ResponseEntity<List<String>> getAvailableSignals(
             @PathVariable String sessionId) {
@@ -30,8 +36,9 @@ public class InfluxController {
     }
 
     /** Returns timeline rows (time, value, tags) for one signal between startTs and endTs (Unix seconds). */
+    @PreAuthorize("hasAuthority('session:read') or hasRole('ADMIN')")
     @GetMapping("/sessions/{sessionId}/timeline")
-    public ResponseEntity<List<Map<String, Object>>> getSignalTimeline(
+    public ResponseEntity<List<SignalTimelinePoint>> getSignalTimeline(
             @PathVariable String sessionId,
             @RequestParam String signalName,
             @RequestParam double startTs,
@@ -41,6 +48,7 @@ public class InfluxController {
         );
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/sessions/{sessionId}")
     public ResponseEntity<Map<String, String>> deleteSession(@PathVariable String sessionId) {
         try {
@@ -50,9 +58,10 @@ public class InfluxController {
                 "message", "InfluxDB data deleted for session: " + sessionId
             ));
         } catch (Exception e) {
+            log.error("Failed to delete InfluxDB data for session {}: {}", sessionId, e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of(
                 "status", "error",
-                "message", e.getMessage()
+                "message", SafeErrorMessage.of(e, "Failed to delete InfluxDB data")
             ));
         }
     }

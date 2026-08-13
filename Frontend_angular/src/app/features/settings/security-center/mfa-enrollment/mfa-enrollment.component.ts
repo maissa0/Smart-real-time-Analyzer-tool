@@ -9,13 +9,15 @@ import {
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ProfileService } from '../../../../core/services/profile.service';
-import { AuthStore } from '../../../../store/auth.store';
+import { AuthStore } from '../../../../core/store/auth.store';
+import QRCode from 'qrcode';
 
 @Component({
   selector: 'app-mfa-enrollment',
   standalone: true,
   imports: [ReactiveFormsModule],
   templateUrl: './mfa-enrollment.component.html',
+  styleUrl: './mfa-enrollment.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MfaEnrollmentComponent implements OnInit {
@@ -27,7 +29,11 @@ export class MfaEnrollmentComponent implements OnInit {
   readonly isEnrolled = signal(false);
   readonly isEnrolling = signal(false);
   readonly secret = signal('');
-  readonly qrCodeUrl = signal('');
+  /** Raw otpauth:// URI returned by the backend — not an image URL. */
+  readonly otpauthUri = signal('');
+  /** Base64 PNG data URL generated client-side from otpauthUri for <img> binding. */
+  readonly qrDataUrl = signal('');
+  readonly backupCodes = signal<string[]>([]);
 
   readonly verificationForm = this.fb.nonNullable.group({
     code: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
@@ -56,7 +62,14 @@ export class MfaEnrollmentComponent implements OnInit {
     this.profileService.mfaEnable().subscribe({
       next: (res) => {
         this.secret.set(res.secret);
-        this.qrCodeUrl.set(res.qrCodeUrl);
+        this.otpauthUri.set(res.qrCodeUrl);
+        QRCode.toDataURL(res.qrCodeUrl, { width: 192, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
+          .then(dataUrl => {
+            this.qrDataUrl.set(dataUrl);
+          })
+          .catch(() => {
+            this.qrDataUrl.set('');
+          });
         this.isEnrolling.set(false);
       },
       error: () => {
@@ -73,18 +86,17 @@ export class MfaEnrollmentComponent implements OnInit {
     const code = this.verificationForm.getRawValue().code;
     this.profileService.mfaConfirm(code).subscribe({
       next: (res) => {
-        this.isEnrolled.set(true);
         this.secret.set('');
-        this.qrCodeUrl.set('');
+        this.otpauthUri.set('');
+        this.qrDataUrl.set('');
         this.verificationForm.reset();
+        this.backupCodes.set(res.backupCodes ?? []);
+        this.isEnrolled.set(true);
         const user = this.authStore.user();
         if (user) {
           this.authStore.updateUser({ ...user, mfaEnabled: true });
         }
-        this.toast.success('MFA has been enabled successfully.');
-        if (res.backupCodes?.length) {
-          this.toast.info('Save your backup codes in a secure place.');
-        }
+        this.toast.success('MFA enabled. Save your backup codes before continuing.');
       },
       error: () => {
         this.toast.error('Invalid verification code. Please try again.');
@@ -94,7 +106,8 @@ export class MfaEnrollmentComponent implements OnInit {
 
   cancelEnrollment(): void {
     this.secret.set('');
-    this.qrCodeUrl.set('');
+    this.otpauthUri.set('');
+    this.qrDataUrl.set('');
     this.verificationForm.reset();
   }
 
@@ -122,6 +135,28 @@ export class MfaEnrollmentComponent implements OnInit {
         this.toast.error('Incorrect password. MFA was not disabled.');
       },
     });
+  }
+
+  confirmBackupCodesSaved(): void {
+    this.backupCodes.set([]);
+  }
+
+  copyAllCodes(): void {
+    const text = this.backupCodes().join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      this.toast.success('Backup codes copied to clipboard.');
+    });
+  }
+
+  downloadCodes(): void {
+    const text = this.backupCodes().join('\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'kpit-mfa-recovery-codes.txt';
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   cancelDisable(): void {

@@ -4,3 +4,10 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 dist/
+
+anomaly_engine/data/public/
+anomaly_engine/data/raw/
+anomaly_engine/data/features/
+anomaly_engine/models/*.joblib
+anomaly_engine/models/*.pkl
+anomaly_engine/models/*.json

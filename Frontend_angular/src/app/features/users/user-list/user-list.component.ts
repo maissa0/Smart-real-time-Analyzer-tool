@@ -7,17 +7,16 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged, skip } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { UserStore } from '../../../store/user.store';
+import { UserStore } from '../../../core/store/user.store';
 import { UserService } from '../../../core/services/user.service';
-import type { User } from '../../../data/models';
+import type { User } from '../../../core/models';
 import { UserDetailPanelComponent } from '../user-detail-panel/user-detail-panel.component';
 
 @Component({
@@ -35,7 +34,6 @@ export class UserListComponent implements OnInit {
   private readonly toast       = inject(ToastService);
   private readonly destroyRef  = inject(DestroyRef);
   private readonly fb          = inject(FormBuilder);
-  private readonly searchInput$ = new Subject<string>();
 
   // ── table ────────────────────────────────────────────────────────────────
   readonly filteredUsers = computed(() => this.userStore.users());
@@ -68,6 +66,7 @@ export class UserListComponent implements OnInit {
   readonly pendingUsers      = signal<User[]>([]);
 
   readonly searchValue = signal('');
+  private readonly search$ = toObservable(this.searchValue);
 
   ngOnInit(): void {
     this.breadcrumb.set([
@@ -75,8 +74,9 @@ export class UserListComponent implements OnInit {
       { label: 'Users', url: '/admin/users/list' },
       { label: 'List' },
     ]);
-    this.searchInput$
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+    // skip(1) — toObservable emits the initial '' immediately; the store is already empty on mount
+    this.search$
+      .pipe(skip(1), debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe((search) => this.userStore.setFilter({ search }));
 
     // Force reload every time the component mounts —
@@ -91,7 +91,6 @@ export class UserListComponent implements OnInit {
   // ── search ───────────────────────────────────────────────────────────────
   onSearchInput(value: string): void {
     this.searchValue.set(value);
-    this.searchInput$.next(value);
   }
   clearSearch(): void {
     this.searchValue.set('');
@@ -108,7 +107,9 @@ export class UserListComponent implements OnInit {
     if (this.inviteForm.invalid) { this.inviteForm.markAllAsTouched(); return; }
     this.isInviting.set(true);
     const { fullName, email, jobTitle, department, role } = this.inviteForm.getRawValue();
-    this.userService.inviteUser({ fullName, email, jobTitle, department, role }).subscribe({
+    this.userService.inviteUser({ fullName, email, jobTitle, department, role })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: () => {
         this.isInviting.set(false);
         this.showInviteModal.set(false);
@@ -171,7 +172,9 @@ export class UserListComponent implements OnInit {
   }
 
   approveUser(user: User): void {
-    this.userService.approveUser(user.id).subscribe({
+    this.userService.approveUser(user.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: () => {
         this.toast.success(`${user.fullName ?? user.email} approved`);
         this.userStore.loadUsers();
@@ -191,7 +194,9 @@ export class UserListComponent implements OnInit {
   confirmReject(): void {
     const user = this.rejectTargetUser();
     if (!user) return;
-    this.userService.rejectUser(user.id, this.rejectReason()).subscribe({
+    this.userService.rejectUser(user.id, this.rejectReason())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: () => {
         this.toast.success(`${user.fullName ?? user.email} rejected`);
         this.showRejectModal.set(false);
@@ -202,15 +207,19 @@ export class UserListComponent implements OnInit {
   }
 
   private refreshPending(): void {
-    this.userService.getPendingUsers().subscribe({
-      next: (u) => this.pendingUsers.set(u),
-      error: () => {},
-    });
+    this.userService.getPendingUsers()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (u) => this.pendingUsers.set(u),
+        error: () => {},
+      });
   }
 
   // ── reset password ────────────────────────────────────────────────────────
   onResetPassword(user: User): void {
-    this.authService.forgotPassword(user.email).subscribe({
+    this.authService.forgotPassword(user.email)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: () => this.toast.success('Reset email sent to ' + user.email),
       error: () => {},
     });

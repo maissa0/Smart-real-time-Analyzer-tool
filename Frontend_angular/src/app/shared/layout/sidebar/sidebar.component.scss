@@ -103,3 +103,18 @@
   flex-shrink: 0;
   stroke: currentColor;
 }
+
+/* Uppercase group label between nav sections (Workspace / Vehicles / Admin / System). */
+.kpit-nav-section {
+  display: block;
+  padding: 14px 16px 6px;
+  color: var(--kpit-dim, #484f58);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  user-select: none;
+}
+.kpit-nav-section:first-child {
+  padding-top: 4px;
+}

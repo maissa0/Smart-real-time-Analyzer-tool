@@ -31,26 +31,38 @@ public class AuditAspect {
 
     @Around("@annotation(auditLog)")
     public Object aroundAuditedMethod(ProceedingJoinPoint joinPoint, AuditLog auditLog) throws Throwable {
-        Object result = joinPoint.proceed();
+        UUID userId = currentUserService.getCurrentUserId().orElse(null);
+        String resourceId = extractResourceId(joinPoint, auditLog.resourceIdParam());
+        HttpServletRequest request = getCurrentRequest();
 
         try {
-            UUID userId = currentUserService.getCurrentUserId().orElse(null);
-            String resourceId = extractResourceId(joinPoint, auditLog.resourceIdParam());
-            HttpServletRequest request = getCurrentRequest();
+            Object result = joinPoint.proceed();
+            writeAuditEntry(auditLog, joinPoint, resourceId, userId, request, "SUCCESS", null);
+            return result;
+        } catch (Throwable t) {
+            writeAuditEntry(auditLog, joinPoint, resourceId, userId, request, "FAILURE", t.getMessage());
+            throw t;
+        }
+    }
+
+    private void writeAuditEntry(AuditLog auditLog, ProceedingJoinPoint joinPoint, String resourceId,
+                                  UUID userId, HttpServletRequest request, String outcome, String error) {
+        try {
+            Map<String, String> metadata = error != null
+                    ? Map.of("endpoint", joinPoint.getSignature().getName(), "outcome", outcome, "error", error)
+                    : Map.of("endpoint", joinPoint.getSignature().getName(), "outcome", outcome);
 
             auditService.logAudit(
                     auditLog.action(),
                     auditLog.resource(),
                     resourceId,
                     userId,
-                    Map.of("endpoint", joinPoint.getSignature().getName()),
+                    metadata,
                     request
             );
         } catch (Exception e) {
             log.warn("Failed to write audit log for {}: {}", auditLog.action(), e.getMessage());
         }
-
-        return result;
     }
 
     private String extractResourceId(ProceedingJoinPoint joinPoint, String paramName) {

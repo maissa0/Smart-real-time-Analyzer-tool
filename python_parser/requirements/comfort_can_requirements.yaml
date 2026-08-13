@@ -1,0 +1,416 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXAMPLE requirement set — transcription of the "Requirements" PDF (CA_1..CA_30).
+#
+# This file is SAMPLE CONTENT: requirement sets are fully dynamic user uploads,
+# assigned per car next to ECU catalogs. Upload your own file per car; nothing
+# in the engine is specific to these rule ids or signal names.
+#
+# Conventions:
+#   - Predicates: "signal op value" with ops == != < <= > >= in
+#   - trigger/forbidden edges: {signal, from, to}; '*' means "any value"
+#   - draft: true  => rule is loaded and reported as NOT_TESTED, never VIOLATED
+#     (used where the source document is ambiguous or references the missing
+#     "NK" appendix / press-duration semantics not yet supported).
+#   - car_state: if your car publishes a status signal directly, point
+#     signal_map at it and delete the derived_signals entry. Here it is
+#     DERIVED from the LED mapping defined by CA_30.
+# ═══════════════════════════════════════════════════════════════════════════
+meta:
+  name: Comfort CAN access requirements (example)
+  version: 1
+  signal_map:
+    # rule-name -> catalog signal name (edit to match your catalogs)
+    KEY_Pos: KEY_Pos
+    KEY_Butt: KEY_Butt
+    Key_Button_Status: Key_Button_Status
+    door_latche_status: door_latche_status
+    Drd_Status: Drd_Status
+    Drdr_Status: Drdr_Status
+    Psd_Status: Psd_Status
+    Psdr_Status: Psdr_Status
+    Rocker_switch_Status: Rocker_switch_Status
+    Bootlid_Status: Bootlid_Status
+    Led_Status: Led_Status
+  derived_signals:
+    - name: car_state
+      from: [Led_Status]
+      cases:
+        - value: unlocked
+          when: ["Led_Status == 'green'"]
+        - value: locked
+          when: ["Led_Status == 'bleu'"]
+        - value: secured
+          when: ["Led_Status == 'red'"]
+        - value: unsecured
+          when: ["Led_Status == 'yellow'"]
+
+rules:
+  # ── Securing / locking / unlocking ─────────────────────────────────────────
+  - id: CA_1
+    title: Car must secure on key lock press (key outside, driver door closed, key valid)
+    component: driver_door
+    severity: HIGH
+    kind: response
+    preconditions:
+      - "KEY_Pos == 'Outside'"
+      - "Drd_Status == 'Closed'"
+      - "KEY_Butt in [1000, 45896567]"
+    trigger: { signal: Key_Button_Status, to: 'Lock_Pressed' }
+    expect: { signal: car_state, becomes: 'secured' }
+    deadline_ms: 600
+    tolerance_pct: 10
+    violation_title: "Car did not secure after key lock press"
+    check_list:
+      - "Key fob battery / KEY_Butt signal reaching the master"
+      - "Driver door latch sensor (Drd_Status) wiring"
+      - "Body gateway <-> comfort ECU communication"
+
+  - id: CA_2
+    title: Car must lock on key lock release (key inside, driver door closed, key valid)
+    component: driver_door
+    severity: HIGH
+    kind: response
+    preconditions:
+      - "KEY_Pos == 'Inside'"
+      - "Drd_Status == 'Closed'"
+    trigger: { signal: Key_Button_Status, to: 'Lock_Released' }
+    expect: { signal: car_state, becomes: 'locked' }
+    deadline_ms: 500
+    tolerance_pct: 10
+    violation_title: "Car did not lock after key lock release"
+    check_list:
+      - "Key position detection (KEY_Pos antenna)"
+      - "Master state machine transition secure->lock (see CA_20)"
+
+  - id: CA_3
+    title: Car must unlock on last door/bootlid close (car secured, securing key inside)
+    component: doors
+    severity: HIGH
+    kind: response
+    preconditions:
+      - "car_state == 'secured'"
+      - "KEY_Pos == 'Inside'"
+    trigger: { signal: Drd_Status, to: 'Closed' }
+    expect: { signal: car_state, becomes: 'unlocked' }
+    deadline_ms: 400
+    violation_title: "Car did not unlock after closing door with key inside"
+    check_list:
+      - "Door/bootlid closed detection"
+      - "Key-inside detection of the key that secured the car"
+
+  - id: CA_4
+    title: Front-door rocker buttons lock/unlock timing (set->check 100ms max)
+    component: doors
+    severity: MEDIUM
+    kind: response
+    draft: true   # ambiguous which status signal is the "check" — clarify then enable
+    trigger: { signal: Rocker_switch_Status, to: '*' }
+    expect: { signal: door_latche_status, becomes: '*' }
+    deadline_ms: 100
+    tolerance_pct: 10
+
+  - id: CA_5
+    title: Welcome light active 3s on key unlock
+    component: interior_light
+    severity: LOW
+    kind: duration
+    draft: true   # welcome-light signal not defined in the example catalogs
+    state: ["car_state == 'unlocked'"]
+    duration_ms: 3000
+    expect: { signal: car_state, becomes: 'unlocked' }
+
+  - id: CA_6
+    title: Long press (>=5s) on 3rd key button opens bootlid (250ms after 750ms reached)
+    component: bootlid
+    severity: MEDIUM
+    kind: response
+    draft: true   # press-duration triggers not yet supported by the engine
+    trigger: { signal: Key_Button_Status, to: 'Third_Button_Long' }
+    expect: { signal: Bootlid_Status, becomes: 'Open' }
+    deadline_ms: 250
+
+  - id: CA_7
+    title: Door/bootlid open changes LED red->green within 200ms
+    component: doors
+    severity: MEDIUM
+    kind: response
+    trigger: { signal: Drd_Status, to: 'Open' }
+    expect: { signal: Led_Status, becomes: 'green' }
+    deadline_ms: 200
+    violation_title: "Door state LED did not change after door opened"
+    check_list:
+      - "Door status LED wiring"
+      - "Drd_Status sensor debounce"
+
+  - id: CA_8
+    title: Key buttons must not work when key position is unknown
+    component: key
+    severity: HIGH
+    kind: absence
+    while: ["KEY_Pos == 'Unknown'"]
+    forbidden: { signal: car_state, from: '*' }
+    violation_title: "Car state changed although the key was not found"
+    check_list:
+      - "Key search / antenna diagnostics"
+
+  - id: CA_9
+    title: Selective unlock press counting (first press selective, second global)
+    severity: MEDIUM
+    kind: response
+    draft: true   # press-counting semantics ambiguous in source document
+    trigger: { signal: Key_Button_Status, to: 'Unlock_Pressed' }
+    expect: { signal: car_state, becomes: 'unlocked' }
+    deadline_ms: 100
+
+  - id: CA_10
+    title: Status must survive a reset
+    severity: MEDIUM
+    kind: invariant
+    draft: true   # reset events are not observable as a signal in the example catalogs
+    when: ["car_state == '*'"]
+    expect_all: ["car_state == '*'"]
+
+  - id: CA_11
+    title: Lock/unlock buttons inactive while driver door is open
+    component: driver_door
+    severity: HIGH
+    kind: absence
+    while: ["Drd_Status == 'Open'"]
+    forbidden: { signal: car_state, from: '*' }
+    violation_title: "Car state changed from a key press while driver door was open"
+    check_list:
+      - "Driver door status contact (Drd_Status_Cont)"
+
+  - id: CA_12
+    title: Master ignores lock presses longer than 6s
+    severity: MEDIUM
+    kind: absence
+    draft: true   # needs press-duration tracking
+    while: ["Key_Button_Status == 'Lock_Pressed'"]
+    forbidden: { signal: car_state, from: '*' }
+    window_ms: 6000
+    trigger: { signal: Key_Button_Status, to: 'Lock_Pressed' }
+
+  # ── Latch actuation pulses (CA_13..CA_18) ──────────────────────────────────
+  - id: CA_13
+    title: Unlock sets door latches to 5V during 100ms
+    severity: MEDIUM
+    kind: response
+    draft: true   # pulse-duration (hold for N ms) semantics pending engine support
+    trigger: { signal: car_state, to: 'unlocked' }
+    expect: { signal: Drd_Unlock_latch_action, becomes: 'Active' }
+    deadline_ms: 100
+
+  - id: CA_14
+    title: Secure sets door latches to 5V during 120ms
+    severity: MEDIUM
+    kind: response
+    draft: true
+    trigger: { signal: car_state, to: 'secured' }
+    expect: { signal: Drd_Secure_latch_action, becomes: 'Active' }
+    deadline_ms: 120
+
+  - id: CA_15
+    title: Lock sets door latches to 5V during 100ms
+    severity: MEDIUM
+    kind: response
+    draft: true
+    trigger: { signal: car_state, to: 'locked' }
+    expect: { signal: Drd_Lock_latch_action, becomes: 'Active' }
+    deadline_ms: 100
+
+  - id: CA_16
+    title: Unlock latches actuate 150ms after the unlock trigger
+    component: doors
+    severity: MEDIUM
+    kind: response
+    trigger: { signal: Key_Button_Status, to: 'Unlock_Pressed' }
+    expect: { signal: Drd_Unlock_latch_action, becomes: 'Active' }
+    deadline_ms: 150
+    check_list:
+      - "Latch actuator supply (5V rail)"
+      - "Latch action feedback wiring"
+
+  - id: CA_17
+    title: Secure latches actuate 200ms after the trigger
+    component: doors
+    severity: MEDIUM
+    kind: response
+    trigger: { signal: Key_Button_Status, to: 'Lock_Pressed' }
+    expect: { signal: Drd_Secure_latch_action, becomes: 'Active' }
+    deadline_ms: 200
+
+  - id: CA_18
+    title: Lock latches actuate 150ms after the trigger
+    component: doors
+    severity: MEDIUM
+    kind: response
+    trigger: { signal: Key_Button_Status, to: 'Lock_Released' }
+    expect: { signal: Drd_Lock_latch_action, becomes: 'Active' }
+    deadline_ms: 150
+
+  # ── State machine behaviour ────────────────────────────────────────────────
+  - id: CA_19
+    title: Car status changes to secure when pressing lock button
+    severity: HIGH
+    kind: response
+    preconditions:
+      - "KEY_Pos == 'Outside'"
+    trigger: { signal: Key_Button_Status, to: 'Lock_Pressed' }
+    expect: { signal: car_state, becomes: 'secured' }
+    deadline_ms: 600
+    tolerance_pct: 10
+
+  - id: CA_20
+    title: Key search triggered 50ms after key lock release
+    severity: MEDIUM
+    kind: response
+    draft: true   # key-search trigger signal not defined in the example catalogs
+    trigger: { signal: Key_Button_Status, to: 'Lock_Released' }
+    expect: { signal: KEY_Pos, becomes: '*' }
+    deadline_ms: 50
+
+  - id: CA_21
+    title: Second simultaneous key button press must be ignored
+    severity: MEDIUM
+    kind: absence
+    draft: true   # simultaneity window ambiguous in source document
+    while: ["Key_Button_Status == 'Two_Pressed'"]
+    forbidden: { signal: car_state, from: '*' }
+
+  - id: CA_22
+    title: Status change requests ignored during latch actuation windows (CA_16..18)
+    severity: MEDIUM
+    kind: absence
+    draft: true   # needs coupling to the CA_16..18 windows — Phase 2 engine feature
+    while: ["Drd_Unlock_latch_action == 'Active'"]
+    forbidden: { signal: car_state, from: '*' }
+
+  - id: CA_23
+    title: Unlocked with key outside auto-locks after 2 minutes
+    component: doors
+    severity: HIGH
+    kind: duration
+    state:
+      - "car_state == 'unlocked'"
+      - "KEY_Pos == 'Outside'"
+    duration_ms: 120000
+    expect: { signal: car_state, becomes: 'locked' }
+    violation_title: "Car stayed unlocked with the key outside for over 2 minutes"
+    check_list:
+      - "Auto-lock timer in the body controller"
+      - "Key-outside detection"
+
+  - id: CA_24
+    title: 1s press on 3rd button closes an open bootlid (250ms after 1s reached)
+    component: bootlid
+    severity: MEDIUM
+    kind: response
+    draft: true   # press-duration triggers not yet supported
+    preconditions: ["Bootlid_Status == 'Open'"]
+    trigger: { signal: Key_Button_Status, to: 'Third_Button_1s' }
+    expect: { signal: Bootlid_Status, becomes: 'Closed' }
+    deadline_ms: 250
+
+  - id: CA_25
+    title: Selective unlock on first key unlock press (option on, car locked, one door)
+    severity: MEDIUM
+    kind: response
+    preconditions:
+      - "selective_unlock_action == 'On'"
+      - "car_state == 'locked'"
+    trigger: { signal: Key_Button_Status, to: 'Unlock_Pressed' }
+    expect: { signal: car_state, becomes: 'unlocked' }
+    deadline_ms: 300
+    tolerance_pct: 10
+
+  - id: CA_26
+    title: Global unlock (option on, car locked, all doors)
+    severity: MEDIUM
+    kind: response
+    draft: true   # depends on CA_9 press counting
+    preconditions:
+      - "selective_unlock_action == 'On'"
+      - "car_state == 'locked'"
+    trigger: { signal: Key_Button_Status, to: 'Unlock_Pressed' }
+    expect: { signal: car_state, becomes: 'unlocked' }
+    deadline_ms: 300
+
+  - id: CA_27
+    title: Doors must not open from inside while the car is secured
+    component: doors
+    severity: CRITICAL
+    kind: absence
+    while: ["car_state == 'secured'"]
+    forbidden: { signal: Drd_Status, to: 'Open' }
+    violation_title: "A door opened while the car was secured"
+    check_list:
+      - "Interior handle decoupling actuator"
+      - "Door latch secure state feedback"
+
+  - id: CA_28
+    title: Secured-state door opening exception via rocker unlock (states 4->6, see NK)
+    severity: MEDIUM
+    kind: invariant
+    draft: true   # references the unavailable NK appendix
+    when: ["car_state == 'secured'"]
+    expect_all: ["car_state == 'secured'"]
+
+  - id: CA_29
+    title: Welcome light active 20s when car becomes secured
+    component: interior_light
+    severity: LOW
+    kind: duration
+    draft: true   # welcome-light signal not defined in the example catalogs
+    state: ["car_state == 'secured'"]
+    duration_ms: 20000
+    expect: { signal: car_state, becomes: 'secured' }
+
+  # ── CA_30: LED <-> state mapping, one invariant per state ─────────────────
+  - id: CA_30_unlocked
+    title: Unlocked state shows the green LED
+    severity: MEDIUM
+    kind: invariant
+    when: ["car_state == 'unlocked'"]
+    expect_all: ["Led_Status == 'green'"]
+
+  - id: CA_30_locked
+    title: Locked state shows the blue LED
+    severity: MEDIUM
+    kind: invariant
+    when: ["car_state == 'locked'"]
+    expect_all: ["Led_Status == 'bleu'"]
+
+  - id: CA_30_secured
+    title: Secured state shows the red LED
+    severity: MEDIUM
+    kind: invariant
+    when: ["car_state == 'secured'"]
+    expect_all: ["Led_Status == 'red'"]
+
+  - id: CA_30_unsecured
+    title: Unsecured state shows the yellow LED
+    severity: MEDIUM
+    kind: invariant
+    when: ["car_state == 'unsecured'"]
+    expect_all: ["Led_Status == 'yellow'"]
+
+  # ── Access state machine: any transition not listed here is illegal ────────
+  - id: SM_CAR_STATE
+    title: Car access state machine — allowed transitions
+    severity: HIGH
+    kind: invariant
+    state_signal: car_state
+    allowed_transitions:
+      - [unlocked, secured]          # CA_1 / CA_19
+      - [unlocked, locked]           # CA_23 auto-lock
+      - [secured, locked]            # CA_2 / CA_20 key found inside
+      - [secured, unlocked]          # CA_3 last door close
+      - [locked, unlocked]           # CA_25 / CA_26 unlock press
+      - [locked, secured]            # lock button while locked
+      - [unsecured, unlocked]
+      - [unsecured, locked]
+    violation_title: "Car access state made an illegal transition"
+    check_list:
+      - "Body controller state machine firmware"
+      - "Check for injected/spoofed frames on the comfort bus"

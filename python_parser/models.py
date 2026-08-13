@@ -22,6 +22,7 @@ class MessageDefinition:
     msg_name: str
     bus_name: str
     signals: list[SignalDefinition] = field(default_factory=list)
+    cycle_ms: int | None = None
 
 
 @dataclass

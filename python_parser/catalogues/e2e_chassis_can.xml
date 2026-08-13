@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bus Name="E2E_Chassis_CAN">
+
+    <!-- Fast cyclic wheel speeds: numeric km/h per wheel (no enum on purpose) -->
+    <massage id="0x600" name="Wheel_Speeds">
+        <sender>ABS ECU</sender>
+        <reciver>chassis gateway</reciver>
+        <Cyclic>
+            <status>true</status>
+            <cycle>100</cycle>
+        </Cyclic>
+        <Byte Num="0">
+            <Signal Bit="11111111">
+                <signal_name>E2E_Wheel_Speed_FL</signal_name>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <Signal Bit="11111111">
+                <signal_name>E2E_Wheel_Speed_FR</signal_name>
+            </Signal>
+        </Byte>
+        <Byte Num="2">
+            <Signal Bit="11111111">
+                <signal_name>E2E_Wheel_Speed_RL</signal_name>
+            </Signal>
+        </Byte>
+        <Byte Num="3">
+            <Signal Bit="11111111">
+                <signal_name>E2E_Wheel_Speed_RR</signal_name>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <!-- Fast cyclic vehicle dynamics: speed, steering wheel angle, gear -->
+    <massage id="0x601" name="Vehicle_Dynamics">
+        <sender>chassis ECU</sender>
+        <reciver>chassis gateway</reciver>
+        <Cyclic>
+            <status>true</status>
+            <cycle>100</cycle>
+        </Cyclic>
+        <Byte Num="0">
+            <Signal Bit="11111111">
+                <signal_name>E2E_Vehicle_Speed</signal_name>
+            </Signal>
+        </Byte>
+        <Byte Num="1">
+            <!-- steering wheel angle, offset-encoded: 128 = centre,
+                 <128 = left, >128 = right (raw byte, no enum) -->
+            <Signal Bit="11111111">
+                <signal_name>E2E_Steering_Angle</signal_name>
+            </Signal>
+        </Byte>
+        <Byte Num="2">
+            <Signal Bit="00000111">
+                <signal_name>E2E_Gear_Position</signal_name>
+                <values>
+                    <value>0</value><name>Park</name>
+                    <value>1</value><name>Reverse</name>
+                    <value>2</value><name>Neutral</name>
+                    <value>3</value><name>Drive</name>
+                    <value>4</value><name>Sport</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+    <!-- Event message (non-cyclic): brake pedal events -->
+    <massage id="0x602" name="Brake_Event">
+        <sender>brake ECU</sender>
+        <reciver>chassis gateway</reciver>
+        <Cyclic>
+            <status>false</status>
+        </Cyclic>
+        <Byte Num="0">
+            <Signal Bit="00000001">
+                <signal_name>E2E_Brake_Pedal</signal_name>
+                <values>
+                    <value>0</value><name>Released</name>
+                    <value>1</value><name>Pressed</name>
+                </values>
+            </Signal>
+        </Byte>
+    </massage>
+
+</Bus>

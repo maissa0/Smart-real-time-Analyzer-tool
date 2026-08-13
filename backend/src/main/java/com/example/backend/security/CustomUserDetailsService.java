@@ -1,6 +1,9 @@
 package com.example.backend.security;
 
+import com.example.backend.entity.RoleEntity;
 import com.example.backend.entity.UserEntity;
+import com.example.backend.repository.PermissionRepository;
+import com.example.backend.repository.RoleRepository;
 import com.example.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,6 +14,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,6 +24,8 @@ import java.util.stream.Collectors;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PermissionRepository permissionRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -29,20 +37,26 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("Account Disabled");
         }
 
-        var authorities = user.getRoles().stream()
-                .flatMap(role -> role.getPermissions().stream())
-                .map(p -> new SimpleGrantedAuthority(p.getSlug()))
-                .collect(Collectors.toCollection(java.util.HashSet::new));
+        List<RoleEntity> roles = (user.getRoleIds() == null || user.getRoleIds().isEmpty())
+                ? List.of()
+                : roleRepository.findByIdIn(new ArrayList<>(user.getRoleIds()));
 
-        // Add per-user extra permissions (in addition to role permissions)
-        if (user.getExtraPermissions() != null) {
-            user.getExtraPermissions().stream()
-                    .map(p -> new SimpleGrantedAuthority(p.getSlug()))
-                    .forEach(authorities::add);
+        // Collect all permission IDs: role permissions + per-user overrides
+        var permIdSet = roles.stream()
+                .flatMap(r -> r.getPermissionIds().stream())
+                .collect(Collectors.toCollection(HashSet::new));
+        if (user.getExtraPermissionIds() != null) {
+            permIdSet.addAll(user.getExtraPermissionIds());
         }
 
+        var authorities = permIdSet.isEmpty()
+                ? new HashSet<SimpleGrantedAuthority>()
+                : permissionRepository.findByIdIn(new ArrayList<>(permIdSet)).stream()
+                        .map(p -> new SimpleGrantedAuthority(p.getSlug()))
+                        .collect(Collectors.toCollection(HashSet::new));
+
         // Add role-based authority for @PreAuthorize("hasRole('ADMIN')")
-        user.getRoles().forEach(role ->
+        roles.forEach(role ->
                 authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().toUpperCase().replace(" ", "_")))
         );
 

@@ -16,12 +16,24 @@ import { BreadcrumbService } from '../../../core/services/breadcrumb.service';
           <h1 class="text-2xl font-bold text-gray-900">Security Center</h1>
         </div>
       }
-      <div class="grid gap-8 lg:grid-cols-2">
+      <div class="sc-grid">
         <app-mfa-enrollment />
         <app-active-sessions />
       </div>
     </div>
   `,
+  styles: [`
+    .sc-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 900px) {
+      .sc-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SecurityCenterComponent implements OnInit {

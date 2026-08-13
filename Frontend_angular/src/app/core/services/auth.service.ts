@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
-import type { AuthResponse, MfaAuthResponse } from '../../data/models';
+import type { AuthResponse, MfaAuthResponse } from '../models';
 
 export type LoginResult = { type: 'success'; data: AuthResponse } | { type: 'mfa_required'; data: MfaAuthResponse };
 

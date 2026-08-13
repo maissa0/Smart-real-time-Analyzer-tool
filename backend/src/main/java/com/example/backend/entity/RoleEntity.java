@@ -32,18 +32,11 @@ public class RoleEntity {
     @Column(name = "updated_at", nullable = false)
     private java.time.Instant updatedAt;
 
-    @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_id"))
+    @Column(name = "permission_id", columnDefinition = "BINARY(16)")
     @Builder.Default
-    private Set<UserEntity> users = new HashSet<>();
-
-    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(
-            name = "role_permissions",
-            joinColumns = @JoinColumn(name = "role_id"),
-            inverseJoinColumns = @JoinColumn(name = "permission_id")
-    )
-    @Builder.Default
-    private Set<PermissionEntity> permissions = new HashSet<>();
+    private Set<UUID> permissionIds = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {
